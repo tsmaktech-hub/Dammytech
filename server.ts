@@ -10,6 +10,11 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
+  // Redirect login and signup to home on direct server requests (reloads)
+  app.get(['/login', '/signup'], (req, res) => {
+    res.redirect('/');
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

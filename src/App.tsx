@@ -67,7 +67,7 @@ const Navbar = () => {
             </div>
             <div className="flex flex-col">
               <span className="text-base sm:text-xl font-black tracking-tighter text-gray-900 leading-none">
-                DAMMY TECH
+                DAMMYTECH
               </span>
               <span className="text-[8px] sm:text-[10px] font-bold tracking-[0.2em] text-cyan-600 uppercase">
                 Gadget Store
@@ -310,7 +310,7 @@ export default function App() {
                   <div className="w-8 h-8 sm:w-10 sm:h-10 bg-cyan-500 rounded-lg sm:rounded-xl flex items-center justify-center">
                     <Cpu className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                   </div>
-                  <span className="text-lg sm:text-xl font-black tracking-tighter">DAMMY TECH</span>
+                  <span className="text-lg sm:text-xl font-black tracking-tighter">DAMMYTECH GADGET STORE</span>
                 </div>
                 <p className="text-gray-400 text-sm max-w-sm mb-6 sm:mb-8 leading-relaxed">
                   Your ultimate destination for high-end gadgets and futuristic technology. We bring the future to your doorstep.
@@ -347,7 +347,7 @@ export default function App() {
             </div>
             <div className="px-4 sm:px-8 lg:px-20 pt-10 sm:pt-20 mt-10 sm:mt-20 border-t border-gray-800 text-center">
               <p className="text-gray-500 text-[10px] font-bold tracking-widest uppercase">
-                © {new Date().getFullYear()} Dammy Tech Gadget. Engineered for Excellence.
+                © {new Date().getFullYear()} Dammytech Gadget Store. Engineered for Excellence.
               </p>
             </div>
           </footer>
