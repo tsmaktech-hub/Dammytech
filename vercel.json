@@ -1,7 +1,12 @@
 {
   "redirects": [
     {
-      "source": "/(login|signup)/?",
+      "source": "/login",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/signup",
       "destination": "/",
       "permanent": false
     }
