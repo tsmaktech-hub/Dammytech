@@ -11,8 +11,15 @@ async function startServer() {
   const PORT = 3000;
 
   // Redirect login and signup to home on direct server requests (reloads)
-  app.get(['/login', '/signup'], (req, res) => {
-    res.redirect('/');
+  // This handles the user's request to go to home on reload instead of 404
+  app.use((req, res, next) => {
+    const path = req.path.toLowerCase();
+    console.log(`[Server] Request path: ${path}`);
+    if (path === '/login' || path === '/signup' || path === '/login/' || path === '/signup/') {
+      console.log(`[Server] Redirecting ${path} to /`);
+      return res.redirect('/');
+    }
+    next();
   });
 
   // Vite middleware for development
