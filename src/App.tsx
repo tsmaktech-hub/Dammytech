@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
-import { pb } from './lib/pocketbase';
+import { pb, isMockMode } from './lib/pocketbase';
 import { UserProfile } from './types';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { 
@@ -248,6 +248,21 @@ export default function App() {
   const [loading, setLoading] = useState(true);
 
   const refreshProfile = async () => {
+    if (isMockMode) {
+      setProfile({
+        id: 'admin',
+        username: 'admin',
+        email: 'admin@example.com',
+        fullName: 'Admin User',
+        phoneNumber: '1234567890',
+        role: 'admin',
+        avatar: '',
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+      });
+      return;
+    }
+
     if (pb.authStore.model) {
       try {
         const record = await pb.collection('users').getOne(pb.authStore.model.id, { requestKey: null });

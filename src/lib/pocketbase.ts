@@ -1,6 +1,7 @@
 import PocketBase from 'pocketbase';
 
 const url = import.meta.env.VITE_POCKETBASE_URL || 'YOUR_POCKETBASE_URL';
+export const isMockMode = url === 'YOUR_POCKETBASE_URL';
 export const pb = new PocketBase(url);
 
 // Helper to get file URL

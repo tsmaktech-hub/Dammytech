@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { pb } from '../lib/pocketbase';
+import { pb, isMockMode } from '../lib/pocketbase';
 import { motion } from 'motion/react';
 import { 
   LogIn, 
@@ -28,6 +28,24 @@ export default function Login() {
     setError('');
     setLoading(true);
 
+    if (isMockMode) {
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (formData.email === 'admin@example.com' && formData.password === 'password') {
+        pb.authStore.save('mock-token', { 
+          id: 'admin', 
+          email: 'admin@example.com',
+          collectionId: 'users',
+          collectionName: 'users'
+        } as any);
+        navigate('/');
+      } else {
+        setError('Invalid email or password (Try admin@example.com / password)');
+      }
+      setLoading(false);
+      return;
+    }
+
     try {
       await pb.collection('users').authWithPassword(formData.email, formData.password);
       navigate('/');
@@ -39,8 +57,8 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4 py-8 sm:py-12">
-      <div className="grid grid-cols-1 lg:grid-cols-2 max-w-6xl w-full bg-white rounded-3xl sm:rounded-[3rem] shadow-2xl overflow-hidden border border-gray-100">
+    <div className="min-h-[80vh] flex items-center justify-center px-4 py-6 sm:py-12">
+      <div className="grid grid-cols-1 lg:grid-cols-2 max-w-6xl w-full bg-white rounded-2xl sm:rounded-[3rem] shadow-2xl overflow-hidden border border-gray-100">
         {/* Left Side - Visual */}
         <div className="hidden lg:flex relative bg-gray-950 p-20 flex-col justify-between overflow-hidden">
           <div className="absolute inset-0">
@@ -85,32 +103,32 @@ export default function Login() {
         </div>
 
         {/* Right Side - Form */}
-        <div className="p-8 sm:p-12 md:p-20 flex flex-col justify-center">
-          <div className="mb-8 sm:mb-12">
-            <h1 className="text-3xl sm:text-4xl font-black text-gray-900 tracking-tight mb-3 sm:mb-4">Sign In</h1>
-            <p className="text-gray-500 font-medium text-sm sm:text-base">Enter your credentials to access your account</p>
+        <div className="p-6 sm:p-12 md:p-20 flex flex-col justify-center">
+          <div className="mb-6 sm:mb-12">
+            <h1 className="text-2xl sm:text-4xl font-black text-gray-900 tracking-tight mb-2 sm:mb-4">Sign In</h1>
+            <p className="text-gray-500 font-medium text-xs sm:text-base">Enter your credentials to access your account</p>
           </div>
 
           {error && (
             <motion.div
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
-              className="mb-8 p-5 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-4 text-red-700 text-sm font-bold"
+              className="mb-6 p-4 sm:p-5 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 sm:gap-4 text-red-700 text-xs sm:text-sm font-bold"
             >
-              <AlertCircle className="w-6 h-6 flex-shrink-0" />
+              <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" />
               {error}
             </motion.div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Email Address</label>
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+            <div className="space-y-1 sm:space-y-2">
+              <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Email Address</label>
               <div className="relative group">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
                 <input
                   type="email"
                   required
-                  className="w-full pl-12 pr-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold"
+                  className="w-full pl-10 sm:pl-12 pr-5 py-3 sm:py-4 bg-gray-50 border border-gray-100 rounded-xl sm:rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm sm:text-base"
                   placeholder="name@example.com"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -118,17 +136,17 @@ export default function Login() {
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1 sm:space-y-2">
               <div className="flex justify-between items-center ml-1">
-                <label className="text-xs font-black uppercase tracking-widest text-gray-500">Password</label>
-                <a href="#" className="text-xs font-black uppercase tracking-widest text-cyan-600 hover:text-cyan-700">Forgot?</a>
+                <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-500">Password</label>
+                <a href="#" className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-cyan-600 hover:text-cyan-700">Forgot?</a>
               </div>
               <div className="relative group">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
                 <input
                   type="password"
                   required
-                  className="w-full pl-12 pr-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold"
+                  className="w-full pl-10 sm:pl-12 pr-5 py-3 sm:py-4 bg-gray-50 border border-gray-100 rounded-xl sm:rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm sm:text-base"
                   placeholder="••••••••"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
@@ -139,23 +157,23 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-5 bg-gray-900 text-white rounded-[1.5rem] font-black uppercase tracking-widest text-xs hover:bg-cyan-600 transition-all shadow-2xl shadow-gray-200 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed group"
+              className="w-full py-4 sm:py-5 bg-gray-900 text-white rounded-xl sm:rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] sm:text-xs hover:bg-cyan-600 transition-all shadow-2xl shadow-gray-200 flex items-center justify-center gap-2 sm:gap-3 disabled:opacity-50 disabled:cursor-not-allowed group"
             >
               {loading ? (
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
               ) : (
                 <>
                   Sign In
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
                 </>
               )}
             </button>
           </form>
 
-          <div className="mt-12 pt-12 border-t border-gray-50 text-center">
-            <p className="text-gray-500 font-medium">
+          <div className="mt-8 sm:mt-12 pt-8 sm:pt-12 border-t border-gray-50 text-center">
+            <p className="text-gray-500 font-medium text-sm">
               Don't have an account?{' '}
-              <Link to="/signup" className="text-cyan-600 font-black uppercase tracking-widest text-xs hover:underline ml-2">
+              <Link to="/signup" className="text-cyan-600 font-black uppercase tracking-widest text-[10px] sm:text-xs hover:underline ml-2">
                 Create Account
               </Link>
             </p>

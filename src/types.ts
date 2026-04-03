@@ -6,6 +6,8 @@ export interface UserProfile {
   username: string;
   role: 'user' | 'admin';
   avatar?: string;
+  created: string;
+  updated: string;
 }
 
 export interface Gadget {
@@ -16,6 +18,7 @@ export interface Gadget {
   image: string;
   category: string;
   created: string;
+  updated: string;
   author: string;
   expand?: {
     author: UserProfile;

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { pb, getFileUrl } from '../lib/pocketbase';
+import { pb, getFileUrl, isMockMode } from '../lib/pocketbase';
 import { Gadget } from '../types';
+import { MOCK_GADGETS } from '../lib/mockData';
 import { useAuth } from '../App';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -42,6 +43,15 @@ const AddGadgetModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
     setLoading(true);
 
     try {
+      if (isMockMode) {
+        // Simulate network delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        onClose();
+        setFormData({ name: '', description: '', price: '', category: 'phones' });
+        setImageFile(null);
+        return;
+      }
+
       const data = new FormData();
       data.append('name', formData.name);
       data.append('description', formData.description);
@@ -204,6 +214,18 @@ export default function Home() {
   useEffect(() => {
     const fetchGadgets = async () => {
       setLoading(true);
+      
+      if (isMockMode) {
+        // Simulate network delay
+        await new Promise(resolve => setTimeout(resolve, 500));
+        const filtered = category 
+          ? MOCK_GADGETS.filter(g => g.category === category)
+          : MOCK_GADGETS;
+        setGadgets(filtered);
+        setLoading(false);
+        return;
+      }
+
       try {
         const filter = category ? `category = "${category}"` : '';
         const records = await pb.collection('gadgets').getList(1, 50, {
@@ -215,6 +237,11 @@ export default function Home() {
         setGadgets(records.items as unknown as Gadget[]);
       } catch (error) {
         console.error('Error fetching gadgets:', error);
+        // Fallback to mock data on error
+        const filtered = category 
+          ? MOCK_GADGETS.filter(g => g.category === category)
+          : MOCK_GADGETS;
+        setGadgets(filtered);
       } finally {
         setLoading(false);
       }
@@ -222,19 +249,25 @@ export default function Home() {
 
     fetchGadgets();
     
-    // Real-time subscription
-    const unsubscribe = pb.collection('gadgets').subscribe('*', (e) => {
-      fetchGadgets();
-    });
+    if (!isMockMode) {
+      // Real-time subscription
+      const unsubscribe = pb.collection('gadgets').subscribe('*', (e) => {
+        fetchGadgets();
+      });
 
-    return () => {
-      pb.collection('gadgets').unsubscribe();
-    };
+      return () => {
+        pb.collection('gadgets').unsubscribe();
+      };
+    }
   }, [category]);
 
   const handleDelete = async (id: string) => {
     if (!window.confirm('Are you sure you want to delete this gadget?')) return;
     try {
+      if (isMockMode) {
+        setGadgets(prev => prev.filter(g => g.id !== id));
+        return;
+      }
       await pb.collection('gadgets').delete(id);
     } catch (error) {
       console.error('Error deleting gadget:', error);
@@ -421,7 +454,7 @@ export default function Home() {
                 >
                   <div className="relative aspect-[4/5] rounded-xl sm:rounded-[2rem] overflow-hidden bg-gray-50 mb-3 sm:mb-6">
                     <img
-                      src={getFileUrl('gadgets', gadget.id, gadget.image)}
+                      src={gadget.id.startsWith('mock-') ? gadget.image : getFileUrl('gadgets', gadget.id, gadget.image)}
                       alt={gadget.name}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                       referrerPolicy="no-referrer"
