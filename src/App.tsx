@@ -80,7 +80,7 @@ const Navbar = () => {
           </Link>
 
           {/* Desktop Search */}
-          <div className="hidden xl:flex flex-1 max-w-xl mx-8">
+          <div className="hidden xl:flex flex-1 max-w-xs focus-within:max-w-xl mx-8 transition-all duration-500 ease-in-out">
             <div className="relative w-full group">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
               <input
@@ -142,10 +142,10 @@ const Navbar = () => {
               <div className="flex items-center gap-2">
                 <Link
                   to="/auth"
-                  className="hidden xl:flex items-center gap-2 px-4 py-2 text-xs font-black uppercase tracking-widest text-white bg-gray-900 rounded-xl hover:bg-cyan-600 transition-all shadow-lg shadow-gray-200 group"
+                  className="hidden xl:flex items-center gap-2 px-6 py-2.5 text-sm font-black uppercase tracking-widest text-white bg-gray-900 rounded-xl hover:bg-cyan-600 transition-all shadow-lg shadow-gray-200 group"
                 >
-                  <UserCircle className="w-4 h-4 group-hover:rotate-12 transition-transform" />
-                  Get Started
+                  <UserCircle className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+                  Explore
                 </Link>
               </div>
             )}
@@ -230,10 +230,10 @@ const Navbar = () => {
                   <Link
                     to="/auth"
                     onClick={() => setIsMenuOpen(false)}
-                    className="flex items-center justify-center gap-3 p-3.5 text-xs font-black uppercase tracking-widest text-white bg-gray-900 rounded-xl shadow-lg shadow-gray-200 hover:bg-cyan-600 transition-all group"
+                    className="flex items-center justify-center gap-3 p-4 text-sm font-black uppercase tracking-widest text-white bg-gray-900 rounded-xl shadow-lg shadow-gray-200 hover:bg-cyan-600 transition-all group"
                   >
-                    <UserCircle className="w-4 h-4 group-hover:rotate-12 transition-transform" />
-                    Get Started
+                    <UserCircle className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+                    Explore
                   </Link>
                 </div>
               ) : (
