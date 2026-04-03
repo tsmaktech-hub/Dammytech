@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
-import { pb, isMockMode } from './lib/pocketbase';
+import { supabase, isMockMode } from './lib/supabase';
 import { mockStorage } from './lib/mockStorage';
 import { UserProfile } from './types';
-import { ErrorBoundary } from './components/ErrorBoundary';
+import { ErrorBoundary } from './components/errorboundary';
 import { 
   LogOut, 
   LogIn, 
@@ -118,7 +118,7 @@ const Navbar = () => {
                   </span>
                 </div>
                 <button
-                  onClick={() => pb.authStore.clear()}
+                  onClick={() => supabase.auth.signOut()}
                   className="p-3 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all"
                   title="Sign Out"
                 >
@@ -223,9 +223,9 @@ const Navbar = () => {
                 </div>
               ) : (
                 <div className="pt-2">
-                  <button
+                    <button
                     onClick={() => {
-                      pb.authStore.clear();
+                      supabase.auth.signOut();
                       setIsMenuOpen(false);
                     }}
                     className="w-full flex items-center justify-center gap-2 p-3.5 text-xs font-black uppercase tracking-widest text-red-600 bg-red-50 rounded-xl hover:bg-red-100 transition-all"
@@ -244,45 +244,59 @@ const Navbar = () => {
 };
 
 export default function App() {
-  const [user, setUser] = useState<any | null>(pb.authStore.model);
+  const [user, setUser] = useState<any | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const refreshProfile = async () => {
-    if (isMockMode) {
-      const mockUser = pb.authStore.model;
-      if (mockUser) {
-        const profile = mockStorage.getUserById(mockUser.id);
-        if (profile) {
-          setProfile(profile);
-          return;
-        }
-      }
+  const refreshProfile = async (userId?: string) => {
+    const id = userId || user?.id;
+    if (!id) {
       setProfile(null);
       return;
     }
 
-    if (pb.authStore.model) {
-      try {
-        const record = await pb.collection('users').getOne(pb.authStore.model.id, { requestKey: null });
-        setProfile(record as unknown as UserProfile);
-      } catch (error) {
-        console.error("Error fetching profile:", error);
-      }
-    } else {
+    if (isMockMode) {
+      const profile = mockStorage.getUserById(id);
+      setProfile(profile || null);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (error) throw error;
+      setProfile(data as UserProfile);
+    } catch (error) {
+      console.error("Error fetching profile:", error);
       setProfile(null);
     }
   };
 
   useEffect(() => {
-    const unsubscribe = pb.authStore.onChange((token, model) => {
-      setUser(model);
-      refreshProfile();
+    // Initial session check
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        refreshProfile(session.user.id);
+      }
+      setLoading(false);
     });
 
-    refreshProfile().finally(() => setLoading(false));
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        refreshProfile(session.user.id);
+      } else {
+        setProfile(null);
+      }
+    });
 
-    return () => unsubscribe();
+    return () => subscription.unsubscribe();
   }, []);
 
   if (loading) {

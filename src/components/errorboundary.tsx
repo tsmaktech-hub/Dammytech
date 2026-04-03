@@ -32,19 +32,26 @@ export class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       let errorMessage = "An unexpected error occurred.";
-      let isPocketBaseError = false;
+      let isDatabaseError = false;
 
       try {
-        // Try to parse PocketBase error if it's JSON
-        if (this.state.error?.message.startsWith('{')) {
-          const pbError = JSON.parse(this.state.error.message);
-          errorMessage = pbError.message || errorMessage;
-          isPocketBaseError = true;
+        const error = this.state.error;
+        const message = error instanceof Error ? error.message : String(error);
+
+        // Try to parse error if it's JSON (common for PB/Supabase)
+        if (message && message.startsWith('{')) {
+          try {
+            const dbError = JSON.parse(message);
+            errorMessage = dbError.message || dbError.error_description || dbError.error || errorMessage;
+            isDatabaseError = true;
+          } catch {
+            errorMessage = message;
+          }
         } else {
-          errorMessage = this.state.error?.message || errorMessage;
+          errorMessage = message || errorMessage;
         }
       } catch (e) {
-        errorMessage = this.state.error?.message || errorMessage;
+        console.error("Error in ErrorBoundary render:", e);
       }
 
       return (
@@ -62,9 +69,9 @@ export class ErrorBoundary extends Component<Props, State> {
               <p className="text-gray-600 font-medium leading-relaxed text-sm sm:text-base">
                 {errorMessage}
               </p>
-              {isPocketBaseError && (
+              {isDatabaseError && (
                 <p className="mt-3 sm:mt-4 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-red-400">
-                  PocketBase Connection Error
+                  Database Connection Error
                 </p>
               )}
             </div>

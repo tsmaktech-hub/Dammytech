@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { pb, isMockMode } from '../lib/pocketbase';
+import { supabase, isMockMode } from '../lib/supabase';
 import { mockStorage } from '../lib/mockStorage';
 import { motion } from 'motion/react';
 import { 
@@ -34,12 +34,7 @@ export default function Login() {
       await new Promise(resolve => setTimeout(resolve, 1000));
       const user = mockStorage.getUserByEmail(formData.email);
       if (user && formData.password === 'password') {
-        pb.authStore.save('mock-token', { 
-          id: user.id, 
-          email: user.email,
-          collectionId: 'users',
-          collectionName: 'users'
-        } as any);
+        // In mock mode, we just navigate. The App component handles the mock user.
         navigate('/');
       } else {
         setError('Invalid email or password (Try admin@example.com / password)');
@@ -49,7 +44,11 @@ export default function Login() {
     }
 
     try {
-      await pb.collection('users').authWithPassword(formData.email, formData.password);
+      const { error } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
+      if (error) throw error;
       navigate('/');
     } catch (err: any) {
       setError(err.message || 'Invalid email or password');

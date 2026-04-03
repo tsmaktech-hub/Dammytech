@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { pb, isMockMode } from '../lib/pocketbase';
+import { supabase, isMockMode } from '../lib/supabase';
 import { mockStorage } from '../lib/mockStorage';
 import { motion } from 'motion/react';
 import { 
@@ -58,33 +58,44 @@ export default function Signup() {
       
       mockStorage.saveUser(newUser as any);
       
-      pb.authStore.save('mock-token', { 
-        id: newUser.id, 
-        email: newUser.email,
-        collectionId: 'users',
-        collectionName: 'users'
-      } as any);
+      // In mock mode, we just navigate. The App component handles the mock user.
       navigate('/');
       setLoading(false);
       return;
     }
 
     try {
-      // Create user record
-      const data = {
-        username: formData.username.toLowerCase(),
+      // Sign up with Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
-        passwordConfirm: formData.confirmPassword,
-        fullName: formData.fullName,
-        phoneNumber: formData.phoneNumber,
-        role: 'user',
-      };
+        options: {
+          data: {
+            full_name: formData.fullName,
+            username: formData.username.toLowerCase(),
+          }
+        }
+      });
 
-      await pb.collection('users').create(data);
-      
-      // Auto login after signup
-      await pb.collection('users').authWithPassword(formData.email, formData.password);
+      if (authError) throw authError;
+
+      if (authData.user) {
+        // Create profile record
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert([
+            {
+              id: authData.user.id,
+              username: formData.username.toLowerCase(),
+              email: formData.email,
+              fullName: formData.fullName,
+              phoneNumber: formData.phoneNumber,
+              role: 'user',
+            }
+          ]);
+
+        if (profileError) throw profileError;
+      }
       
       navigate('/');
     } catch (err: any) {

@@ -11,11 +11,14 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  // Redirect login and signup to home on direct server requests (reloads)
-  // This handles the user's request to go to home on reload instead of 404
+  // Log requests for debugging
   app.use((req, res, next) => {
     const path = req.path.toLowerCase();
-    console.log(`[Server] Request path: ${path}`);
+    // Skip logging for static assets to reduce noise
+    if (!path.includes('.') || path.endsWith('.html')) {
+      console.log(`[Server] Incoming request: ${path}`);
+    }
+    
     if (path === '/login' || path === '/signup' || path === '/login/' || path === '/signup/') {
       console.log(`[Server] Redirecting ${path} to /`);
       return res.redirect('/');

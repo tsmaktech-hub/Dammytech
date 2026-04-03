@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { pb, getFileUrl, isMockMode } from '../lib/pocketbase';
+import { supabase, getFileUrl, isMockMode } from '../lib/supabase';
 import { mockStorage } from '../lib/mockStorage';
 import { Gadget } from '../types';
 import { useAuth } from '../App';
@@ -74,18 +74,38 @@ const AddGadgetModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
         return;
       }
 
-      const data = new FormData();
-      data.append('name', formData.name);
-      data.append('description', formData.description);
-      data.append('price', formData.price);
-      data.append('category', formData.category);
-      data.append('image', imageFile);
-      data.append('author', user.id);
+      // Upload image to Supabase Storage
+      const fileExt = imageFile.name.split('.').pop();
+      const fileName = `${Math.random()}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
 
-      await pb.collection('gadgets').create(data);
+      const { error: uploadError } = await supabase.storage
+        .from('gadgets')
+        .upload(filePath, imageFile);
+
+      if (uploadError) throw uploadError;
+
+      // Create gadget record in database
+      const { error: dbError } = await supabase
+        .from('gadgets')
+        .insert([
+          {
+            name: formData.name,
+            description: formData.description,
+            price: parseFloat(formData.price),
+            category: formData.category,
+            image: filePath,
+            author: user.id,
+          }
+        ]);
+
+      if (dbError) throw dbError;
+
       onClose();
       setFormData({ name: '', description: '', price: '', category: 'phones' });
       setImageFile(null);
+      // Trigger a refresh of the gadgets list
+      window.dispatchEvent(new Event('gadgets-updated'));
     } catch (err: any) {
       setError(err.message || 'Failed to add gadget');
     } finally {
@@ -250,14 +270,29 @@ export default function Home() {
       }
 
       try {
-        const filter = category ? `category = "${category}"` : '';
-        const records = await pb.collection('gadgets').getList(1, 50, {
-          sort: '-created',
-          filter: filter,
-          expand: 'author',
-          requestKey: null,
-        });
-        setGadgets(records.items as unknown as Gadget[]);
+        let query = supabase
+          .from('gadgets')
+          .select('*, profiles(*)');
+        
+        if (category) {
+          query = query.eq('category', category);
+        }
+
+        const { data, error } = await query.order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        // Map Supabase data to our Gadget type
+        const mappedData = (data || []).map(item => ({
+          ...item,
+          created: item.created_at,
+          updated: item.updated_at,
+          expand: {
+            author: item.profiles
+          }
+        }));
+
+        setGadgets(mappedData as any[]);
       } catch (error) {
         console.error('Error fetching gadgets:', error);
         // Fallback to mock data on error
@@ -273,32 +308,45 @@ export default function Home() {
 
     fetchGadgets();
     
-    if (isMockMode) {
-      window.addEventListener('mock-gadgets-updated', fetchGadgets);
-      return () => window.removeEventListener('mock-gadgets-updated', fetchGadgets);
-    } else {
-      // Real-time subscription
-      const unsubscribe = pb.collection('gadgets').subscribe('*', (e) => {
-        fetchGadgets();
-      });
-
-      return () => {
-        pb.collection('gadgets').unsubscribe();
-      };
+    const handleUpdate = () => fetchGadgets();
+    window.addEventListener('mock-gadgets-updated', handleUpdate);
+    window.addEventListener('gadgets-updated', handleUpdate);
+    
+    // Real-time subscription
+    let subscription: any;
+    if (!isMockMode) {
+      subscription = supabase
+        .channel('gadgets-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'gadgets' }, () => {
+          fetchGadgets();
+        })
+        .subscribe();
     }
+
+    return () => {
+      window.removeEventListener('mock-gadgets-updated', handleUpdate);
+      window.removeEventListener('gadgets-updated', handleUpdate);
+      if (subscription) {
+        supabase.removeChannel(subscription);
+      }
+    };
   }, [category]);
 
   const handleDelete = async (id: string) => {
     if (!window.confirm('Are you sure you want to delete this gadget?')) return;
     try {
       if (isMockMode) {
-        const gadgets = mockStorage.getGadgets();
-        const updated = gadgets.filter(g => g.id !== id);
-        localStorage.setItem('mock_gadgets', JSON.stringify(updated));
+        mockStorage.deleteGadget(id);
         window.dispatchEvent(new Event('mock-gadgets-updated'));
         return;
       }
-      await pb.collection('gadgets').delete(id);
+      const { error } = await supabase
+        .from('gadgets')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      setGadgets(prev => prev.filter(g => g.id !== id));
     } catch (error) {
       console.error('Error deleting gadget:', error);
     }
@@ -484,7 +532,7 @@ export default function Home() {
                 >
                   <div className="relative aspect-[4/5] rounded-xl sm:rounded-[2rem] overflow-hidden bg-gray-50 mb-3 sm:mb-6">
                     <img
-                      src={gadget.id.startsWith('mock-') ? gadget.image : getFileUrl('gadgets', gadget.id, gadget.image)}
+                      src={gadget.id.startsWith('mock-') ? gadget.image : getFileUrl('gadgets', gadget.image)}
                       alt={gadget.name}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                       referrerPolicy="no-referrer"

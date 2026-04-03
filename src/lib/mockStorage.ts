@@ -30,8 +30,13 @@ if (isBrowser && !localStorage.getItem(USERS_KEY)) {
 export const mockStorage = {
   getUsers: (): UserProfile[] => {
     if (!isBrowser) return [];
-    const data = localStorage.getItem(USERS_KEY);
-    return data ? JSON.parse(data) : [];
+    try {
+      const data = localStorage.getItem(USERS_KEY);
+      return data ? JSON.parse(data) : [];
+    } catch (e) {
+      console.error('Error parsing mock users:', e);
+      return [];
+    }
   },
   
   saveUser: (user: UserProfile) => {
@@ -56,8 +61,13 @@ export const mockStorage = {
   
   getGadgets: (): Gadget[] => {
     if (!isBrowser) return [];
-    const data = localStorage.getItem(GADGETS_KEY);
-    return data ? JSON.parse(data) : [];
+    try {
+      const data = localStorage.getItem(GADGETS_KEY);
+      return data ? JSON.parse(data) : [];
+    } catch (e) {
+      console.error('Error parsing mock gadgets:', e);
+      return [];
+    }
   },
   
   saveGadget: (gadget: Gadget) => {
@@ -70,5 +80,12 @@ export const mockStorage = {
       gadgets.push(gadget);
     }
     localStorage.setItem(GADGETS_KEY, JSON.stringify(gadgets));
+  },
+  
+  deleteGadget: (id: string) => {
+    if (!isBrowser) return;
+    const gadgets = mockStorage.getGadgets();
+    const updated = gadgets.filter(g => g.id !== id);
+    localStorage.setItem(GADGETS_KEY, JSON.stringify(updated));
   }
 };
