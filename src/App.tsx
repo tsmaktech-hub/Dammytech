@@ -67,10 +67,10 @@ const Navbar = () => {
               <Cpu className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
             </div>
             <div className="flex flex-col">
-              <span className="text-base sm:text-xl font-black tracking-tighter text-gray-900 leading-none">
+              <span className="text-sm sm:text-lg font-bold tracking-tight text-gray-900 leading-none">
                 DAMMYTECH
               </span>
-              <span className="text-[8px] sm:text-[10px] font-bold tracking-[0.2em] text-cyan-600 uppercase">
+              <span className="text-[7px] sm:text-[9px] font-semibold tracking-widest text-cyan-600 uppercase">
                 Gadget Store
               </span>
             </div>
@@ -112,8 +112,8 @@ const Navbar = () => {
             {user ? (
               <div className="flex items-center gap-4">
                 <div className="hidden sm:flex flex-col items-end">
-                  <span className="text-sm font-bold text-gray-900">{profile?.fullName}</span>
-                  <span className="text-[10px] font-bold text-cyan-600 uppercase tracking-wider">
+                  <span className="text-sm font-semibold text-gray-900">{profile?.fullName}</span>
+                  <span className="text-[9px] font-bold text-cyan-600 uppercase tracking-wider">
                     {profile?.role}
                   </span>
                 </div>
@@ -129,14 +129,14 @@ const Navbar = () => {
               <div className="flex items-center gap-2">
                 <Link
                   to="/login"
-                  className="hidden sm:flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-gray-700 hover:text-cyan-600 transition-colors"
+                  className="hidden sm:flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-700 hover:text-cyan-600 transition-colors"
                 >
                   <LogIn className="w-4 h-4" />
                   Login
                 </Link>
                 <Link
                   to="/signup"
-                  className="hidden sm:flex items-center gap-2 px-6 py-3 text-sm font-bold text-white bg-gray-900 rounded-2xl hover:bg-cyan-600 transition-all shadow-xl shadow-gray-200"
+                  className="hidden sm:flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-gray-900 rounded-xl hover:bg-cyan-600 transition-all shadow-lg shadow-gray-200"
                 >
                   <UserPlus className="w-4 h-4" />
                   Join
@@ -338,7 +338,7 @@ export default function App() {
                   <div className="w-8 h-8 sm:w-10 sm:h-10 bg-cyan-500 rounded-lg sm:rounded-xl flex items-center justify-center">
                     <Cpu className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                   </div>
-                  <span className="text-lg sm:text-xl font-black tracking-tighter">DAMMYTECH GADGET STORE</span>
+                  <span className="text-base sm:text-lg font-bold tracking-tight">DAMMYTECH GADGET STORE</span>
                 </div>
                 <p className="text-gray-400 text-sm max-w-sm mb-6 sm:mb-8 leading-relaxed">
                   Your ultimate destination for high-end gadgets and futuristic technology. We bring the future to your doorstep.

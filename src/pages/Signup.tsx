@@ -127,11 +127,11 @@ export default function Signup() {
               </div>
               <span className="text-2xl font-black tracking-tighter text-white">DAMMY TECH</span>
             </div>
-            <h2 className="text-5xl font-black text-white leading-tight mb-6">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white leading-tight mb-4">
               JOIN THE <br />
               <span className="text-cyan-400">REVOLUTION.</span>
             </h2>
-            <p className="text-gray-400 text-lg font-medium leading-relaxed max-w-sm">
+            <p className="text-gray-400 text-base font-medium leading-relaxed max-w-sm">
               Create your account to start collecting the most advanced gadgets in the world.
             </p>
           </div>
@@ -152,10 +152,10 @@ export default function Signup() {
         </div>
 
         {/* Right Side - Form */}
-        <div className="p-6 sm:p-12 md:p-20 flex flex-col justify-center">
-          <div className="mb-6 sm:mb-12">
-            <h1 className="text-2xl sm:text-4xl font-black text-gray-900 tracking-tight mb-2 sm:mb-4">Create Account</h1>
-            <p className="text-gray-500 font-medium text-xs sm:text-base">Join our futuristic community today</p>
+        <div className="p-6 sm:p-12 md:p-16 flex flex-col justify-center">
+          <div className="mb-6 sm:mb-10">
+            <h1 className="text-xl sm:text-3xl font-bold text-gray-900 tracking-tight mb-2 sm:mb-3">Create Account</h1>
+            <p className="text-gray-500 font-medium text-xs sm:text-sm">Join our futuristic community today</p>
           </div>
 
           {error && (
@@ -266,7 +266,7 @@ export default function Signup() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-4 sm:py-5 bg-gray-900 text-white rounded-xl sm:rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] sm:text-xs hover:bg-cyan-600 transition-all shadow-2xl shadow-gray-200 flex items-center justify-center gap-2 sm:gap-3 disabled:opacity-50 disabled:cursor-not-allowed group"
+              className="w-full py-3.5 sm:py-4 bg-gray-900 text-white rounded-xl sm:rounded-2xl font-bold uppercase tracking-widest text-[10px] sm:text-xs hover:bg-cyan-600 transition-all shadow-xl shadow-gray-200 flex items-center justify-center gap-2 sm:gap-3 disabled:opacity-50 disabled:cursor-not-allowed group"
             >
               {loading ? (
                 <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />

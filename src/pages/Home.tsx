@@ -122,8 +122,8 @@ const AddGadgetModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
         animate={{ opacity: 1, scale: 1, y: 0 }}
         className="bg-white rounded-3xl sm:rounded-[2.5rem] shadow-2xl w-full max-w-xl overflow-hidden border border-gray-100 my-auto"
       >
-        <div className="px-6 sm:px-8 py-5 sm:py-6 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
-          <h2 className="text-xl sm:text-2xl font-black tracking-tight text-gray-900 flex items-center gap-3">
+        <div className="px-6 sm:px-8 py-4 sm:py-5 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
+          <h2 className="text-lg sm:text-xl font-bold tracking-tight text-gray-900 flex items-center gap-3">
             <div className="w-8 h-8 sm:w-10 sm:h-10 bg-cyan-500 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-200">
               <Plus className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
@@ -144,20 +144,20 @@ const AddGadgetModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Gadget Name</label>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 ml-1">Gadget Name</label>
               <input
                 type="text"
                 required
-                className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold"
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm"
                 placeholder="e.g. iPhone 15 Pro"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               />
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Category</label>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 ml-1">Category</label>
               <select
-                className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold appearance-none"
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold appearance-none text-sm"
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
               >
@@ -172,14 +172,14 @@ const AddGadgetModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Price ($)</label>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 ml-1">Price ($)</label>
               <div className="relative">
-                <Tag className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Tag className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   type="number"
                   step="0.01"
                   required
-                  className="w-full pl-12 pr-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold"
+                  className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm"
                   placeholder="999.99"
                   value={formData.price}
                   onChange={(e) => setFormData({ ...formData, price: e.target.value })}
@@ -187,7 +187,7 @@ const AddGadgetModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
               </div>
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Gadget Image</label>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 ml-1">Gadget Image</label>
               <div className="relative">
                 <input
                   type="file"
@@ -199,9 +199,9 @@ const AddGadgetModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
                 />
                 <label
                   htmlFor="gadget-image"
-                  className="w-full flex items-center gap-3 px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl cursor-pointer hover:bg-gray-100 transition-all font-semibold text-gray-500 truncate"
+                  className="w-full flex items-center gap-3 px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl cursor-pointer hover:bg-gray-100 transition-all font-semibold text-gray-500 truncate text-sm"
                 >
-                  <ImageIcon className="w-5 h-5 flex-shrink-0 text-cyan-500" />
+                  <ImageIcon className="w-4 h-4 flex-shrink-0 text-cyan-500" />
                   {imageFile ? imageFile.name : 'Choose image...'}
                 </label>
               </div>
@@ -209,29 +209,29 @@ const AddGadgetModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Description</label>
+            <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 ml-1">Description</label>
             <textarea
               required
-              rows={4}
-              className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all resize-none font-semibold"
+              rows={3}
+              className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all resize-none font-semibold text-sm"
               placeholder="Describe the features and condition..."
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             />
           </div>
 
-          <div className="flex gap-4 pt-4">
+          <div className="flex gap-4 pt-2">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-4 bg-gray-100 text-gray-700 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-gray-200 transition-all"
+              className="flex-1 py-3.5 bg-gray-100 text-gray-700 rounded-xl font-bold uppercase tracking-widest text-[10px] hover:bg-gray-200 transition-all"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-[2] py-4 bg-gray-900 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-cyan-600 transition-all shadow-2xl shadow-gray-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-[2] py-3.5 bg-gray-900 text-white rounded-xl font-bold uppercase tracking-widest text-[10px] hover:bg-cyan-600 transition-all shadow-xl shadow-gray-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -380,7 +380,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-3xl sm:text-8xl font-black text-white leading-[1.1] sm:leading-[0.9] tracking-tighter mb-4 sm:mb-8"
+            className="text-2xl sm:text-5xl font-bold text-white leading-[1.2] sm:leading-[1.1] tracking-tight mb-4 sm:mb-6"
           >
             UPGRADE YOUR <br className="hidden sm:block" />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
@@ -392,7 +392,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="text-sm sm:text-xl text-gray-400 mb-8 sm:mb-12 max-w-2xl mx-auto sm:mx-0 leading-relaxed font-medium"
+            className="text-xs sm:text-base text-gray-400 mb-6 sm:mb-10 max-w-xl mx-auto sm:mx-0 leading-relaxed font-medium"
           >
             The most advanced marketplace for futuristic gadgets. From neural-link headsets to quantum laptops.
           </motion.p>
@@ -472,7 +472,7 @@ export default function Home() {
               <div className="w-4 sm:w-8 h-[2px] bg-cyan-600" />
               Our Inventory
             </div>
-            <h2 className="text-xl sm:text-4xl font-black text-gray-900 tracking-tight">
+            <h2 className="text-lg sm:text-2xl font-bold text-gray-900 tracking-tight">
               {category ? `${category.charAt(0).toUpperCase() + category.slice(1)} Collection` : 'All Gadgets'}
             </h2>
           </div>
@@ -505,14 +505,14 @@ export default function Home() {
             <div className="w-16 h-16 sm:w-24 sm:h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-xl shadow-gray-200/50">
               <ShoppingCart className="w-6 h-6 sm:w-10 sm:h-10 text-gray-300" />
             </div>
-            <h3 className="text-lg sm:text-2xl font-black text-gray-900 mb-2 sm:mb-3">No gadgets found</h3>
-            <p className="text-xs sm:text-gray-500 font-medium max-w-xs mx-auto mb-6 sm:mb-10">
+            <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3">No gadgets found</h3>
+            <p className="text-xs sm:text-sm text-gray-500 font-medium max-w-xs mx-auto mb-6 sm:mb-10">
               We couldn't find any gadgets in this category. Be the first to list one!
             </p>
             {user && (
               <button 
                 onClick={() => setIsModalOpen(true)}
-                className="w-full sm:w-auto px-8 py-3 sm:px-10 sm:py-4 bg-gray-900 text-white rounded-xl sm:rounded-2xl font-black uppercase tracking-widest text-[10px] sm:text-xs hover:bg-cyan-600 transition-all shadow-2xl shadow-gray-200"
+                className="w-full sm:w-auto px-8 py-3 sm:px-10 sm:py-4 bg-gray-900 text-white rounded-xl sm:rounded-2xl font-bold uppercase tracking-widest text-[10px] sm:text-xs hover:bg-cyan-600 transition-all shadow-xl shadow-gray-200"
               >
                 Start Selling
               </button>
@@ -557,18 +557,18 @@ export default function Home() {
                     </div>
 
                     <div className="absolute top-2 sm:top-4 left-2 sm:left-4">
-                      <span className="px-2 sm:px-4 py-1 sm:py-2 bg-white/90 backdrop-blur-md text-gray-900 text-[8px] sm:text-xs font-black uppercase tracking-widest rounded-md sm:rounded-xl shadow-lg border border-white/20">
+                      <span className="px-2 sm:px-4 py-1 sm:py-2 bg-white/90 backdrop-blur-md text-gray-900 text-[8px] sm:text-[10px] font-bold uppercase tracking-widest rounded-md sm:rounded-xl shadow-lg border border-white/20">
                         {gadget.category}
                       </span>
                     </div>
                   </div>
 
                   <div className="px-1 sm:px-2 pb-1 sm:pb-2">
-                    <div className="flex justify-between items-start mb-1 sm:mb-3">
-                      <h3 className="text-sm sm:text-xl font-black text-gray-900 tracking-tight line-clamp-1 group-hover:text-cyan-600 transition-colors">
+                    <div className="flex justify-between items-start mb-1 sm:mb-2">
+                      <h3 className="text-sm sm:text-lg font-bold text-gray-900 tracking-tight line-clamp-1 group-hover:text-cyan-600 transition-colors">
                         {gadget.name}
                       </h3>
-                      <span className="text-sm sm:text-xl font-black text-cyan-600">
+                      <span className="text-sm sm:text-lg font-bold text-cyan-600">
                         ${gadget.price.toLocaleString()}
                       </span>
                     </div>
@@ -577,14 +577,14 @@ export default function Home() {
                     </p>
                     <div className="flex items-center justify-between pt-2 sm:pt-4 border-t border-gray-50">
                       <div className="flex items-center gap-1.5 sm:gap-2">
-                        <div className="w-5 h-5 sm:w-8 sm:h-8 bg-gray-100 rounded-full flex items-center justify-center text-[6px] sm:text-[10px] font-black text-gray-400">
+                        <div className="w-5 h-5 sm:w-8 sm:h-8 bg-gray-100 rounded-full flex items-center justify-center text-[6px] sm:text-[9px] font-bold text-gray-400">
                           {gadget.expand?.author?.fullName?.charAt(0) || 'U'}
                         </div>
-                        <span className="text-[6px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                        <span className="text-[6px] sm:text-[9px] font-semibold text-gray-400 uppercase tracking-widest">
                           {gadget.expand?.author?.username || 'Anonymous'}
                         </span>
                       </div>
-                      <button className="text-[8px] sm:text-xs font-black uppercase tracking-widest text-cyan-600 flex items-center gap-0.5 sm:gap-1 group/btn">
+                      <button className="text-[8px] sm:text-[10px] font-bold uppercase tracking-widest text-cyan-600 flex items-center gap-0.5 sm:gap-1 group/btn">
                         Details
                         <ChevronRight className="w-2.5 h-2.5 sm:w-4 sm:h-4 group-hover/btn:translate-x-1 transition-transform" />
                       </button>
