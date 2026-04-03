@@ -242,9 +242,9 @@ export default function Home() {
   };
 
   return (
-    <div className="space-y-12 sm:space-y-24">
+    <div className="space-y-8 sm:space-y-24">
       {/* Hero Section */}
-      <section className="relative min-h-[500px] sm:min-h-[600px] rounded-3xl sm:rounded-[3rem] overflow-hidden bg-gray-950 flex items-center px-6 sm:px-20 py-20 sm:py-0">
+      <section className="relative min-h-[400px] sm:min-h-[600px] rounded-2xl sm:rounded-[3rem] overflow-hidden bg-gray-950 flex items-center px-4 sm:px-20 py-12 sm:py-0">
         <div className="absolute inset-0">
           <img 
             src="https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&q=80&w=2000" 
@@ -259,9 +259,9 @@ export default function Home() {
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500/10 border border-cyan-500/20 rounded-full text-cyan-400 text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] mb-6 sm:mb-8"
+            className="inline-flex items-center gap-2 px-3 py-1.5 bg-cyan-500/10 border border-cyan-500/20 rounded-full text-cyan-400 text-[8px] sm:text-xs font-black uppercase tracking-[0.2em] mb-4 sm:mb-8"
           >
-            <Zap className="w-3 h-3 sm:w-4 sm:h-4 fill-cyan-400" />
+            <Zap className="w-2.5 h-2.5 sm:w-4 sm:h-4 fill-cyan-400" />
             Next Gen Tech Store
           </motion.div>
           
@@ -269,9 +269,9 @@ export default function Home() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-4xl sm:text-8xl font-black text-white leading-[1] sm:leading-[0.9] tracking-tighter mb-6 sm:mb-8"
+            className="text-3xl sm:text-8xl font-black text-white leading-[1.1] sm:leading-[0.9] tracking-tighter mb-4 sm:mb-8"
           >
-            UPGRADE YOUR <br />
+            UPGRADE YOUR <br className="hidden sm:block" />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
               DIGITAL LIFE
             </span>
@@ -281,7 +281,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="text-lg sm:text-xl text-gray-400 mb-10 sm:mb-12 max-w-2xl mx-auto sm:mx-0 leading-relaxed font-medium"
+            className="text-sm sm:text-xl text-gray-400 mb-8 sm:mb-12 max-w-2xl mx-auto sm:mx-0 leading-relaxed font-medium"
           >
             The most advanced marketplace for futuristic gadgets. From neural-link headsets to quantum laptops.
           </motion.p>
@@ -290,25 +290,47 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-4 sm:gap-6"
+            className="flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-3 sm:gap-6"
           >
-            <button className="w-full sm:w-auto px-10 py-4 sm:py-5 bg-cyan-500 text-white rounded-2xl sm:rounded-[1.5rem] font-black uppercase tracking-widest text-xs hover:bg-cyan-400 transition-all shadow-2xl shadow-cyan-500/20 flex items-center justify-center gap-3 group">
+            <button className="w-full sm:w-auto px-6 py-3.5 sm:px-10 sm:py-5 bg-cyan-500 text-white rounded-xl sm:rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] sm:text-xs hover:bg-cyan-400 transition-all shadow-2xl shadow-cyan-500/20 flex items-center justify-center gap-2 sm:gap-3 group">
               Explore Collection
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
             </button>
             {user && (
               <button 
                 onClick={() => setIsModalOpen(true)}
-                className="w-full sm:w-auto px-10 py-4 sm:py-5 bg-white/5 backdrop-blur-xl border border-white/10 text-white rounded-2xl sm:rounded-[1.5rem] font-black uppercase tracking-widest text-xs hover:bg-white/10 transition-all flex items-center justify-center gap-3"
+                className="w-full sm:w-auto px-6 py-3.5 sm:px-10 sm:py-5 bg-white/5 backdrop-blur-xl border border-white/10 text-white rounded-xl sm:rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] sm:text-xs hover:bg-white/10 transition-all flex items-center justify-center gap-2 sm:gap-3"
               >
-                <Plus className="w-5 h-5" />
+                <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
                 List a Gadget
               </button>
             )}
           </motion.div>
+
+          {/* Mobile Stats */}
+          <div className="grid grid-cols-2 gap-2 mt-8 sm:hidden">
+            {[
+              { label: 'Users', value: '50K+', icon: Star },
+              { label: 'Sold', value: '120K+', icon: ShoppingCart },
+            ].map((stat, i) => (
+              <motion.div
+                key={stat.label}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.4 + i * 0.1 }}
+                className="p-3 bg-white/5 backdrop-blur-2xl border border-white/10 rounded-xl flex items-center gap-3"
+              >
+                <stat.icon className="w-4 h-4 text-cyan-400" />
+                <div>
+                  <div className="text-sm font-black text-white">{stat.value}</div>
+                  <div className="text-[8px] font-bold text-gray-500 uppercase tracking-widest">{stat.label}</div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
         </div>
 
-        {/* Floating Stats */}
+        {/* Floating Stats Desktop */}
         <div className="absolute right-20 bottom-20 hidden xl:grid grid-cols-2 gap-6">
           {[
             { label: 'Active Users', value: '50K+', icon: Star },
@@ -333,60 +355,60 @@ export default function Home() {
 
       {/* Product Grid */}
       <section>
-        <div className="flex flex-col sm:flex-row justify-between items-center sm:items-end gap-8 mb-12 sm:mb-16">
+        <div className="flex flex-col sm:flex-row justify-between items-center sm:items-end gap-4 sm:gap-8 mb-8 sm:mb-16">
           <div className="text-center sm:text-left">
-            <div className="inline-flex items-center gap-2 text-cyan-600 font-black uppercase tracking-widest text-[10px] sm:text-xs mb-3">
-              <div className="w-6 sm:w-8 h-[2px] bg-cyan-600" />
+            <div className="inline-flex items-center gap-2 text-cyan-600 font-black uppercase tracking-widest text-[8px] sm:text-xs mb-2 sm:mb-3">
+              <div className="w-4 sm:w-8 h-[2px] bg-cyan-600" />
               Our Inventory
             </div>
-            <h2 className="text-3xl sm:text-4xl font-black text-gray-900 tracking-tight">
+            <h2 className="text-xl sm:text-4xl font-black text-gray-900 tracking-tight">
               {category ? `${category.charAt(0).toUpperCase() + category.slice(1)} Collection` : 'All Gadgets'}
             </h2>
           </div>
-          <div className="flex items-center gap-3 sm:gap-4">
-            <div className="flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-gray-50 rounded-xl sm:rounded-2xl text-[10px] sm:text-sm font-bold text-gray-500 border border-gray-100">
-              <Filter className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <div className="flex items-center gap-2 sm:gap-4">
+            <div className="flex items-center gap-2 px-3 sm:px-6 py-2 sm:py-3 bg-gray-50 rounded-lg sm:rounded-2xl text-[8px] sm:text-sm font-bold text-gray-500 border border-gray-100">
+              <Filter className="w-3 h-3 sm:w-4 sm:h-4" />
               Sort: Newest
             </div>
-            <div className="flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-cyan-50 rounded-xl sm:rounded-2xl text-[10px] sm:text-sm font-bold text-cyan-600 border border-cyan-100">
-              <Tag className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <div className="flex items-center gap-2 px-3 sm:px-6 py-2 sm:py-3 bg-cyan-50 rounded-lg sm:rounded-2xl text-[8px] sm:text-sm font-bold text-cyan-600 border border-cyan-100">
+              <Tag className="w-3 h-3 sm:w-4 sm:h-4" />
               {gadgets.length} Items
             </div>
           </div>
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-10">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-10">
             {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-              <div key={i} className="animate-pulse space-y-6">
-                <div className="aspect-[4/5] bg-gray-100 rounded-3xl sm:rounded-[2.5rem]" />
-                <div className="space-y-3">
-                  <div className="h-6 bg-gray-100 rounded-full w-3/4" />
-                  <div className="h-4 bg-gray-100 rounded-full w-1/2" />
+              <div key={i} className="animate-pulse space-y-3 sm:space-y-6">
+                <div className="aspect-[4/5] bg-gray-100 rounded-2xl sm:rounded-[2.5rem]" />
+                <div className="space-y-2 sm:space-y-3">
+                  <div className="h-4 sm:h-6 bg-gray-100 rounded-full w-3/4" />
+                  <div className="h-3 sm:h-4 bg-gray-100 rounded-full w-1/2" />
                 </div>
               </div>
             ))}
           </div>
         ) : gadgets.length === 0 ? (
-          <div className="text-center py-20 sm:py-32 bg-gray-50 rounded-3xl sm:rounded-[3rem] border-2 border-dashed border-gray-200 px-6">
-            <div className="w-20 h-20 sm:w-24 sm:h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl shadow-gray-200/50">
-              <ShoppingCart className="w-8 h-8 sm:w-10 sm:h-10 text-gray-300" />
+          <div className="text-center py-12 sm:py-32 bg-gray-50 rounded-2xl sm:rounded-[3rem] border-2 border-dashed border-gray-200 px-4 sm:px-6">
+            <div className="w-16 h-16 sm:w-24 sm:h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-xl shadow-gray-200/50">
+              <ShoppingCart className="w-6 h-6 sm:w-10 sm:h-10 text-gray-300" />
             </div>
-            <h3 className="text-xl sm:text-2xl font-black text-gray-900 mb-3">No gadgets found</h3>
-            <p className="text-gray-500 font-medium max-w-xs mx-auto mb-8 sm:mb-10">
+            <h3 className="text-lg sm:text-2xl font-black text-gray-900 mb-2 sm:mb-3">No gadgets found</h3>
+            <p className="text-xs sm:text-gray-500 font-medium max-w-xs mx-auto mb-6 sm:mb-10">
               We couldn't find any gadgets in this category. Be the first to list one!
             </p>
             {user && (
               <button 
                 onClick={() => setIsModalOpen(true)}
-                className="w-full sm:w-auto px-10 py-4 bg-gray-900 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-cyan-600 transition-all shadow-2xl shadow-gray-200"
+                className="w-full sm:w-auto px-8 py-3 sm:px-10 sm:py-4 bg-gray-900 text-white rounded-xl sm:rounded-2xl font-black uppercase tracking-widest text-[10px] sm:text-xs hover:bg-cyan-600 transition-all shadow-2xl shadow-gray-200"
               >
                 Start Selling
               </button>
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-10">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-10">
             <AnimatePresence mode="popLayout">
               {gadgets.map((gadget) => (
                 <motion.div
@@ -395,9 +417,9 @@ export default function Home() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.9 }}
-                  className="group relative bg-white rounded-3xl sm:rounded-[2.5rem] p-3 sm:p-4 border border-gray-100 hover:border-cyan-500/20 hover:shadow-[0_32px_64px_-12px_rgba(0,0,0,0.08)] transition-all duration-500"
+                  className="group relative bg-white rounded-2xl sm:rounded-[2.5rem] p-2 sm:p-4 border border-gray-100 hover:border-cyan-500/20 hover:shadow-[0_32px_64px_-12px_rgba(0,0,0,0.08)] transition-all duration-500"
                 >
-                  <div className="relative aspect-[4/5] rounded-2xl sm:rounded-[2rem] overflow-hidden bg-gray-50 mb-4 sm:mb-6">
+                  <div className="relative aspect-[4/5] rounded-xl sm:rounded-[2rem] overflow-hidden bg-gray-50 mb-3 sm:mb-6">
                     <img
                       src={getFileUrl('gadgets', gadget.id, gadget.image)}
                       alt={gadget.name}
@@ -409,51 +431,51 @@ export default function Home() {
                     />
                     
                     {/* Overlay Actions */}
-                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-3">
-                      <button className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-xl sm:rounded-2xl flex items-center justify-center text-gray-900 hover:bg-cyan-500 hover:text-white transition-all shadow-xl">
-                        <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-2 sm:gap-3">
+                      <button className="w-8 h-8 sm:w-12 sm:h-12 bg-white rounded-lg sm:rounded-2xl flex items-center justify-center text-gray-900 hover:bg-cyan-500 hover:text-white transition-all shadow-xl">
+                        <ShoppingCart className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
                       </button>
                       {(user?.id === gadget.author || isAdmin) && (
                         <button
                           onClick={() => handleDelete(gadget.id)}
-                          className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-xl sm:rounded-2xl flex items-center justify-center text-red-600 hover:bg-red-600 hover:text-white transition-all shadow-xl"
+                          className="w-8 h-8 sm:w-12 sm:h-12 bg-white rounded-lg sm:rounded-2xl flex items-center justify-center text-red-600 hover:bg-red-600 hover:text-white transition-all shadow-xl"
                         >
-                          <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                          <Trash2 className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
                         </button>
                       )}
                     </div>
 
-                    <div className="absolute top-3 sm:top-4 left-3 sm:left-4">
-                      <span className="px-3 sm:px-4 py-1.5 sm:py-2 bg-white/90 backdrop-blur-md text-gray-900 text-[10px] sm:text-xs font-black uppercase tracking-widest rounded-lg sm:rounded-xl shadow-lg border border-white/20">
+                    <div className="absolute top-2 sm:top-4 left-2 sm:left-4">
+                      <span className="px-2 sm:px-4 py-1 sm:py-2 bg-white/90 backdrop-blur-md text-gray-900 text-[8px] sm:text-xs font-black uppercase tracking-widest rounded-md sm:rounded-xl shadow-lg border border-white/20">
                         {gadget.category}
                       </span>
                     </div>
                   </div>
 
                   <div className="px-1 sm:px-2 pb-1 sm:pb-2">
-                    <div className="flex justify-between items-start mb-2 sm:mb-3">
-                      <h3 className="text-lg sm:text-xl font-black text-gray-900 tracking-tight line-clamp-1 group-hover:text-cyan-600 transition-colors">
+                    <div className="flex justify-between items-start mb-1 sm:mb-3">
+                      <h3 className="text-sm sm:text-xl font-black text-gray-900 tracking-tight line-clamp-1 group-hover:text-cyan-600 transition-colors">
                         {gadget.name}
                       </h3>
-                      <span className="text-lg sm:text-xl font-black text-cyan-600">
+                      <span className="text-sm sm:text-xl font-black text-cyan-600">
                         ${gadget.price.toLocaleString()}
                       </span>
                     </div>
-                    <p className="text-gray-500 text-xs sm:text-sm font-medium line-clamp-2 mb-4 sm:mb-6 leading-relaxed">
+                    <p className="text-gray-500 text-[10px] sm:text-sm font-medium line-clamp-2 mb-3 sm:mb-6 leading-relaxed">
                       {gadget.description}
                     </p>
-                    <div className="flex items-center justify-between pt-3 sm:pt-4 border-t border-gray-50">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gray-100 rounded-full flex items-center justify-center text-[8px] sm:text-[10px] font-black text-gray-400">
+                    <div className="flex items-center justify-between pt-2 sm:pt-4 border-t border-gray-50">
+                      <div className="flex items-center gap-1.5 sm:gap-2">
+                        <div className="w-5 h-5 sm:w-8 sm:h-8 bg-gray-100 rounded-full flex items-center justify-center text-[6px] sm:text-[10px] font-black text-gray-400">
                           {gadget.expand?.author?.fullName?.charAt(0) || 'U'}
                         </div>
-                        <span className="text-[8px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                        <span className="text-[6px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                           {gadget.expand?.author?.username || 'Anonymous'}
                         </span>
                       </div>
-                      <button className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-cyan-600 flex items-center gap-1 group/btn">
+                      <button className="text-[8px] sm:text-xs font-black uppercase tracking-widest text-cyan-600 flex items-center gap-0.5 sm:gap-1 group/btn">
                         Details
-                        <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 group-hover/btn:translate-x-1 transition-transform" />
+                        <ChevronRight className="w-2.5 h-2.5 sm:w-4 sm:h-4 group-hover/btn:translate-x-1 transition-transform" />
                       </button>
                     </div>
                   </div>

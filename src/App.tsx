@@ -59,17 +59,17 @@ const Navbar = () => {
   return (
     <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100">
       <div className="px-4 sm:px-8 lg:px-20">
-        <div className="flex justify-between h-16 sm:h-20 items-center">
+        <div className="flex justify-between h-14 sm:h-20 items-center">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-3 group shrink-0">
-            <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-cyan-200 group-hover:rotate-6 transition-all duration-300">
-              <Cpu className="w-7 h-7 text-white" />
+          <Link to="/" className="flex items-center gap-2 sm:gap-3 group shrink-0">
+            <div className="w-9 h-9 sm:w-12 sm:h-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg shadow-cyan-200 group-hover:rotate-6 transition-all duration-300">
+              <Cpu className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
             </div>
             <div className="flex flex-col">
-              <span className="text-xl font-black tracking-tighter text-gray-900 leading-none">
+              <span className="text-base sm:text-xl font-black tracking-tighter text-gray-900 leading-none">
                 DAMMY TECH
               </span>
-              <span className="text-[10px] font-bold tracking-[0.2em] text-cyan-600 uppercase">
+              <span className="text-[8px] sm:text-[10px] font-bold tracking-[0.2em] text-cyan-600 uppercase">
                 Gadget Store
               </span>
             </div>
@@ -291,7 +291,7 @@ export default function App() {
       <Router>
         <div className="min-h-screen bg-white font-sans selection:bg-cyan-100 selection:text-cyan-900">
           <Navbar />
-          <main className="px-4 sm:px-8 lg:px-20 py-8 sm:py-12">
+          <main className="px-4 sm:px-8 lg:px-20 py-6 sm:py-12">
             <ErrorBoundary>
               <Routes>
                 <Route path="/" element={<Home />} />
@@ -303,31 +303,31 @@ export default function App() {
             </ErrorBoundary>
           </main>
           
-          <footer className="bg-gray-900 text-white py-12 sm:py-20 mt-12 sm:mt-20">
-            <div className="px-4 sm:px-8 lg:px-20 grid grid-cols-1 md:grid-cols-4 gap-12">
+          <footer className="bg-gray-900 text-white py-10 sm:py-20 mt-10 sm:mt-20">
+            <div className="px-4 sm:px-8 lg:px-20 grid grid-cols-1 md:grid-cols-4 gap-8 sm:gap-12">
               <div className="col-span-1 md:col-span-2">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 bg-cyan-500 rounded-xl flex items-center justify-center">
-                    <Cpu className="w-6 h-6 text-white" />
+                <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-cyan-500 rounded-lg sm:rounded-xl flex items-center justify-center">
+                    <Cpu className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                   </div>
-                  <span className="text-xl font-black tracking-tighter">DAMMY TECH</span>
+                  <span className="text-lg sm:text-xl font-black tracking-tighter">DAMMY TECH</span>
                 </div>
-                <p className="text-gray-400 max-w-sm mb-8 leading-relaxed">
+                <p className="text-gray-400 text-sm max-w-sm mb-6 sm:mb-8 leading-relaxed">
                   Your ultimate destination for high-end gadgets and futuristic technology. We bring the future to your doorstep.
                 </p>
-                <div className="flex gap-4">
+                <div className="flex gap-3 sm:gap-4">
                   {['Twitter', 'Instagram', 'Facebook', 'LinkedIn'].map(social => (
-                    <a key={social} href="#" className="w-10 h-10 bg-gray-800 rounded-xl flex items-center justify-center hover:bg-cyan-500 transition-colors">
+                    <a key={social} href="#" className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-800 rounded-lg sm:rounded-xl flex items-center justify-center hover:bg-cyan-500 transition-colors">
                       <span className="sr-only">{social}</span>
-                      <div className="w-4 h-4 bg-white/20 rounded-full" />
+                      <div className="w-3 h-3 sm:w-4 sm:h-4 bg-white/20 rounded-full" />
                     </a>
                   ))}
                 </div>
               </div>
               
               <div>
-                <h4 className="font-bold mb-6 uppercase tracking-widest text-xs text-cyan-500">Shop</h4>
-                <ul className="space-y-4 text-sm font-medium text-gray-400">
+                <h4 className="font-bold mb-4 sm:mb-6 uppercase tracking-widest text-[10px] sm:text-xs text-cyan-500">Shop</h4>
+                <ul className="space-y-3 sm:space-y-4 text-xs sm:text-sm font-medium text-gray-400">
                   <li><Link to="/category/phones" className="hover:text-white transition-colors">Phones</Link></li>
                   <li><Link to="/category/laptops" className="hover:text-white transition-colors">Laptops</Link></li>
                   <li><Link to="/category/watches" className="hover:text-white transition-colors">Watches</Link></li>
@@ -336,8 +336,8 @@ export default function App() {
               </div>
 
               <div>
-                <h4 className="font-bold mb-6 uppercase tracking-widest text-xs text-cyan-500">Support</h4>
-                <ul className="space-y-4 text-sm font-medium text-gray-400">
+                <h4 className="font-bold mb-4 sm:mb-6 uppercase tracking-widest text-[10px] sm:text-xs text-cyan-500">Support</h4>
+                <ul className="space-y-3 sm:space-y-4 text-xs sm:text-sm font-medium text-gray-400">
                   <li><a href="#" className="hover:text-white transition-colors">Help Center</a></li>
                   <li><a href="#" className="hover:text-white transition-colors">Shipping Info</a></li>
                   <li><a href="#" className="hover:text-white transition-colors">Returns</a></li>
@@ -345,8 +345,8 @@ export default function App() {
                 </ul>
               </div>
             </div>
-            <div className="px-4 sm:px-8 lg:px-20 pt-12 sm:pt-20 mt-12 sm:mt-20 border-t border-gray-800 text-center">
-              <p className="text-gray-500 text-xs font-bold tracking-widest uppercase">
+            <div className="px-4 sm:px-8 lg:px-20 pt-10 sm:pt-20 mt-10 sm:mt-20 border-t border-gray-800 text-center">
+              <p className="text-gray-500 text-[10px] font-bold tracking-widest uppercase">
                 © {new Date().getFullYear()} Dammy Tech Gadget. Engineered for Excellence.
               </p>
             </div>
