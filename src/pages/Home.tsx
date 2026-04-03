@@ -19,7 +19,9 @@ import {
   Star,
   Zap,
   ShieldCheck,
-  Truck
+  Truck,
+  Headphones,
+  RefreshCcw
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
@@ -122,8 +124,8 @@ const AddGadgetModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
         animate={{ opacity: 1, scale: 1, y: 0 }}
         className="bg-white rounded-3xl sm:rounded-[2.5rem] shadow-2xl w-full max-w-xl overflow-hidden border border-gray-100 my-auto"
       >
-        <div className="px-6 sm:px-8 py-4 sm:py-5 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
-          <h2 className="text-lg sm:text-xl font-bold tracking-tight text-gray-900 flex items-center gap-3">
+        <div className="px-6 sm:px-8 py-5 sm:py-6 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
+          <h2 className="text-xl sm:text-2xl font-black tracking-tight text-gray-900 flex items-center gap-3">
             <div className="w-8 h-8 sm:w-10 sm:h-10 bg-cyan-500 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-200">
               <Plus className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
@@ -144,20 +146,20 @@ const AddGadgetModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 ml-1">Gadget Name</label>
+              <label className="text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Gadget Name</label>
               <input
                 type="text"
                 required
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm"
+                className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold"
                 placeholder="e.g. iPhone 15 Pro"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               />
             </div>
             <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 ml-1">Category</label>
+              <label className="text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Category</label>
               <select
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold appearance-none text-sm"
+                className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold appearance-none"
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
               >
@@ -172,14 +174,14 @@ const AddGadgetModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 ml-1">Price ($)</label>
+              <label className="text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Price ($)</label>
               <div className="relative">
-                <Tag className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Tag className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="number"
                   step="0.01"
                   required
-                  className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm"
+                  className="w-full pl-12 pr-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold"
                   placeholder="999.99"
                   value={formData.price}
                   onChange={(e) => setFormData({ ...formData, price: e.target.value })}
@@ -187,7 +189,7 @@ const AddGadgetModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
               </div>
             </div>
             <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 ml-1">Gadget Image</label>
+              <label className="text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Gadget Image</label>
               <div className="relative">
                 <input
                   type="file"
@@ -199,9 +201,9 @@ const AddGadgetModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
                 />
                 <label
                   htmlFor="gadget-image"
-                  className="w-full flex items-center gap-3 px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl cursor-pointer hover:bg-gray-100 transition-all font-semibold text-gray-500 truncate text-sm"
+                  className="w-full flex items-center gap-3 px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl cursor-pointer hover:bg-gray-100 transition-all font-semibold text-gray-500 truncate"
                 >
-                  <ImageIcon className="w-4 h-4 flex-shrink-0 text-cyan-500" />
+                  <ImageIcon className="w-5 h-5 flex-shrink-0 text-cyan-500" />
                   {imageFile ? imageFile.name : 'Choose image...'}
                 </label>
               </div>
@@ -209,29 +211,29 @@ const AddGadgetModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
           </div>
 
           <div className="space-y-2">
-            <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 ml-1">Description</label>
+            <label className="text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Description</label>
             <textarea
               required
-              rows={3}
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all resize-none font-semibold text-sm"
+              rows={4}
+              className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all resize-none font-semibold"
               placeholder="Describe the features and condition..."
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             />
           </div>
 
-          <div className="flex gap-4 pt-2">
+          <div className="flex gap-4 pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-3.5 bg-gray-100 text-gray-700 rounded-xl font-bold uppercase tracking-widest text-[10px] hover:bg-gray-200 transition-all"
+              className="flex-1 py-4 bg-gray-100 text-gray-700 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-gray-200 transition-all"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-[2] py-3.5 bg-gray-900 text-white rounded-xl font-bold uppercase tracking-widest text-[10px] hover:bg-cyan-600 transition-all shadow-xl shadow-gray-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-[2] py-4 bg-gray-900 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-cyan-600 transition-all shadow-2xl shadow-gray-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -380,7 +382,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-2xl sm:text-5xl font-bold text-white leading-[1.2] sm:leading-[1.1] tracking-tight mb-4 sm:mb-6"
+            className="text-3xl sm:text-8xl font-black text-white leading-[1.1] sm:leading-[0.9] tracking-tighter mb-4 sm:mb-8"
           >
             UPGRADE YOUR <br className="hidden sm:block" />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
@@ -392,7 +394,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="text-xs sm:text-base text-gray-400 mb-6 sm:mb-10 max-w-xl mx-auto sm:mx-0 leading-relaxed font-medium"
+            className="text-sm sm:text-xl text-gray-400 mb-8 sm:mb-12 max-w-2xl mx-auto sm:mx-0 leading-relaxed font-medium"
           >
             The most advanced marketplace for futuristic gadgets. From neural-link headsets to quantum laptops.
           </motion.p>
@@ -472,7 +474,7 @@ export default function Home() {
               <div className="w-4 sm:w-8 h-[2px] bg-cyan-600" />
               Our Inventory
             </div>
-            <h2 className="text-lg sm:text-2xl font-bold text-gray-900 tracking-tight">
+            <h2 className="text-xl sm:text-4xl font-black text-gray-900 tracking-tight">
               {category ? `${category.charAt(0).toUpperCase() + category.slice(1)} Collection` : 'All Gadgets'}
             </h2>
           </div>
@@ -505,14 +507,14 @@ export default function Home() {
             <div className="w-16 h-16 sm:w-24 sm:h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-xl shadow-gray-200/50">
               <ShoppingCart className="w-6 h-6 sm:w-10 sm:h-10 text-gray-300" />
             </div>
-            <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3">No gadgets found</h3>
-            <p className="text-xs sm:text-sm text-gray-500 font-medium max-w-xs mx-auto mb-6 sm:mb-10">
+            <h3 className="text-lg sm:text-2xl font-black text-gray-900 mb-2 sm:mb-3">No gadgets found</h3>
+            <p className="text-xs sm:text-gray-500 font-medium max-w-xs mx-auto mb-6 sm:mb-10">
               We couldn't find any gadgets in this category. Be the first to list one!
             </p>
             {user && (
               <button 
                 onClick={() => setIsModalOpen(true)}
-                className="w-full sm:w-auto px-8 py-3 sm:px-10 sm:py-4 bg-gray-900 text-white rounded-xl sm:rounded-2xl font-bold uppercase tracking-widest text-[10px] sm:text-xs hover:bg-cyan-600 transition-all shadow-xl shadow-gray-200"
+                className="w-full sm:w-auto px-8 py-3 sm:px-10 sm:py-4 bg-gray-900 text-white rounded-xl sm:rounded-2xl font-black uppercase tracking-widest text-[10px] sm:text-xs hover:bg-cyan-600 transition-all shadow-2xl shadow-gray-200"
               >
                 Start Selling
               </button>
@@ -557,18 +559,18 @@ export default function Home() {
                     </div>
 
                     <div className="absolute top-2 sm:top-4 left-2 sm:left-4">
-                      <span className="px-2 sm:px-4 py-1 sm:py-2 bg-white/90 backdrop-blur-md text-gray-900 text-[8px] sm:text-[10px] font-bold uppercase tracking-widest rounded-md sm:rounded-xl shadow-lg border border-white/20">
+                      <span className="px-2 sm:px-4 py-1 sm:py-2 bg-white/90 backdrop-blur-md text-gray-900 text-[8px] sm:text-xs font-black uppercase tracking-widest rounded-md sm:rounded-xl shadow-lg border border-white/20">
                         {gadget.category}
                       </span>
                     </div>
                   </div>
 
                   <div className="px-1 sm:px-2 pb-1 sm:pb-2">
-                    <div className="flex justify-between items-start mb-1 sm:mb-2">
-                      <h3 className="text-sm sm:text-lg font-bold text-gray-900 tracking-tight line-clamp-1 group-hover:text-cyan-600 transition-colors">
+                    <div className="flex justify-between items-start mb-1 sm:mb-3">
+                      <h3 className="text-sm sm:text-xl font-black text-gray-900 tracking-tight line-clamp-1 group-hover:text-cyan-600 transition-colors">
                         {gadget.name}
                       </h3>
-                      <span className="text-sm sm:text-lg font-bold text-cyan-600">
+                      <span className="text-sm sm:text-xl font-black text-cyan-600">
                         ${gadget.price.toLocaleString()}
                       </span>
                     </div>
@@ -577,14 +579,14 @@ export default function Home() {
                     </p>
                     <div className="flex items-center justify-between pt-2 sm:pt-4 border-t border-gray-50">
                       <div className="flex items-center gap-1.5 sm:gap-2">
-                        <div className="w-5 h-5 sm:w-8 sm:h-8 bg-gray-100 rounded-full flex items-center justify-center text-[6px] sm:text-[9px] font-bold text-gray-400">
+                        <div className="w-5 h-5 sm:w-8 sm:h-8 bg-gray-100 rounded-full flex items-center justify-center text-[6px] sm:text-[10px] font-black text-gray-400">
                           {gadget.expand?.author?.fullName?.charAt(0) || 'U'}
                         </div>
-                        <span className="text-[6px] sm:text-[9px] font-semibold text-gray-400 uppercase tracking-widest">
+                        <span className="text-[6px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                           {gadget.expand?.author?.username || 'Anonymous'}
                         </span>
                       </div>
-                      <button className="text-[8px] sm:text-[10px] font-bold uppercase tracking-widest text-cyan-600 flex items-center gap-0.5 sm:gap-1 group/btn">
+                      <button className="text-[8px] sm:text-xs font-black uppercase tracking-widest text-cyan-600 flex items-center gap-0.5 sm:gap-1 group/btn">
                         Details
                         <ChevronRight className="w-2.5 h-2.5 sm:w-4 sm:h-4 group-hover/btn:translate-x-1 transition-transform" />
                       </button>
@@ -598,6 +600,236 @@ export default function Home() {
       </section>
 
       <AddGadgetModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+
+      {/* Why Choose Us Section */}
+      <section className="py-20 sm:py-32 bg-gray-50 rounded-[2rem] sm:rounded-[4rem] px-6 sm:px-20">
+        <div className="text-center max-w-3xl mx-auto mb-16 sm:mb-24">
+          <div className="inline-flex items-center gap-2 text-cyan-600 font-black uppercase tracking-widest text-[10px] sm:text-xs mb-4">
+            <div className="w-8 h-[2px] bg-cyan-600" />
+            The Dammytech Edge
+          </div>
+          <h2 className="text-3xl sm:text-6xl font-black text-gray-900 tracking-tighter mb-6">
+            WHY THE FUTURE <br /> CHOOSES US
+          </h2>
+          <p className="text-gray-500 font-medium text-sm sm:text-lg leading-relaxed">
+            We don't just sell gadgets; we curate the building blocks of tomorrow. Join thousands of tech enthusiasts who trust us for their digital evolution.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-10">
+          {[
+            {
+              title: "CURATED EXCELLENCE",
+              desc: "Every gadget in our store undergoes rigorous testing for performance, durability, and 'wow' factor.",
+              icon: ShieldCheck,
+              color: "bg-blue-500"
+            },
+            {
+              title: "LIGHTSPEED DELIVERY",
+              desc: "Our global logistics network ensures your tech reaches you faster than a fiber-optic pulse.",
+              icon: Zap,
+              color: "bg-cyan-500"
+            },
+            {
+              title: "FUTURE-PROOF SUPPORT",
+              desc: "24/7 technical assistance from experts who live and breathe high-end technology.",
+              icon: Headphones,
+              color: "bg-indigo-500"
+            }
+          ].map((item, i) => (
+            <motion.div
+              key={item.title}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+              className="p-8 sm:p-12 bg-white rounded-[2.5rem] border border-gray-100 shadow-xl shadow-gray-200/50 hover:-translate-y-2 transition-all duration-500 group"
+            >
+              <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center mb-8 shadow-lg group-hover:rotate-12 transition-transform", item.color)}>
+                <item.icon className="w-7 h-7 text-white" />
+              </div>
+              <h3 className="text-xl font-black text-gray-900 mb-4 tracking-tight">{item.title}</h3>
+              <p className="text-gray-500 font-medium leading-relaxed text-sm">{item.desc}</p>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* About Us Section */}
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-12 sm:gap-24 items-center">
+        <div className="relative aspect-square sm:aspect-video lg:aspect-square rounded-[3rem] overflow-hidden shadow-2xl">
+          <img 
+            src="https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&q=80&w=1200" 
+            alt="About Us" 
+            className="w-full h-full object-cover"
+            referrerPolicy="no-referrer"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-cyan-600/40 to-transparent" />
+          <div className="absolute bottom-10 left-10 right-10 p-8 bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20">
+            <div className="text-4xl font-black text-white mb-2">10+</div>
+            <div className="text-xs font-bold text-cyan-100 uppercase tracking-widest">Years of Innovation</div>
+          </div>
+        </div>
+
+        <div className="space-y-8 sm:space-y-12">
+          <div>
+            <div className="inline-flex items-center gap-2 text-cyan-600 font-black uppercase tracking-widest text-[10px] sm:text-xs mb-4">
+              <div className="w-8 h-[2px] bg-cyan-600" />
+              Our Story
+            </div>
+            <h2 className="text-3xl sm:text-6xl font-black text-gray-900 tracking-tighter mb-6 leading-[1.1]">
+              WE ARE THE <br /> ARCHITECTS OF <br /> <span className="text-cyan-600">DIGITAL DREAMS</span>
+            </h2>
+            <p className="text-gray-500 font-medium text-sm sm:text-lg leading-relaxed">
+              Founded in 2016, Dammytech began with a simple mission: to bridge the gap between today's reality and tomorrow's possibilities. We believe that technology should be an extension of human potential.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-8">
+            <div>
+              <div className="text-2xl font-black text-gray-900 mb-1">500K+</div>
+              <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Gadgets Delivered</div>
+            </div>
+            <div>
+              <div className="text-2xl font-black text-gray-900 mb-1">99.9%</div>
+              <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Customer Satisfaction</div>
+            </div>
+          </div>
+
+          <button className="inline-flex items-center gap-3 text-sm font-black uppercase tracking-widest text-cyan-600 group">
+            Read Full Manifesto
+            <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
+          </button>
+        </div>
+      </section>
+
+      {/* Customer Reviews */}
+      <section className="py-20 sm:py-32">
+        <div className="flex flex-col sm:flex-row justify-between items-center sm:items-end gap-8 mb-16 sm:mb-24">
+          <div className="text-center sm:text-left">
+            <div className="inline-flex items-center gap-2 text-cyan-600 font-black uppercase tracking-widest text-[10px] sm:text-xs mb-4">
+              <div className="w-8 h-[2px] bg-cyan-600" />
+              Testimonials
+            </div>
+            <h2 className="text-3xl sm:text-6xl font-black text-gray-900 tracking-tighter">
+              VOICES FROM <br /> THE FUTURE
+            </h2>
+          </div>
+          <div className="flex gap-2">
+            {[1, 2, 3, 4, 5].map(i => (
+              <Star key={i} className="w-5 h-5 sm:w-8 sm:h-8 text-yellow-400 fill-yellow-400" />
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-10">
+          {[
+            {
+              name: "Alex Rivera",
+              role: "Tech Reviewer",
+              text: "The neural-link headset I bought here changed my workflow forever. Dammytech is literally living in 2030.",
+              avatar: "AR"
+            },
+            {
+              name: "Sarah Chen",
+              role: "Software Architect",
+              text: "Fastest shipping I've ever experienced. The quantum laptop arrived in perfect condition and performs like a beast.",
+              avatar: "SC"
+            },
+            {
+              name: "Marcus Thorne",
+              role: "Digital Artist",
+              text: "Customer support is top-tier. They helped me calibrate my holographic display at 3 AM. Unbeatable service.",
+              avatar: "MT"
+            }
+          ].map((review, i) => (
+            <motion.div
+              key={review.name}
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+              className="p-8 sm:p-10 bg-white rounded-[2.5rem] border border-gray-100 shadow-xl shadow-gray-200/30 relative"
+            >
+              <div className="flex items-center gap-4 mb-8">
+                <div className="w-12 h-12 bg-cyan-500 rounded-full flex items-center justify-center text-white font-black">
+                  {review.avatar}
+                </div>
+                <div>
+                  <div className="font-black text-gray-900">{review.name}</div>
+                  <div className="text-[10px] font-bold text-cyan-600 uppercase tracking-widest">{review.role}</div>
+                </div>
+              </div>
+              <p className="text-gray-500 font-medium leading-relaxed italic">"{review.text}"</p>
+              <div className="absolute top-8 right-10 opacity-10">
+                <ShoppingCart className="w-12 h-12 text-cyan-600" />
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* Delivery & FAQ Section */}
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-12 sm:gap-24">
+        {/* Delivery Info */}
+        <div className="p-8 sm:p-16 bg-gray-900 rounded-[3rem] text-white">
+          <div className="inline-flex items-center gap-2 text-cyan-400 font-black uppercase tracking-widest text-[10px] sm:text-xs mb-8">
+            <div className="w-8 h-[2px] bg-cyan-400" />
+            Logistics
+          </div>
+          <h2 className="text-3xl sm:text-5xl font-black tracking-tighter mb-12">
+            GLOBAL REACH, <br /> LOCAL SPEED
+          </h2>
+          
+          <div className="space-y-10">
+            {[
+              { title: "Free Global Shipping", desc: "On all orders over $500. Fully insured and tracked.", icon: Truck },
+              { title: "30-Day Returns", desc: "Not satisfied? Return it within 30 days for a full refund, no questions asked.", icon: RefreshCcw },
+              { title: "24H Dispatch", desc: "Orders placed before 2 PM are dispatched the same business day.", icon: Zap }
+            ].map((item) => (
+              <div key={item.title} className="flex gap-6">
+                <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center shrink-0">
+                  <item.icon className="w-6 h-6 text-cyan-400" />
+                </div>
+                <div>
+                  <h3 className="font-black text-lg mb-2">{item.title}</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed">{item.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* FAQ */}
+        <div className="py-8 sm:py-12">
+          <div className="inline-flex items-center gap-2 text-cyan-600 font-black uppercase tracking-widest text-[10px] sm:text-xs mb-4">
+            <div className="w-8 h-[2px] bg-cyan-600" />
+            Support
+          </div>
+          <h2 className="text-3xl sm:text-5xl font-black text-gray-900 tracking-tighter mb-12">
+            FREQUENTLY <br /> ASKED QUESTIONS
+          </h2>
+
+          <div className="space-y-4">
+            {[
+              { q: "Do you ship internationally?", a: "Yes, we ship to over 150 countries worldwide with premium express carriers." },
+              { q: "What is your warranty policy?", a: "All gadgets come with a minimum 2-year international manufacturer warranty." },
+              { q: "Can I cancel my order?", a: "Orders can be cancelled within 2 hours of placement for a full immediate refund." },
+              { q: "Are the gadgets authentic?", a: "We are authorized retailers for every brand we carry. 100% authenticity guaranteed." }
+            ].map((faq, i) => (
+              <details key={i} className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all">
+                <summary className="flex items-center justify-between p-6 cursor-pointer list-none font-bold text-gray-900">
+                  {faq.q}
+                  <ChevronRight className="w-5 h-5 text-cyan-600 group-open:rotate-90 transition-transform" />
+                </summary>
+                <div className="px-6 pb-6 text-gray-500 text-sm leading-relaxed font-medium">
+                  {faq.a}
+                </div>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
