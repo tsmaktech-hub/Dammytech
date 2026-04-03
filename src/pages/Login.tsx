@@ -31,10 +31,12 @@ export default function Login() {
     if (isMockMode) {
       // Simulate network delay
       await new Promise(resolve => setTimeout(resolve, 1000));
-      if (formData.email === 'admin@example.com' && formData.password === 'password') {
+      const { mockStorage } = await import('../lib/mockStorage');
+      const user = mockStorage.getUserByEmail(formData.email);
+      if (user && formData.password === 'password') {
         pb.authStore.save('mock-token', { 
-          id: 'admin', 
-          email: 'admin@example.com',
+          id: user.id, 
+          email: user.email,
           collectionId: 'users',
           collectionName: 'users'
         } as any);

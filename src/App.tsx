@@ -249,17 +249,16 @@ export default function App() {
 
   const refreshProfile = async () => {
     if (isMockMode) {
-      setProfile({
-        id: 'admin',
-        username: 'admin',
-        email: 'admin@example.com',
-        fullName: 'Admin User',
-        phoneNumber: '1234567890',
-        role: 'admin',
-        avatar: '',
-        created: new Date().toISOString(),
-        updated: new Date().toISOString(),
-      });
+      const { mockStorage } = await import('./lib/mockStorage');
+      const mockUser = pb.authStore.model;
+      if (mockUser) {
+        const profile = mockStorage.getUserById(mockUser.id);
+        if (profile) {
+          setProfile(profile);
+          return;
+        }
+      }
+      setProfile(null);
       return;
     }
 

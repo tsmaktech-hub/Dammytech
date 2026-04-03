@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { pb, getFileUrl, isMockMode } from '../lib/pocketbase';
 import { Gadget } from '../types';
-import { MOCK_GADGETS } from '../lib/mockData';
 import { useAuth } from '../App';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -46,6 +45,29 @@ const AddGadgetModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
       if (isMockMode) {
         // Simulate network delay
         await new Promise(resolve => setTimeout(resolve, 1000));
+        const { mockStorage } = await import('../lib/mockStorage');
+        
+        const newGadget: any = {
+          id: `mock-${Math.random().toString(36).substr(2, 9)}`,
+          name: formData.name,
+          description: formData.description,
+          price: parseFloat(formData.price),
+          category: formData.category,
+          image: URL.createObjectURL(imageFile),
+          author: user.id,
+          created: new Date().toISOString(),
+          updated: new Date().toISOString(),
+          expand: {
+            author: {
+              fullName: user.fullName || 'User',
+              username: user.username || 'user'
+            }
+          }
+        };
+        
+        mockStorage.saveGadget(newGadget);
+        window.dispatchEvent(new Event('mock-gadgets-updated'));
+        
         onClose();
         setFormData({ name: '', description: '', price: '', category: 'phones' });
         setImageFile(null);
@@ -218,9 +240,11 @@ export default function Home() {
       if (isMockMode) {
         // Simulate network delay
         await new Promise(resolve => setTimeout(resolve, 500));
+        const { mockStorage } = await import('../lib/mockStorage');
+        const allGadgets = mockStorage.getGadgets();
         const filtered = category 
-          ? MOCK_GADGETS.filter(g => g.category === category)
-          : MOCK_GADGETS;
+          ? allGadgets.filter(g => g.category === category)
+          : allGadgets;
         setGadgets(filtered);
         setLoading(false);
         return;
@@ -238,9 +262,11 @@ export default function Home() {
       } catch (error) {
         console.error('Error fetching gadgets:', error);
         // Fallback to mock data on error
+        const { mockStorage } = await import('../lib/mockStorage');
+        const allGadgets = mockStorage.getGadgets();
         const filtered = category 
-          ? MOCK_GADGETS.filter(g => g.category === category)
-          : MOCK_GADGETS;
+          ? allGadgets.filter(g => g.category === category)
+          : allGadgets;
         setGadgets(filtered);
       } finally {
         setLoading(false);
@@ -249,7 +275,10 @@ export default function Home() {
 
     fetchGadgets();
     
-    if (!isMockMode) {
+    if (isMockMode) {
+      window.addEventListener('mock-gadgets-updated', fetchGadgets);
+      return () => window.removeEventListener('mock-gadgets-updated', fetchGadgets);
+    } else {
       // Real-time subscription
       const unsubscribe = pb.collection('gadgets').subscribe('*', (e) => {
         fetchGadgets();
@@ -265,7 +294,11 @@ export default function Home() {
     if (!window.confirm('Are you sure you want to delete this gadget?')) return;
     try {
       if (isMockMode) {
-        setGadgets(prev => prev.filter(g => g.id !== id));
+        const { mockStorage } = await import('../lib/mockStorage');
+        const gadgets = mockStorage.getGadgets();
+        const updated = gadgets.filter(g => g.id !== id);
+        localStorage.setItem('mock_gadgets', JSON.stringify(updated));
+        window.dispatchEvent(new Event('mock-gadgets-updated'));
         return;
       }
       await pb.collection('gadgets').delete(id);

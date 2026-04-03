@@ -42,9 +42,25 @@ export default function Signup() {
     if (isMockMode) {
       // Simulate network delay
       await new Promise(resolve => setTimeout(resolve, 1000));
-      pb.authStore.save('mock-token', { 
-        id: 'admin', 
+      const { mockStorage } = await import('../lib/mockStorage');
+      
+      const newUser = {
+        id: Math.random().toString(36).substr(2, 9),
+        username: formData.username.toLowerCase(),
         email: formData.email,
+        fullName: formData.fullName,
+        phoneNumber: formData.phoneNumber,
+        role: 'user',
+        avatar: '',
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+      };
+      
+      mockStorage.saveUser(newUser as any);
+      
+      pb.authStore.save('mock-token', { 
+        id: newUser.id, 
+        email: newUser.email,
         collectionId: 'users',
         collectionName: 'users'
       } as any);
