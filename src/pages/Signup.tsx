@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { pb, isMockMode } from '../lib/pocketbase';
+import { mockStorage } from '../lib/mockStorage';
 import { motion } from 'motion/react';
 import { 
   UserPlus, 
@@ -42,7 +43,6 @@ export default function Signup() {
     if (isMockMode) {
       // Simulate network delay
       await new Promise(resolve => setTimeout(resolve, 1000));
-      const { mockStorage } = await import('../lib/mockStorage');
       
       const newUser = {
         id: Math.random().toString(36).substr(2, 9),

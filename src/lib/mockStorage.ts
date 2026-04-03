@@ -1,16 +1,18 @@
 import { UserProfile, Gadget } from '../types';
 import { MOCK_GADGETS } from './mockData';
 
+const isBrowser = typeof window !== 'undefined';
+
 const USERS_KEY = 'mock_users';
 const GADGETS_KEY = 'mock_gadgets';
 
 // Initialize gadgets in localStorage if not present
-if (!localStorage.getItem(GADGETS_KEY)) {
+if (isBrowser && !localStorage.getItem(GADGETS_KEY)) {
   localStorage.setItem(GADGETS_KEY, JSON.stringify(MOCK_GADGETS));
 }
 
 // Initialize users in localStorage if not present (with default admin)
-if (!localStorage.getItem(USERS_KEY)) {
+if (isBrowser && !localStorage.getItem(USERS_KEY)) {
   const defaultAdmin: UserProfile = {
     id: 'admin',
     username: 'admin',
@@ -27,11 +29,13 @@ if (!localStorage.getItem(USERS_KEY)) {
 
 export const mockStorage = {
   getUsers: (): UserProfile[] => {
+    if (!isBrowser) return [];
     const data = localStorage.getItem(USERS_KEY);
     return data ? JSON.parse(data) : [];
   },
   
   saveUser: (user: UserProfile) => {
+    if (!isBrowser) return;
     const users = mockStorage.getUsers();
     const index = users.findIndex(u => u.id === user.id || u.email === user.email);
     if (index >= 0) {
@@ -51,11 +55,13 @@ export const mockStorage = {
   },
   
   getGadgets: (): Gadget[] => {
+    if (!isBrowser) return [];
     const data = localStorage.getItem(GADGETS_KEY);
     return data ? JSON.parse(data) : [];
   },
   
   saveGadget: (gadget: Gadget) => {
+    if (!isBrowser) return;
     const gadgets = mockStorage.getGadgets();
     const index = gadgets.findIndex(g => g.id === gadget.id);
     if (index >= 0) {

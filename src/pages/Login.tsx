@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { pb, isMockMode } from '../lib/pocketbase';
+import { mockStorage } from '../lib/mockStorage';
 import { motion } from 'motion/react';
 import { 
   LogIn, 
@@ -31,7 +32,6 @@ export default function Login() {
     if (isMockMode) {
       // Simulate network delay
       await new Promise(resolve => setTimeout(resolve, 1000));
-      const { mockStorage } = await import('../lib/mockStorage');
       const user = mockStorage.getUserByEmail(formData.email);
       if (user && formData.password === 'password') {
         pb.authStore.save('mock-token', { 

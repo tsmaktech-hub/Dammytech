@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { pb, getFileUrl, isMockMode } from '../lib/pocketbase';
+import { mockStorage } from '../lib/mockStorage';
 import { Gadget } from '../types';
 import { useAuth } from '../App';
 import { motion, AnimatePresence } from 'motion/react';
@@ -45,7 +46,6 @@ const AddGadgetModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
       if (isMockMode) {
         // Simulate network delay
         await new Promise(resolve => setTimeout(resolve, 1000));
-        const { mockStorage } = await import('../lib/mockStorage');
         
         const newGadget: any = {
           id: `mock-${Math.random().toString(36).substr(2, 9)}`,
@@ -240,7 +240,6 @@ export default function Home() {
       if (isMockMode) {
         // Simulate network delay
         await new Promise(resolve => setTimeout(resolve, 500));
-        const { mockStorage } = await import('../lib/mockStorage');
         const allGadgets = mockStorage.getGadgets();
         const filtered = category 
           ? allGadgets.filter(g => g.category === category)
@@ -262,7 +261,6 @@ export default function Home() {
       } catch (error) {
         console.error('Error fetching gadgets:', error);
         // Fallback to mock data on error
-        const { mockStorage } = await import('../lib/mockStorage');
         const allGadgets = mockStorage.getGadgets();
         const filtered = category 
           ? allGadgets.filter(g => g.category === category)
@@ -294,7 +292,6 @@ export default function Home() {
     if (!window.confirm('Are you sure you want to delete this gadget?')) return;
     try {
       if (isMockMode) {
-        const { mockStorage } = await import('../lib/mockStorage');
         const gadgets = mockStorage.getGadgets();
         const updated = gadgets.filter(g => g.id !== id);
         localStorage.setItem('mock_gadgets', JSON.stringify(updated));

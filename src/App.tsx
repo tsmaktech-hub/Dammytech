@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import { pb, isMockMode } from './lib/pocketbase';
+import { mockStorage } from './lib/mockStorage';
 import { UserProfile } from './types';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { 
@@ -249,7 +250,6 @@ export default function App() {
 
   const refreshProfile = async () => {
     if (isMockMode) {
-      const { mockStorage } = await import('./lib/mockStorage');
       const mockUser = pb.authStore.model;
       if (mockUser) {
         const profile = mockStorage.getUserById(mockUser.id);
