@@ -17,11 +17,14 @@ import {
   Headphones, 
   Cpu,
   ShoppingBag,
-  ArrowRight
+  ArrowRight,
+  Home as HomeIcon,
+  UserCircle
 } from 'lucide-react';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import AuthChoice from './pages/AuthChoice';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
 
@@ -92,6 +95,16 @@ const Navbar = () => {
 
           {/* Desktop Nav */}
           <div className="hidden xl:flex items-center gap-8 mr-8">
+            <Link
+              to="/"
+              className={cn(
+                "flex items-center gap-2 text-sm font-semibold transition-colors",
+                location.pathname === "/" ? "text-cyan-600" : "text-gray-500 hover:text-gray-900"
+              )}
+            >
+              <HomeIcon className="w-4 h-4" />
+              Home
+            </Link>
             {categories.map((cat) => (
               <Link
                 key={cat.name}
@@ -128,18 +141,11 @@ const Navbar = () => {
             ) : (
               <div className="flex items-center gap-2">
                 <Link
-                  to="/login"
-                  className="hidden sm:flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-gray-700 hover:text-cyan-600 transition-colors"
+                  to="/auth"
+                  className="hidden sm:flex items-center gap-2 px-6 py-3 text-sm font-black uppercase tracking-widest text-white bg-gray-900 rounded-2xl hover:bg-cyan-600 transition-all shadow-xl shadow-gray-200 group"
                 >
-                  <LogIn className="w-4 h-4" />
-                  Login
-                </Link>
-                <Link
-                  to="/signup"
-                  className="hidden sm:flex items-center gap-2 px-6 py-3 text-sm font-bold text-white bg-gray-900 rounded-2xl hover:bg-cyan-600 transition-all shadow-xl shadow-gray-200"
-                >
-                  <UserPlus className="w-4 h-4" />
-                  Join
+                  <UserCircle className="w-4 h-4 group-hover:rotate-12 transition-transform" />
+                  Get Started
                 </Link>
               </div>
             )}
@@ -175,6 +181,25 @@ const Navbar = () => {
               </div>
               
               <div className="space-y-3">
+                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 ml-1">Navigation</h3>
+                <div className="grid grid-cols-1 gap-2">
+                  <Link
+                    to="/"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="flex items-center justify-between p-4 bg-gray-50 rounded-xl text-sm font-bold text-gray-700 hover:bg-cyan-500 hover:text-white transition-all group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-sm group-hover:bg-cyan-400 transition-colors">
+                        <HomeIcon className="w-4 h-4" />
+                      </div>
+                      Home
+                    </div>
+                    <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0" />
+                  </Link>
+                </div>
+              </div>
+
+              <div className="space-y-3">
                 <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 ml-1">Categories</h3>
                 <div className="grid grid-cols-1 gap-2">
                   {categories.map((cat, i) => (
@@ -203,22 +228,14 @@ const Navbar = () => {
               </div>
 
               {!user ? (
-                <div className="grid grid-cols-2 gap-3 pt-2">
+                <div className="pt-2">
                   <Link
-                    to="/login"
+                    to="/auth"
                     onClick={() => setIsMenuOpen(false)}
-                    className="flex items-center justify-center gap-2 p-3.5 text-xs font-black uppercase tracking-widest text-gray-700 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all"
+                    className="flex items-center justify-center gap-3 p-4 text-xs font-black uppercase tracking-widest text-white bg-gray-900 rounded-xl shadow-lg shadow-gray-200 hover:bg-cyan-600 transition-all group"
                   >
-                    <LogIn className="w-3.5 h-3.5" />
-                    Login
-                  </Link>
-                  <Link
-                    to="/signup"
-                    onClick={() => setIsMenuOpen(false)}
-                    className="flex items-center justify-center gap-2 p-3.5 text-xs font-black uppercase tracking-widest text-white bg-gray-900 rounded-xl shadow-lg shadow-gray-200 hover:bg-cyan-600 transition-all"
-                  >
-                    <UserPlus className="w-3.5 h-3.5" />
-                    Join
+                    <UserCircle className="w-4 h-4 group-hover:rotate-12 transition-transform" />
+                    Get Started
                   </Link>
                 </div>
               ) : (
@@ -332,6 +349,7 @@ export default function App() {
             <ErrorBoundary>
               <Routes>
                 <Route path="/" element={<Home />} />
+                <Route path="/auth" element={user ? <Navigate to="/" /> : <AuthChoice />} />
                 <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
                 <Route path="/signup" element={user ? <Navigate to="/" /> : <Signup />} />
                 <Route path="/category/:category" element={<Home />} />
