@@ -142,7 +142,7 @@ const Navbar = () => {
               <div className="flex items-center gap-2">
                 <Link
                   to="/auth"
-                  className="hidden sm:flex items-center gap-2 px-6 py-3 text-sm font-black uppercase tracking-widest text-white bg-gray-900 rounded-2xl hover:bg-cyan-600 transition-all shadow-xl shadow-gray-200 group"
+                  className="hidden lg:flex items-center gap-2 px-4 py-2 text-xs font-black uppercase tracking-widest text-white bg-gray-900 rounded-xl hover:bg-cyan-600 transition-all shadow-lg shadow-gray-200 group"
                 >
                   <UserCircle className="w-4 h-4 group-hover:rotate-12 transition-transform" />
                   Get Started
@@ -153,7 +153,7 @@ const Navbar = () => {
             {/* Mobile Menu Toggle */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="lg:hidden p-3 text-gray-500 hover:bg-gray-50 rounded-2xl transition-all"
+              className="xl:hidden p-3 text-gray-500 hover:bg-gray-50 rounded-2xl transition-all"
             >
               {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
@@ -168,25 +168,24 @@ const Navbar = () => {
             initial={{ opacity: 0, scale: 0.95, y: -10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: -10 }}
-            className="lg:hidden absolute top-[calc(100%-0.5rem)] right-4 w-[calc(100%-2rem)] max-w-sm bg-white rounded-3xl shadow-[0_32px_64px_-12px_rgba(0,0,0,0.15)] border border-gray-100 overflow-hidden"
+            className="xl:hidden absolute top-[calc(100%-0.5rem)] right-4 w-[calc(100%-2rem)] max-w-sm bg-white rounded-[2rem] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.15)] border border-gray-100 overflow-hidden"
           >
-            <div className="p-6 space-y-6">
+            <div className="p-4 space-y-4">
               <div className="relative group">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
                   placeholder="Search gadgets..."
-                  className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-cyan-500 transition-all text-sm"
+                  className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-cyan-500 transition-all text-sm"
                 />
               </div>
               
-              <div className="space-y-3">
-                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 ml-1">Navigation</h3>
-                <div className="grid grid-cols-1 gap-2">
+              <div className="space-y-2">
+                <div className="grid grid-cols-1 gap-1.5">
                   <Link
                     to="/"
                     onClick={() => setIsMenuOpen(false)}
-                    className="flex items-center justify-between p-4 bg-gray-50 rounded-xl text-sm font-bold text-gray-700 hover:bg-cyan-500 hover:text-white transition-all group"
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-xl text-sm font-bold text-gray-700 hover:bg-cyan-500 hover:text-white transition-all group"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-sm group-hover:bg-cyan-400 transition-colors">
@@ -199,9 +198,8 @@ const Navbar = () => {
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 ml-1">Categories</h3>
-                <div className="grid grid-cols-1 gap-2">
+              <div className="space-y-2">
+                <div className="grid grid-cols-1 gap-1.5">
                   {categories.map((cat, i) => (
                     <motion.div
                       key={cat.name}
@@ -212,7 +210,7 @@ const Navbar = () => {
                       <Link
                         to={cat.path}
                         onClick={() => setIsMenuOpen(false)}
-                        className="flex items-center justify-between p-4 bg-gray-50 rounded-xl text-sm font-bold text-gray-700 hover:bg-cyan-500 hover:text-white transition-all group"
+                        className="flex items-center justify-between p-3 bg-gray-50 rounded-xl text-sm font-bold text-gray-700 hover:bg-cyan-500 hover:text-white transition-all group"
                       >
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-sm group-hover:bg-cyan-400 transition-colors">
@@ -228,24 +226,24 @@ const Navbar = () => {
               </div>
 
               {!user ? (
-                <div className="pt-2">
+                <div className="pt-1">
                   <Link
                     to="/auth"
                     onClick={() => setIsMenuOpen(false)}
-                    className="flex items-center justify-center gap-3 p-4 text-xs font-black uppercase tracking-widest text-white bg-gray-900 rounded-xl shadow-lg shadow-gray-200 hover:bg-cyan-600 transition-all group"
+                    className="flex items-center justify-center gap-3 p-3.5 text-xs font-black uppercase tracking-widest text-white bg-gray-900 rounded-xl shadow-lg shadow-gray-200 hover:bg-cyan-600 transition-all group"
                   >
                     <UserCircle className="w-4 h-4 group-hover:rotate-12 transition-transform" />
                     Get Started
                   </Link>
                 </div>
               ) : (
-                <div className="pt-2">
+                <div className="pt-1">
                     <button
                     onClick={() => {
                       supabase.auth.signOut();
                       setIsMenuOpen(false);
                     }}
-                    className="w-full flex items-center justify-center gap-2 p-3.5 text-xs font-black uppercase tracking-widest text-red-600 bg-red-50 rounded-xl hover:bg-red-100 transition-all"
+                    className="w-full flex items-center justify-center gap-2 p-3 text-xs font-black uppercase tracking-widest text-red-600 bg-red-50 rounded-xl hover:bg-red-100 transition-all"
                   >
                     <LogOut className="w-3.5 h-3.5" />
                     Sign Out
