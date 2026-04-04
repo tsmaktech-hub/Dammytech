@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { supabase, isMockMode } from '../lib/supabase';
 import { mockStorage } from '../lib/mockStorage';
 import { motion } from 'motion/react';
@@ -12,17 +12,31 @@ import {
   Cpu,
   ShieldCheck,
   Zap,
-  Star
+  Star,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 export default function Login() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [formData, setFormData] = useState({
-    email: '',
+    email: location.state?.email || '',
     password: '',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
+  const [successMessage, setSuccessMessage] = useState(location.state?.message || '');
+
+  useEffect(() => {
+    if (location.state?.email) {
+      setFormData(prev => ({ ...prev, email: location.state.email }));
+    }
+    if (location.state?.message) {
+      setSuccessMessage(location.state.message);
+    }
+  }, [location.state]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,14 +87,42 @@ export default function Login() {
     }
 
     try {
+      let loginEmail = formData.email;
+
+      // If it's not an email format, try to find the email by username
+      if (!loginEmail.includes('@')) {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('username', loginEmail.toLowerCase())
+          .single();
+        
+        if (profileData?.email) {
+          loginEmail = profileData.email;
+        } else if (profileError) {
+          // If username lookup fails, we still try to sign in with the original input
+          // but it will likely fail with "Invalid login credentials"
+          console.error("Username lookup failed:", profileError);
+        }
+      }
+
       const { error } = await supabase.auth.signInWithPassword({
-        email: formData.email,
+        email: loginEmail,
         password: formData.password,
       });
       if (error) throw error;
       navigate('/');
     } catch (err: any) {
-      setError(err.message || 'Invalid email or password');
+      let errorMessage = err.message || 'Invalid email or password';
+      
+      // Provide more helpful message for unconfirmed emails
+      if (errorMessage.toLowerCase().includes('email not confirmed')) {
+        errorMessage = 'Please check your email and confirm your account before signing in.';
+      } else if (errorMessage.toLowerCase().includes('invalid login credentials')) {
+        errorMessage = 'Invalid email/username or password. Please try again.';
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -139,6 +181,17 @@ export default function Login() {
             <p className="text-gray-500 font-medium text-xs sm:text-sm">Enter your credentials to access your account</p>
           </div>
 
+          {successMessage && !error && (
+            <motion.div
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="mb-6 p-4 sm:p-5 bg-green-50 border border-green-100 rounded-2xl flex items-center gap-3 sm:gap-4 text-green-700 text-xs sm:text-sm font-bold"
+            >
+              <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" />
+              {successMessage}
+            </motion.div>
+          )}
+
           {error && (
             <motion.div
               initial={{ opacity: 0, x: -10 }}
@@ -174,13 +227,20 @@ export default function Login() {
               <div className="relative group">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   required
-                  className="w-full pl-10 sm:pl-12 pr-5 py-3 sm:py-4 bg-gray-50 border border-gray-100 rounded-xl sm:rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm sm:text-base"
+                  className="w-full pl-10 sm:pl-12 pr-12 py-3 sm:py-4 bg-gray-50 border border-gray-100 rounded-xl sm:rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm sm:text-base"
                   placeholder="••••••••"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-cyan-500 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Eye className="w-4 h-4 sm:w-5 sm:h-5" />}
+                </button>
               </div>
             </div>
 

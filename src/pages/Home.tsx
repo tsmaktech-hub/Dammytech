@@ -323,7 +323,7 @@ const AddGadgetModal = ({
 };
 
 export default function Home({ searchQuery = '' }: { searchQuery?: string }) {
-  const { user, isAdmin } = useAuth();
+  const { user, profile, isAdmin } = useAuth();
   const { category } = useParams();
   const [gadgets, setGadgets] = useState<Gadget[]>([]);
   const [loading, setLoading] = useState(true);
@@ -365,7 +365,7 @@ export default function Home({ searchQuery = '' }: { searchQuery?: string }) {
         if (error) throw error;
         
         // Map Supabase data to our Gadget type
-        const mappedData = (data || []).map(item => ({
+        let mappedData = (data || []).map(item => ({
           ...item,
           created: item.created_at,
           updated: item.updated_at,
@@ -374,14 +374,25 @@ export default function Home({ searchQuery = '' }: { searchQuery?: string }) {
           }
         }));
 
+        // Limit gadgets for guests
+        if (!user) {
+          mappedData = mappedData.slice(0, 4); // Show only first 4 gadgets to guests
+        }
+
         setGadgets(mappedData as any[]);
       } catch (error) {
         console.error('Error fetching gadgets:', error);
         // Fallback to mock data on error
         const allGadgets = mockStorage.getGadgets();
-        const filtered = category 
+        let filtered = category 
           ? allGadgets.filter(g => g.category === category)
           : allGadgets;
+        
+        // Limit gadgets for guests
+        if (!user) {
+          filtered = filtered.slice(0, 4);
+        }
+        
         setGadgets(filtered);
       } finally {
         setLoading(false);
@@ -497,7 +508,7 @@ export default function Home({ searchQuery = '' }: { searchQuery?: string }) {
               Explore Collection
               <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
             </button>
-            {user && (
+            {profile?.username === 'Dammy' && (
               <button 
                 onClick={() => setIsModalOpen(true)}
                 className="w-full sm:w-auto px-6 py-3.5 sm:px-10 sm:py-5 bg-white/5 backdrop-blur-xl border border-white/10 text-white rounded-xl sm:rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] sm:text-xs hover:bg-white/10 transition-all flex items-center justify-center gap-2 sm:gap-3"

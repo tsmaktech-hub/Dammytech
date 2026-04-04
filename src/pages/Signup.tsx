@@ -69,6 +69,7 @@ export default function Signup() {
       };
       
       mockStorage.saveUser(newUser as any);
+      mockStorage.setCurrentUser(newUser as any);
       
       // In mock mode, we just navigate. The App component handles the mock user.
       navigate('/');
@@ -84,32 +85,21 @@ export default function Signup() {
         options: {
           data: {
             full_name: formData.fullName,
+            phone_number: formData.phoneNumber,
             username: formData.username.toLowerCase(),
           }
         }
       });
 
       if (authError) throw authError;
-
-      if (authData.user) {
-        // Create profile record
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert([
-            {
-              id: authData.user.id,
-              username: formData.username.toLowerCase(),
-              email: formData.email,
-              fullName: formData.fullName,
-              phoneNumber: formData.phoneNumber,
-              role: 'user',
-            }
-          ]);
-
-        if (profileError) throw profileError;
-      }
       
-      navigate('/');
+      // Profile is now created automatically by the database trigger!
+      navigate('/login', { 
+        state: { 
+          email: formData.email, 
+          message: 'Account created successfully! Please sign in with your credentials.' 
+        } 
+      });
     } catch (err: any) {
       setError(err.message || 'Failed to create account');
     } finally {

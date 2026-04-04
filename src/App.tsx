@@ -126,12 +126,22 @@ const Navbar = ({
   };
 
   const categories = [
+    { name: 'Home', icon: HomeIcon, path: '/' },
     { name: 'Phones', icon: Smartphone, path: '/category/phones' },
     { name: 'Laptops', icon: Laptop, path: '/category/laptops' },
     { name: 'Watches', icon: Watch, path: '/category/watches' },
-    { name: 'Audio', icon: Headphones, path: '/category/audio' },
+    { name: 'Audios', icon: Headphones, path: '/category/audio' },
     { name: 'Components', icon: Cpu, path: '/category/components' },
   ];
+
+  const getInitials = (name?: string) => {
+    if (!name) return '??';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 0) return '??';
+    if (parts.length === 1) return parts[0].substring(0, 1).toUpperCase();
+    // First letter of surname (last part) and first letter of name (first part)
+    return (parts[parts.length - 1][0] + parts[0][0]).toUpperCase();
+  };
 
   return (
     <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100">
@@ -189,46 +199,43 @@ const Navbar = ({
           )}
 
           {/* Desktop Nav */}
-          <div className="hidden xl:flex items-center gap-8 mr-8">
-            <Link
-              to="/"
-              className={cn(
-                "flex items-center gap-2 text-sm font-semibold transition-colors",
-                location.pathname === "/" ? "text-cyan-600" : "text-gray-500 hover:text-gray-900"
-              )}
-            >
-              <HomeIcon className="w-4 h-4" />
-              Home
-            </Link>
-            {categories.map((cat) => (
-              <Link
-                key={cat.name}
-                to={cat.path}
-                onClick={handleCategoryClick}
-                className={cn(
-                  "flex items-center gap-2 text-sm font-semibold transition-colors",
-                  location.pathname === cat.path ? "text-cyan-600" : "text-gray-500 hover:text-gray-900"
-                )}
-              >
-                <cat.icon className="w-4 h-4" />
-                {cat.name}
-              </Link>
-            ))}
-          </div>
+          {user && (
+            <div className="hidden xl:flex items-center gap-6 mr-8">
+              {categories.map((cat) => (
+                <Link
+                  key={cat.name}
+                  to={cat.path}
+                  onClick={handleCategoryClick}
+                  className={cn(
+                    "flex items-center gap-2 text-sm font-semibold transition-colors",
+                    location.pathname === cat.path ? "text-cyan-600" : "text-gray-500 hover:text-gray-900"
+                  )}
+                >
+                  <cat.icon className="w-4 h-4" />
+                  {cat.name}
+                </Link>
+              ))}
+            </div>
+          )}
 
           {/* User Actions */}
           <div className="flex items-center gap-3">
             {user ? (
               <div className="flex items-center gap-4">
-                <div className="hidden sm:flex flex-col items-end">
-                  <span className="text-sm font-bold text-gray-900">{profile?.fullName}</span>
-                  <span className="text-[10px] font-bold text-cyan-600 uppercase tracking-wider">
-                    {profile?.role}
-                  </span>
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center text-white font-black text-xs sm:text-sm shadow-lg shadow-cyan-200 border-2 border-white">
+                    {getInitials(profile?.fullName)}
+                  </div>
+                  <div className="hidden sm:flex flex-col items-start leading-tight">
+                    <span className="text-sm font-bold text-gray-900">{profile?.fullName}</span>
+                    <span className="text-[10px] font-bold text-cyan-600 uppercase tracking-wider">
+                      {profile?.role}
+                    </span>
+                  </div>
                 </div>
                 <button
                   onClick={() => setIsLogoutModalOpen(true)}
-                  className="flex items-center gap-2 px-4 py-2 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all group"
+                  className="flex items-center gap-2 px-3 py-2 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all group"
                   title="Sign Out"
                 >
                   <LogOut className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
@@ -239,9 +246,9 @@ const Navbar = ({
               <div className="flex items-center gap-2">
                 <Link
                   to="/auth"
-                  className="hidden xl:flex items-center gap-2 px-6 py-2.5 text-sm font-black uppercase tracking-widest text-white bg-gray-900 rounded-xl hover:bg-cyan-600 transition-all shadow-lg shadow-gray-200 group"
+                  className="flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-2.5 text-[10px] sm:text-sm font-black uppercase tracking-widest text-white bg-gray-900 rounded-xl hover:bg-cyan-600 transition-all shadow-lg shadow-gray-200 group"
                 >
-                  <UserCircle className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+                  <UserCircle className="w-4 h-4 sm:w-5 sm:h-5 group-hover:rotate-12 transition-transform" />
                   Explore
                 </Link>
               </div>
@@ -269,6 +276,20 @@ const Navbar = ({
           >
             <div className="p-4 space-y-4">
               {user && (
+                <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                  <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center text-white font-black text-lg shadow-lg shadow-cyan-200 border-2 border-white">
+                    {getInitials(profile?.fullName)}
+                  </div>
+                  <div className="flex flex-col leading-tight">
+                    <span className="text-base font-bold text-gray-900">{profile?.fullName}</span>
+                    <span className="text-xs font-bold text-cyan-600 uppercase tracking-wider">
+                      {profile?.role}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {user && (
                 <div className="relative group">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
@@ -281,50 +302,45 @@ const Navbar = ({
                 </div>
               )}
               
-              <div className="space-y-2">
-                <div className="grid grid-cols-1 gap-1.5">
-                  <Link
-                    to="/"
-                    onClick={() => setIsMenuOpen(false)}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-xl text-sm font-bold text-gray-700 hover:bg-cyan-500 hover:text-white transition-all group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-sm group-hover:bg-cyan-400 transition-colors">
-                        <HomeIcon className="w-4 h-4" />
-                      </div>
-                      Home
-                    </div>
-                    <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0" />
-                  </Link>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="grid grid-cols-1 gap-1.5">
-                  {categories.map((cat, i) => (
-                    <motion.div
-                      key={cat.name}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.05 }}
-                    >
-                      <Link
-                        to={cat.path}
-                        onClick={handleCategoryClick}
-                        className="flex items-center justify-between p-3 bg-gray-50 rounded-xl text-sm font-bold text-gray-700 hover:bg-cyan-500 hover:text-white transition-all group"
+              {user && (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-1 gap-1.5">
+                    {categories.map((cat, i) => (
+                      <motion.div
+                        key={cat.name}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.05 }}
                       >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-sm group-hover:bg-cyan-400 transition-colors">
-                            <cat.icon className="w-4 h-4" />
+                        <Link
+                          to={cat.path}
+                          onClick={handleCategoryClick}
+                          className={cn(
+                            "flex items-center justify-between p-3 rounded-xl text-sm font-bold transition-all group",
+                            location.pathname === cat.path 
+                              ? "bg-cyan-500 text-white" 
+                              : "bg-gray-50 text-gray-700 hover:bg-cyan-50 hover:text-cyan-600"
+                          )}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={cn(
+                              "w-8 h-8 rounded-lg flex items-center justify-center shadow-sm transition-colors",
+                              location.pathname === cat.path ? "bg-cyan-400" : "bg-white group-hover:bg-cyan-100"
+                            )}>
+                              <cat.icon className="w-4 h-4" />
+                            </div>
+                            {cat.name}
                           </div>
-                          {cat.name}
-                        </div>
-                        <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0" />
-                      </Link>
-                    </motion.div>
-                  ))}
+                          <ArrowRight className={cn(
+                            "w-3.5 h-3.5 transition-all -translate-x-2 group-hover:translate-x-0",
+                            location.pathname === cat.path ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                          )} />
+                        </Link>
+                      </motion.div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {!user ? (
                 <div className="pt-1">
