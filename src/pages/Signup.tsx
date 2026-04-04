@@ -44,6 +44,18 @@ export default function Signup() {
       // Simulate network delay
       await new Promise(resolve => setTimeout(resolve, 1000));
       
+      const users = mockStorage.getUsers();
+      if (users.find(u => u.username.toLowerCase() === formData.username.toLowerCase())) {
+        setError('Username already taken');
+        setLoading(false);
+        return;
+      }
+      if (users.find(u => u.email.toLowerCase() === formData.email.toLowerCase())) {
+        setError('Email already registered');
+        setLoading(false);
+        return;
+      }
+      
       const newUser = {
         id: Math.random().toString(36).substr(2, 9),
         username: formData.username.toLowerCase(),

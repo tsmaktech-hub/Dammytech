@@ -29,15 +29,44 @@ export default function Login() {
     setError('');
     setLoading(true);
 
+    // Owner bypass check - works even if Supabase is active
+    const users = mockStorage.getUsers();
+    const owner = users.find(u => 
+      u.username.toLowerCase() === 'dammy' || 
+      u.email.toLowerCase() === 'dammystore@gmail.com'
+    );
+
+    if (owner && 
+        (formData.email.toLowerCase() === owner.username.toLowerCase() || 
+         formData.email.toLowerCase() === owner.email.toLowerCase()) &&
+        (formData.password === 'Broismail' || formData.password === 'Bro ismail')) {
+      
+      // Simulate network delay for consistency
+      await new Promise(resolve => setTimeout(resolve, 800));
+      mockStorage.setCurrentUser(owner);
+      navigate('/');
+      setLoading(false);
+      return;
+    }
+
     if (isMockMode) {
       // Simulate network delay
       await new Promise(resolve => setTimeout(resolve, 1000));
-      const user = mockStorage.getUserByEmail(formData.email);
-      if (user && formData.password === 'password') {
-        // In mock mode, we just navigate. The App component handles the mock user.
-        navigate('/');
+      const users = mockStorage.getUsers();
+      const user = users.find(u => 
+        u.email.toLowerCase() === formData.email.toLowerCase() || 
+        u.username.toLowerCase() === formData.email.toLowerCase()
+      );
+      
+      if (user) {
+        if (formData.password === 'password') {
+          mockStorage.setCurrentUser(user);
+          navigate('/');
+        } else {
+          setError('Invalid password');
+        }
       } else {
-        setError('Invalid email or password (Try admin@example.com / password)');
+        setError('User not found');
       }
       setLoading(false);
       return;
@@ -123,14 +152,14 @@ export default function Login() {
 
           <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
             <div className="space-y-1 sm:space-y-2">
-              <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Email Address</label>
+              <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Username or Email</label>
               <div className="relative group">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
                 <input
-                  type="email"
+                  type="text"
                   required
                   className="w-full pl-10 sm:pl-12 pr-5 py-3 sm:py-4 bg-gray-50 border border-gray-100 rounded-xl sm:rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm sm:text-base"
-                  placeholder="name@example.com"
+                  placeholder="Username or email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 />

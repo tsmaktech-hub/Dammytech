@@ -21,45 +21,82 @@ import {
   ShieldCheck,
   Truck,
   Headphones,
-  RefreshCcw
+  RefreshCcw,
+  Search,
+  Edit2,
+  Link as LinkIcon
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
-const AddGadgetModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+const AddGadgetModal = ({ 
+  isOpen, 
+  onClose, 
+  gadget = null 
+}: { 
+  isOpen: boolean; 
+  onClose: () => void;
+  gadget?: Gadget | null;
+}) => {
   const { user } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     price: '',
     category: 'phones',
+    imageUrl: '',
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  useEffect(() => {
+    if (gadget) {
+      setFormData({
+        name: gadget.name,
+        description: gadget.description,
+        price: gadget.price.toString(),
+        category: gadget.category,
+        imageUrl: gadget.image.startsWith('http') ? gadget.image : '',
+      });
+    } else {
+      setFormData({
+        name: '',
+        description: '',
+        price: '',
+        category: 'phones',
+        imageUrl: '',
+      });
+      setImageFile(null);
+    }
+  }, [gadget, isOpen]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-    if (!imageFile) return setError('Please select an image');
+    if (!imageFile && !formData.imageUrl && !gadget) return setError('Please select an image or provide a link');
     setError('');
     setLoading(true);
 
     try {
+      let finalImageUrl = gadget?.image || '';
+
       if (isMockMode) {
         // Simulate network delay
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-        const newGadget: any = {
-          id: `mock-${Math.random().toString(36).substr(2, 9)}`,
+        finalImageUrl = formData.imageUrl || (imageFile ? URL.createObjectURL(imageFile) : finalImageUrl);
+
+        const updatedGadget: any = {
+          id: gadget?.id || `mock-${Math.random().toString(36).substr(2, 9)}`,
           name: formData.name,
           description: formData.description,
           price: parseFloat(formData.price),
           category: formData.category,
-          image: URL.createObjectURL(imageFile),
-          author: user.id,
-          created: new Date().toISOString(),
+          image: finalImageUrl,
+          author: gadget?.author || user.id,
+          created: gadget?.created || new Date().toISOString(),
           updated: new Date().toISOString(),
-          expand: {
+          expand: gadget?.expand || {
             author: {
               fullName: user.fullName || 'User',
               username: user.username || 'user'
@@ -67,49 +104,67 @@ const AddGadgetModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
           }
         };
         
-        mockStorage.saveGadget(newGadget);
+        mockStorage.saveGadget(updatedGadget);
         window.dispatchEvent(new Event('mock-gadgets-updated'));
         
         onClose();
-        setFormData({ name: '', description: '', price: '', category: 'phones' });
-        setImageFile(null);
         return;
       }
 
-      // Upload image to Supabase Storage
-      const fileExt = imageFile.name.split('.').pop();
-      const fileName = `${Math.random()}.${fileExt}`;
-      const filePath = `${user.id}/${fileName}`;
+      if (imageFile) {
+        // Upload image to Supabase Storage
+        const fileExt = imageFile.name.split('.').pop();
+        const fileName = `${Math.random()}.${fileExt}`;
+        const filePath = `${user.id}/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('gadgets')
-        .upload(filePath, imageFile);
+        const { error: uploadError } = await supabase.storage
+          .from('gadgets')
+          .upload(filePath, imageFile);
 
-      if (uploadError) throw uploadError;
+        if (uploadError) throw uploadError;
+        finalImageUrl = filePath;
+      } else if (formData.imageUrl) {
+        finalImageUrl = formData.imageUrl;
+      }
 
-      // Create gadget record in database
-      const { error: dbError } = await supabase
-        .from('gadgets')
-        .insert([
-          {
+      if (gadget) {
+        // Update existing gadget
+        const { error: dbError } = await supabase
+          .from('gadgets')
+          .update({
             name: formData.name,
             description: formData.description,
             price: parseFloat(formData.price),
             category: formData.category,
-            image: filePath,
-            author: user.id,
-          }
-        ]);
+            image: finalImageUrl,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', gadget.id);
 
-      if (dbError) throw dbError;
+        if (dbError) throw dbError;
+      } else {
+        // Create gadget record in database
+        const { error: dbError } = await supabase
+          .from('gadgets')
+          .insert([
+            {
+              name: formData.name,
+              description: formData.description,
+              price: parseFloat(formData.price),
+              category: formData.category,
+              image: finalImageUrl,
+              author: user.id,
+            }
+          ]);
+
+        if (dbError) throw dbError;
+      }
 
       onClose();
-      setFormData({ name: '', description: '', price: '', category: 'phones' });
-      setImageFile(null);
       // Trigger a refresh of the gadgets list
       window.dispatchEvent(new Event('gadgets-updated'));
     } catch (err: any) {
-      setError(err.message || 'Failed to add gadget');
+      setError(err.message || 'Failed to save gadget');
     } finally {
       setLoading(false);
     }
@@ -127,9 +182,9 @@ const AddGadgetModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
         <div className="px-6 sm:px-8 py-5 sm:py-6 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
           <h2 className="text-xl sm:text-2xl font-black tracking-tight text-gray-900 flex items-center gap-3">
             <div className="w-8 h-8 sm:w-10 sm:h-10 bg-cyan-500 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-200">
-              <Plus className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+              {gadget ? <Edit2 className="w-5 h-5 sm:w-6 sm:h-6 text-white" /> : <Plus className="w-5 h-5 sm:w-6 sm:h-6 text-white" />}
             </div>
-            List New Gadget
+            {gadget ? 'Edit Gadget' : 'List New Gadget'}
           </h2>
           <button onClick={onClose} className="p-2 sm:p-3 hover:bg-white rounded-2xl transition-all text-gray-400 hover:text-gray-900 shadow-sm border border-transparent hover:border-gray-100">
             <X className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -174,7 +229,7 @@ const AddGadgetModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Price ($)</label>
+              <label className="text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Price (₦)</label>
               <div className="relative">
                 <Tag className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
@@ -182,20 +237,22 @@ const AddGadgetModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
                   step="0.01"
                   required
                   className="w-full pl-12 pr-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold"
-                  placeholder="999.99"
+                  placeholder="50,000"
                   value={formData.price}
                   onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                 />
               </div>
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Gadget Image</label>
+              <label className="text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Gadget Image (File)</label>
               <div className="relative">
                 <input
                   type="file"
                   accept="image/*"
-                  required
-                  onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                  onChange={(e) => {
+                    setImageFile(e.target.files?.[0] || null);
+                    if (e.target.files?.[0]) setFormData({ ...formData, imageUrl: '' });
+                  }}
                   className="hidden"
                   id="gadget-image"
                 />
@@ -207,6 +264,23 @@ const AddGadgetModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
                   {imageFile ? imageFile.name : 'Choose image...'}
                 </label>
               </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-black uppercase tracking-widest text-gray-500 ml-1">OR Image URL</label>
+            <div className="relative">
+              <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="url"
+                className="w-full pl-12 pr-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold"
+                placeholder="https://example.com/image.jpg"
+                value={formData.imageUrl}
+                onChange={(e) => {
+                  setFormData({ ...formData, imageUrl: e.target.value });
+                  if (e.target.value) setImageFile(null);
+                }}
+              />
             </div>
           </div>
 
@@ -238,7 +312,7 @@ const AddGadgetModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
               {loading ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
               ) : (
-                'Publish Listing'
+                gadget ? 'Update Gadget' : 'Publish Listing'
               )}
             </button>
           </div>
@@ -248,12 +322,18 @@ const AddGadgetModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
   );
 };
 
-export default function Home() {
+export default function Home({ searchQuery = '' }: { searchQuery?: string }) {
   const { user, isAdmin } = useAuth();
   const { category } = useParams();
   const [gadgets, setGadgets] = useState<Gadget[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingGadget, setEditingGadget] = useState<Gadget | null>(null);
+
+  const filteredGadgets = gadgets.filter(gadget => 
+    gadget.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    gadget.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   useEffect(() => {
     const fetchGadgets = async () => {
@@ -309,6 +389,14 @@ export default function Home() {
     };
 
     fetchGadgets();
+    
+    // Scroll to collection if category is selected
+    if (category) {
+      const element = document.getElementById('collection');
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
     
     const handleUpdate = () => fetchGadgets();
     window.addEventListener('mock-gadgets-updated', handleUpdate);
@@ -467,7 +555,7 @@ export default function Home() {
       </section>
 
       {/* Product Grid */}
-      <section>
+      <section id="collection">
         <div className="flex flex-col sm:flex-row justify-between items-center sm:items-end gap-4 sm:gap-8 mb-8 sm:mb-16">
           <div className="text-center sm:text-left">
             <div className="inline-flex items-center gap-2 text-cyan-600 font-black uppercase tracking-widest text-[8px] sm:text-xs mb-2 sm:mb-3">
@@ -520,10 +608,20 @@ export default function Home() {
               </button>
             )}
           </div>
+        ) : filteredGadgets.length === 0 ? (
+          <div className="text-center py-12 sm:py-32 bg-gray-50 rounded-2xl sm:rounded-[3rem] border-2 border-dashed border-gray-200 px-4 sm:px-6">
+            <div className="w-16 h-16 sm:w-24 sm:h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-xl shadow-gray-200/50">
+              <Search className="w-6 h-6 sm:w-10 sm:h-10 text-gray-300" />
+            </div>
+            <h3 className="text-lg sm:text-2xl font-black text-gray-900 mb-2 sm:mb-3">No matches found</h3>
+            <p className="text-xs sm:text-gray-500 font-medium max-w-xs mx-auto mb-6 sm:mb-10">
+              We couldn't find any gadgets matching "{searchQuery}". Try a different search term.
+            </p>
+          </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-10">
             <AnimatePresence mode="popLayout">
-              {gadgets.map((gadget) => (
+              {filteredGadgets.map((gadget) => (
                 <motion.div
                   key={gadget.id}
                   layout
@@ -534,7 +632,7 @@ export default function Home() {
                 >
                   <div className="relative aspect-[4/5] rounded-xl sm:rounded-[2rem] overflow-hidden bg-gray-50 mb-3 sm:mb-6">
                     <img
-                      src={gadget.id.startsWith('mock-') ? gadget.image : getFileUrl('gadgets', gadget.image)}
+                      src={getFileUrl('gadgets', gadget.image)}
                       alt={gadget.name}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                       referrerPolicy="no-referrer"
@@ -549,12 +647,23 @@ export default function Home() {
                         <ShoppingCart className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
                       </button>
                       {(user?.id === gadget.author || isAdmin) && (
-                        <button
-                          onClick={() => handleDelete(gadget.id)}
-                          className="w-8 h-8 sm:w-12 sm:h-12 bg-white rounded-lg sm:rounded-2xl flex items-center justify-center text-red-600 hover:bg-red-600 hover:text-white transition-all shadow-xl"
-                        >
-                          <Trash2 className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
-                        </button>
+                        <>
+                          <button
+                            onClick={() => {
+                              setEditingGadget(gadget);
+                              setIsModalOpen(true);
+                            }}
+                            className="w-8 h-8 sm:w-12 sm:h-12 bg-white rounded-lg sm:rounded-2xl flex items-center justify-center text-cyan-600 hover:bg-cyan-600 hover:text-white transition-all shadow-xl"
+                          >
+                            <Edit2 className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(gadget.id)}
+                            className="w-8 h-8 sm:w-12 sm:h-12 bg-white rounded-lg sm:rounded-2xl flex items-center justify-center text-red-600 hover:bg-red-600 hover:text-white transition-all shadow-xl"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+                          </button>
+                        </>
                       )}
                     </div>
 
@@ -571,7 +680,7 @@ export default function Home() {
                         {gadget.name}
                       </h3>
                       <span className="text-sm sm:text-xl font-black text-cyan-600">
-                        ${gadget.price.toLocaleString()}
+                        ₦{gadget.price.toLocaleString()}
                       </span>
                     </div>
                     <p className="text-gray-500 text-[10px] sm:text-sm font-medium line-clamp-2 mb-3 sm:mb-6 leading-relaxed">
@@ -599,7 +708,14 @@ export default function Home() {
         )}
       </section>
 
-      <AddGadgetModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <AddGadgetModal 
+        isOpen={isModalOpen} 
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingGadget(null);
+        }} 
+        gadget={editingGadget}
+      />
 
       {/* Why Choose Us Section */}
       <section className="py-20 sm:py-32 bg-gray-50 rounded-[2rem] sm:rounded-[4rem] px-6 sm:px-20">
@@ -786,7 +902,7 @@ export default function Home() {
           
           <div className="space-y-10">
             {[
-              { title: "Free Global Shipping", desc: "On all orders over $500. Fully insured and tracked.", icon: Truck },
+              { title: "Free Global Shipping", desc: "On all orders over ₦500,000. Fully insured and tracked.", icon: Truck },
               { title: "30-Day Returns", desc: "Not satisfied? Return it within 30 days for a full refund, no questions asked.", icon: RefreshCcw },
               { title: "24H Dispatch", desc: "Orders placed before 2 PM are dispatched the same business day.", icon: Zap }
             ].map((item) => (

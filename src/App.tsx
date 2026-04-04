@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase, isMockMode } from './lib/supabase';
 import { mockStorage } from './lib/mockStorage';
 import { UserProfile } from './types';
@@ -33,7 +33,8 @@ interface AuthContextType {
   profile: UserProfile | null;
   loading: boolean;
   isAdmin: boolean;
-  refreshProfile: () => Promise<void>;
+  refreshProfile: (userId?: string) => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -42,15 +43,87 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   isAdmin: false,
   refreshProfile: async () => {},
+  logout: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
 
-const Navbar = () => {
-  const { user, profile, isAdmin } = useAuth();
+const LogoutModal = ({ isOpen, onClose, onConfirm }: { isOpen: boolean; onClose: () => void; onConfirm: () => void }) => {
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm"
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            className="relative w-full max-w-sm bg-white rounded-[2rem] shadow-2xl overflow-hidden border border-gray-100 p-8"
+          >
+            <div className="flex flex-col items-center text-center">
+              <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mb-6">
+                <LogOut className="w-8 h-8 text-red-500" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Confirm Log Out</h3>
+              <p className="text-gray-500 text-sm mb-8 leading-relaxed">
+                Are you sure you want to log out of your account? You'll need to sign in again to access your dashboard.
+              </p>
+              <div className="grid grid-cols-2 gap-3 w-full">
+                <button
+                  onClick={onClose}
+                  className="py-3 px-4 bg-gray-50 text-gray-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-gray-100 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    onConfirm();
+                    onClose();
+                  }}
+                  className="py-3 px-4 bg-red-500 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-red-600 transition-all shadow-lg shadow-red-200"
+                >
+                  Log Out
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+};
+
+const Navbar = ({ 
+  searchQuery, 
+  setSearchQuery, 
+  isSearchOpen, 
+  setIsSearchOpen 
+}: { 
+  searchQuery: string; 
+  setSearchQuery: (q: string) => void;
+  isSearchOpen: boolean;
+  setIsSearchOpen: (o: boolean) => void;
+}) => {
+  const { user, profile, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/');
+  };
+
+  const handleCategoryClick = () => {
+    setIsMenuOpen(false);
+  };
 
   const categories = [
     { name: 'Phones', icon: Smartphone, path: '/category/phones' },
@@ -80,18 +153,40 @@ const Navbar = () => {
           </Link>
 
           {/* Desktop Search */}
-          <div className="hidden xl:flex flex-1 max-w-xs focus-within:max-w-xl mx-8 transition-all duration-500 ease-in-out">
-            <div className="relative w-full group">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
-              <input
-                type="text"
-                placeholder="Search gadgets..."
-                className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-cyan-500 focus:bg-white outline-none transition-all text-sm"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+          {user && (
+            <div className={cn(
+              "hidden xl:flex items-center transition-all duration-500 ease-in-out mx-4",
+              isSearchOpen ? "flex-1 max-w-xl" : "max-w-[48px]"
+            )}>
+              <div className="relative w-full flex items-center">
+                <button 
+                  onClick={() => setIsSearchOpen(!isSearchOpen)}
+                  className={cn(
+                    "p-3 rounded-xl transition-all flex items-center justify-center",
+                    isSearchOpen ? "absolute left-1 z-10 text-cyan-500" : "bg-gray-50 border border-gray-100 text-gray-400 hover:text-cyan-500 hover:bg-white"
+                  )}
+                >
+                  <Search className="w-5 h-5" />
+                </button>
+                <AnimatePresence>
+                  {isSearchOpen && (
+                    <motion.input
+                      initial={{ width: 0, opacity: 0 }}
+                      animate={{ width: "100%", opacity: 1 }}
+                      exit={{ width: 0, opacity: 0 }}
+                      autoFocus
+                      type="text"
+                      placeholder="Search gadgets..."
+                      className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-cyan-500 focus:bg-white outline-none text-sm"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onBlur={() => !searchQuery && setIsSearchOpen(false)}
+                    />
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Desktop Nav */}
           <div className="hidden xl:flex items-center gap-8 mr-8">
@@ -109,6 +204,7 @@ const Navbar = () => {
               <Link
                 key={cat.name}
                 to={cat.path}
+                onClick={handleCategoryClick}
                 className={cn(
                   "flex items-center gap-2 text-sm font-semibold transition-colors",
                   location.pathname === cat.path ? "text-cyan-600" : "text-gray-500 hover:text-gray-900"
@@ -131,11 +227,12 @@ const Navbar = () => {
                   </span>
                 </div>
                 <button
-                  onClick={() => supabase.auth.signOut()}
-                  className="p-3 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all"
+                  onClick={() => setIsLogoutModalOpen(true)}
+                  className="flex items-center gap-2 px-4 py-2 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all group"
                   title="Sign Out"
                 >
-                  <LogOut className="w-5 h-5" />
+                  <LogOut className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                  <span className="hidden md:inline text-xs font-black uppercase tracking-widest">Log Out</span>
                 </button>
               </div>
             ) : (
@@ -171,14 +268,18 @@ const Navbar = () => {
             className="xl:hidden absolute top-[calc(100%-0.5rem)] right-4 w-[calc(100%-2rem)] max-w-sm bg-white rounded-[2rem] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.15)] border border-gray-100 overflow-hidden"
           >
             <div className="p-4 space-y-4">
-              <div className="relative group">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search gadgets..."
-                  className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-cyan-500 transition-all text-sm"
-                />
-              </div>
+              {user && (
+                <div className="relative group">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search gadgets..."
+                    className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-cyan-500 transition-all text-sm"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+              )}
               
               <div className="space-y-2">
                 <div className="grid grid-cols-1 gap-1.5">
@@ -209,7 +310,7 @@ const Navbar = () => {
                     >
                       <Link
                         to={cat.path}
-                        onClick={() => setIsMenuOpen(false)}
+                        onClick={handleCategoryClick}
                         className="flex items-center justify-between p-3 bg-gray-50 rounded-xl text-sm font-bold text-gray-700 hover:bg-cyan-500 hover:text-white transition-all group"
                       >
                         <div className="flex items-center gap-3">
@@ -239,14 +340,11 @@ const Navbar = () => {
               ) : (
                 <div className="pt-1">
                     <button
-                    onClick={() => {
-                      supabase.auth.signOut();
-                      setIsMenuOpen(false);
-                    }}
-                    className="w-full flex items-center justify-center gap-2 p-3 text-xs font-black uppercase tracking-widest text-red-600 bg-red-50 rounded-xl hover:bg-red-100 transition-all"
+                    onClick={() => setIsLogoutModalOpen(true)}
+                    className="w-full flex items-center justify-center gap-3 p-4 text-xs font-black uppercase tracking-widest text-red-600 bg-red-50 rounded-xl hover:bg-red-100 transition-all"
                   >
-                    <LogOut className="w-3.5 h-3.5" />
-                    Sign Out
+                    <LogOut className="w-4 h-4" />
+                    Log Out
                   </button>
                 </div>
               )}
@@ -254,6 +352,12 @@ const Navbar = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <LogoutModal 
+        isOpen={isLogoutModalOpen} 
+        onClose={() => setIsLogoutModalOpen(false)} 
+        onConfirm={handleLogout} 
+      />
     </nav>
   );
 };
@@ -270,6 +374,8 @@ export default function App() {
   const [user, setUser] = useState<any | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const refreshProfile = async (userId?: string) => {
     const id = userId || user?.id;
@@ -300,26 +406,64 @@ export default function App() {
   };
 
   useEffect(() => {
-    // Initial session check
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        refreshProfile(session.user.id);
-      }
-      setLoading(false);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        refreshProfile(session.user.id);
+    const handleAuthChange = (updatedUser: any) => {
+      setUser(updatedUser ? { id: updatedUser.id, email: updatedUser.email } : null);
+      if (updatedUser) {
+        refreshProfile(updatedUser.id);
       } else {
         setProfile(null);
+        setSearchQuery('');
+        setIsSearchOpen(false);
       }
-    });
+    };
 
-    return () => subscription.unsubscribe();
+    // Check mock storage first (for owner bypass)
+    const mockUser = mockStorage.getCurrentUser();
+    if (mockUser) {
+      handleAuthChange(mockUser);
+      setLoading(false);
+    } else if (!isMockMode) {
+      // Only check Supabase if no mock user
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) {
+          handleAuthChange(session.user);
+        }
+        setLoading(false);
+      });
+
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (!mockStorage.getCurrentUser()) { // Only update from Supabase if no mock user
+          handleAuthChange(session?.user);
+        }
+      });
+
+      // Still need to listen for mock auth changes in case owner logs in/out
+      const handleMockAuthChange = () => {
+        const updatedMockUser = mockStorage.getCurrentUser();
+        if (updatedMockUser) {
+          handleAuthChange(updatedMockUser);
+        } else {
+          // If mock user logged out, check Supabase again
+          supabase.auth.getSession().then(({ data: { session } }) => {
+            handleAuthChange(session?.user);
+          });
+        }
+      };
+
+      window.addEventListener('mock-auth-change', handleMockAuthChange);
+      return () => {
+        subscription.unsubscribe();
+        window.removeEventListener('mock-auth-change', handleMockAuthChange);
+      };
+    } else {
+      // Pure mock mode
+      setLoading(false);
+      const handleMockAuthChange = () => {
+        handleAuthChange(mockStorage.getCurrentUser());
+      };
+      window.addEventListener('mock-auth-change', handleMockAuthChange);
+      return () => window.removeEventListener('mock-auth-change', handleMockAuthChange);
+    }
   }, []);
 
   if (loading) {
@@ -337,20 +481,44 @@ export default function App() {
     );
   }
 
+  const logout = async () => {
+    if (isMockMode) {
+      mockStorage.setCurrentUser(null);
+    } else {
+      await supabase.auth.signOut();
+    }
+    setUser(null);
+    setProfile(null);
+    setSearchQuery('');
+    setIsSearchOpen(false);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, profile, loading, isAdmin: profile?.role === 'admin', refreshProfile }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      profile, 
+      loading, 
+      isAdmin: profile?.role === 'admin', 
+      refreshProfile,
+      logout
+    }}>
       <Router>
         <ScrollToTop />
         <div className="min-h-screen bg-white font-sans selection:bg-cyan-100 selection:text-cyan-900">
-          <Navbar />
+          <Navbar 
+            searchQuery={searchQuery} 
+            setSearchQuery={setSearchQuery}
+            isSearchOpen={isSearchOpen}
+            setIsSearchOpen={setIsSearchOpen}
+          />
           <main className="px-4 sm:px-8 lg:px-20 py-6 sm:py-12">
             <ErrorBoundary>
               <Routes>
-                <Route path="/" element={<Home />} />
+                <Route path="/" element={<Home searchQuery={searchQuery} />} />
                 <Route path="/auth" element={user ? <Navigate to="/" /> : <AuthChoice />} />
                 <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
                 <Route path="/signup" element={user ? <Navigate to="/" /> : <Signup />} />
-                <Route path="/category/:category" element={<Home />} />
+                <Route path="/category/:category" element={<Home searchQuery={searchQuery} />} />
                 <Route path="*" element={<Navigate to="/" />} />
               </Routes>
             </ErrorBoundary>

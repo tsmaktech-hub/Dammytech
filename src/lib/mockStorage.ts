@@ -12,7 +12,10 @@ if (isBrowser && !localStorage.getItem(GADGETS_KEY)) {
 }
 
 // Initialize users in localStorage if not present (with default admin)
-if (isBrowser && !localStorage.getItem(USERS_KEY)) {
+if (isBrowser) {
+  const existingUsers = localStorage.getItem(USERS_KEY);
+  let users: UserProfile[] = existingUsers ? JSON.parse(existingUsers) : [];
+  
   const defaultAdmin: UserProfile = {
     id: 'admin',
     username: 'admin',
@@ -24,8 +27,39 @@ if (isBrowser && !localStorage.getItem(USERS_KEY)) {
     created: new Date().toISOString(),
     updated: new Date().toISOString(),
   };
-  localStorage.setItem(USERS_KEY, JSON.stringify([defaultAdmin]));
+  
+  const dammyAdmin: UserProfile = {
+    id: 'dammy-admin',
+    username: 'Dammy',
+    email: 'dammystore@gmail.com',
+    fullName: 'Ismail Dammy',
+    phoneNumber: '09071498194',
+    role: 'admin',
+    avatar: '',
+    created: new Date().toISOString(),
+    updated: new Date().toISOString(),
+  };
+
+  // Add or update default admin
+  const adminIndex = users.findIndex(u => u.username === 'admin');
+  if (adminIndex >= 0) {
+    users[adminIndex] = { ...users[adminIndex], ...defaultAdmin };
+  } else {
+    users.push(defaultAdmin);
+  }
+  
+  // Add or update Dammy
+  const dammyIndex = users.findIndex(u => u.username === 'Dammy');
+  if (dammyIndex >= 0) {
+    users[dammyIndex] = { ...users[dammyIndex], ...dammyAdmin };
+  } else {
+    users.push(dammyAdmin);
+  }
+
+  localStorage.setItem(USERS_KEY, JSON.stringify(users));
 }
+
+let currentMockUser: UserProfile | null = null;
 
 export const mockStorage = {
   getUsers: (): UserProfile[] => {
@@ -87,5 +121,16 @@ export const mockStorage = {
     const gadgets = mockStorage.getGadgets();
     const updated = gadgets.filter(g => g.id !== id);
     localStorage.setItem(GADGETS_KEY, JSON.stringify(updated));
+  },
+  
+  getCurrentUser: (): UserProfile | null => {
+    return currentMockUser;
+  },
+  
+  setCurrentUser: (user: UserProfile | null) => {
+    currentMockUser = user;
+    if (isBrowser) {
+      window.dispatchEvent(new Event('mock-auth-change'));
+    }
   }
 };
