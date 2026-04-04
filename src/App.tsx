@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase, isMockMode } from './lib/supabase';
 import { mockStorage } from './lib/mockStorage';
@@ -370,6 +370,25 @@ const ScrollToTop = () => {
   return null;
 };
 
+const AuthRedirectHandler = () => {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const hasChecked = useRef(false);
+
+  useEffect(() => {
+    if (!loading && !hasChecked.current) {
+      // If we are on a category page and not logged in (e.g. after reload), redirect to home
+      if (!user && location.pathname.startsWith('/category/')) {
+        navigate('/', { replace: true });
+      }
+      hasChecked.current = true;
+    }
+  }, [user, loading, location.pathname, navigate]);
+
+  return null;
+};
+
 export default function App() {
   const [user, setUser] = useState<any | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -504,6 +523,7 @@ export default function App() {
     }}>
       <Router>
         <ScrollToTop />
+        <AuthRedirectHandler />
         <div className="min-h-screen bg-white font-sans selection:bg-cyan-100 selection:text-cyan-900">
           <Navbar 
             searchQuery={searchQuery} 
