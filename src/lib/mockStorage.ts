@@ -33,7 +33,7 @@ if (isBrowser) {
   const dammyAdmin: UserProfile & { password?: string } = {
     id: '00000000-0000-0000-0000-000000000000', // Valid UUID format
     username: 'Dammy',
-    email: 'dammystore@gmail.com',
+    email: 'Ibusari127@gmail.com', // Updated to real email
     fullName: 'Ismail Dammy',
     phoneNumber: '09071498194',
     role: 'admin',

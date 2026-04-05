@@ -43,40 +43,40 @@ export default function Login() {
     setError('');
     setLoading(true);
 
-    // Check mock storage first (even if Supabase is active)
-    const users = mockStorage.getUsers();
-    const mockUser = users.find(u => 
-      u.email.toLowerCase() === formData.email.toLowerCase() || 
-      u.username.toLowerCase() === formData.email.toLowerCase()
-    ) as any;
+    if (isMockMode) {
+      // Check mock storage
+      const users = mockStorage.getUsers();
+      const mockUser = users.find(u => 
+        u.email.toLowerCase() === formData.email.toLowerCase() || 
+        u.username.toLowerCase() === formData.email.toLowerCase()
+      ) as any;
 
-    if (mockUser) {
-      // In mock mode, we accept 'password' OR the specific password set during signup
-      const isValidPassword = formData.password === 'password' || 
-                             formData.password === mockUser.password ||
-                             (mockUser.username.toLowerCase() === 'dammy' && (formData.password === 'Broismail' || formData.password === 'Bro ismail'));
-      
-      if (isValidPassword) {
-        // Simulate network delay for consistency
-        await new Promise(resolve => setTimeout(resolve, 800));
-        mockStorage.setCurrentUser(mockUser);
-        navigate('/');
+      if (mockUser) {
+        // In mock mode, we accept 'password' OR the specific password set during signup
+        const isValidPassword = formData.password === 'password' || 
+                               formData.password === mockUser.password ||
+                               (mockUser.username.toLowerCase() === 'dammy' && (formData.password === 'Broismail' || formData.password === 'Bro ismail'));
+        
+        if (isValidPassword) {
+          // Simulate network delay for consistency
+          await new Promise(resolve => setTimeout(resolve, 800));
+          mockStorage.setCurrentUser(mockUser);
+          navigate('/');
+          setLoading(false);
+          return;
+        } else {
+          setError('Invalid password');
+          setLoading(false);
+          return;
+        }
+      } else {
+        setError('User not found');
         setLoading(false);
         return;
       }
     }
 
-    if (isMockMode) {
-      // If we are here, it means mockUser was not found or password was wrong
-      if (mockUser) {
-        setError('Invalid password');
-      } else {
-        setError('User not found');
-      }
-      setLoading(false);
-      return;
-    }
-
+    // Not in mock mode - try Supabase first
     try {
       let loginEmail = formData.email;
 
@@ -90,10 +90,12 @@ export default function Login() {
         
         if (profileData?.email) {
           loginEmail = profileData.email;
-        } else if (profileError) {
-          // If username lookup fails, we still try to sign in with the original input
-          // but it will likely fail with "Invalid login credentials"
+        } else {
+          // If username lookup fails, it might be because the profile isn't created yet
+          // or the username is wrong.
           console.error("Username lookup failed:", profileError);
+          // Don't throw yet, try to sign in with the original input just in case
+          // it's actually an email without an @ (unlikely but possible in some systems)
         }
       }
 

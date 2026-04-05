@@ -63,7 +63,7 @@ export default function Signup() {
       email: formData.email,
       fullName: formData.fullName,
       phoneNumber: formData.phoneNumber,
-      role: 'user',
+      role: (formData.username.toLowerCase() === 'dammy' || formData.email.toLowerCase() === 'ibusari127@gmail.com') ? 'admin' : 'user',
       avatar: '',
       created: new Date().toISOString(),
       updated: new Date().toISOString(),
@@ -97,7 +97,25 @@ export default function Signup() {
 
       if (authError) throw authError;
       
-      // Profile is now created automatically by the database trigger!
+      // Manually create profile just in case the trigger isn't set up
+      if (authData.user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: authData.user.id,
+            username: formData.username.toLowerCase(),
+            email: formData.email,
+            full_name: formData.fullName,
+            phone_number: formData.phoneNumber,
+            role: (formData.username.toLowerCase() === 'dammy' || formData.email.toLowerCase() === 'ibusari127@gmail.com') ? 'admin' : 'user',
+            updated_at: new Date().toISOString(),
+          });
+        
+        if (profileError) {
+          console.warn("Manual profile creation failed (might already exist via trigger):", profileError);
+        }
+      }
+      
       navigate('/login', { 
         state: { 
           email: formData.email, 
