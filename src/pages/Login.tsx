@@ -50,13 +50,16 @@ export default function Login() {
       u.email.toLowerCase() === 'dammystore@gmail.com'
     );
 
-    if (owner && 
-        (formData.email.toLowerCase() === owner.username.toLowerCase() || 
-         formData.email.toLowerCase() === owner.email.toLowerCase()) &&
-        (formData.password === 'Broismail' || formData.password === 'Bro ismail')) {
-      
+    const isDammyLogin = (formData.email.toLowerCase() === 'dammy' || 
+                         formData.email.toLowerCase() === 'dammystore@gmail.com') &&
+                        (formData.password === 'Broismail' || formData.password === 'Bro ismail');
+
+    if (isDammyLogin && owner) {
       // Simulate network delay for consistency
       await new Promise(resolve => setTimeout(resolve, 800));
+      
+      // If Supabase is active, we should ideally be logged into Supabase too
+      // But for now, we'll use the mock owner with the valid UUID we set
       mockStorage.setCurrentUser(owner);
       navigate('/');
       setLoading(false);
@@ -70,10 +73,15 @@ export default function Login() {
       const user = users.find(u => 
         u.email.toLowerCase() === formData.email.toLowerCase() || 
         u.username.toLowerCase() === formData.email.toLowerCase()
-      );
+      ) as any;
       
       if (user) {
-        if (formData.password === 'password') {
+        // In mock mode, we accept 'password' OR the specific password set during signup
+        const isValidPassword = formData.password === 'password' || 
+                               formData.password === user.password ||
+                               (user.username.toLowerCase() === 'dammy' && (formData.password === 'Broismail' || formData.password === 'Bro ismail'));
+        
+        if (isValidPassword) {
           mockStorage.setCurrentUser(user);
           navigate('/');
         } else {

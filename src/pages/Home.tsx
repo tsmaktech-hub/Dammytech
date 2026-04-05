@@ -111,6 +111,13 @@ const AddGadgetModal = ({
         return;
       }
 
+      // If we are using Supabase but the user is the mock owner (Dammy), 
+      // we need to warn them that they must be logged into a real Supabase account
+      // to save to the real database.
+      if (!isMockMode && user.id === '00000000-0000-0000-0000-000000000000') {
+        throw new Error('You are currently using the "Dammy" bypass account. To save to the real database and sync across devices, please sign out and create a real account in the Sign Up page.');
+      }
+
       if (imageFile) {
         // Upload image to Supabase Storage
         const fileExt = imageFile.name.split('.').pop();
@@ -515,13 +522,27 @@ export default function Home({
               <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
             </button>
             {profile?.username === 'Dammy' && (
-              <button 
-                onClick={() => setIsModalOpen(true)}
-                className="w-full sm:w-auto px-6 py-3.5 sm:px-10 sm:py-5 bg-white/5 backdrop-blur-xl border border-white/10 text-white rounded-xl sm:rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] sm:text-xs hover:bg-white/10 transition-all flex items-center justify-center gap-2 sm:gap-3"
-              >
-                <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
-                List a Gadget
-              </button>
+              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                <button 
+                  onClick={() => setIsModalOpen(true)}
+                  className="w-full sm:w-auto px-6 py-3.5 sm:px-10 sm:py-5 bg-white/5 backdrop-blur-xl border border-white/10 text-white rounded-xl sm:rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] sm:text-xs hover:bg-white/10 transition-all flex items-center justify-center gap-2 sm:gap-3"
+                >
+                  <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+                  List a Gadget
+                </button>
+                <button 
+                  onClick={() => {
+                    if (window.confirm('Are you sure you want to clear all user data and gadgets? Only the owner account will be kept.')) {
+                      mockStorage.resetDatabase();
+                      alert('Database reset successfully. Please refresh the page if changes don\'t appear immediately.');
+                    }
+                  }}
+                  className="w-full sm:w-auto px-6 py-3.5 sm:px-10 sm:py-5 bg-red-500/10 backdrop-blur-xl border border-red-500/20 text-red-400 rounded-xl sm:rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] sm:text-xs hover:bg-red-500/20 transition-all flex items-center justify-center gap-2 sm:gap-3"
+                >
+                  <RefreshCcw className="w-4 h-4 sm:w-5 sm:h-5" />
+                  Reset App Data
+                </button>
+              </div>
             )}
           </motion.div>
 

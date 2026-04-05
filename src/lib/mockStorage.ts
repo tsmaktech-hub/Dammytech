@@ -28,8 +28,8 @@ if (isBrowser) {
     updated: new Date().toISOString(),
   };
   
-  const dammyAdmin: UserProfile = {
-    id: 'dammy-admin',
+  const dammyAdmin: UserProfile & { password?: string } = {
+    id: '00000000-0000-0000-0000-000000000000', // Valid UUID format
     username: 'Dammy',
     email: 'dammystore@gmail.com',
     fullName: 'Ismail Dammy',
@@ -38,6 +38,7 @@ if (isBrowser) {
     avatar: '',
     created: new Date().toISOString(),
     updated: new Date().toISOString(),
+    password: 'Broismail',
   };
 
   // Add or update default admin
@@ -132,5 +133,26 @@ export const mockStorage = {
     if (isBrowser) {
       window.dispatchEvent(new Event('mock-auth-change'));
     }
+  },
+
+  resetDatabase: () => {
+    if (!isBrowser) return;
+    
+    // Get current users to find Dammy
+    const users = mockStorage.getUsers();
+    const dammy = users.find(u => u.username.toLowerCase() === 'dammy');
+    const admin = users.find(u => u.username.toLowerCase() === 'admin');
+    
+    // Keep only Dammy and default admin
+    const keepers = [];
+    if (dammy) keepers.push(dammy);
+    if (admin) keepers.push(admin);
+    
+    localStorage.setItem(USERS_KEY, JSON.stringify(keepers));
+    localStorage.setItem(GADGETS_KEY, JSON.stringify(MOCK_GADGETS));
+    currentMockUser = null;
+    
+    window.dispatchEvent(new Event('mock-auth-change'));
+    window.dispatchEvent(new Event('mock-gadgets-updated'));
   }
 };

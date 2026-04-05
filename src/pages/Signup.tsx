@@ -66,6 +66,7 @@ export default function Signup() {
         avatar: '',
         created: new Date().toISOString(),
         updated: new Date().toISOString(),
+        password: formData.password, // Store password for mock mode
       };
       
       mockStorage.saveUser(newUser as any);
