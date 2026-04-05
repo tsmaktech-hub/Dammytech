@@ -102,6 +102,10 @@ export default function Login() {
         password: formData.password,
       });
       if (error) throw error;
+      
+      // Clear mock session when logging in via Supabase
+      mockStorage.setCurrentUser(null);
+      
       navigate('/');
     } catch (err: any) {
       let errorMessage = err.message || 'Invalid email or password';
