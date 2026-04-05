@@ -87,7 +87,7 @@ const AddGadgetModal = ({
         finalImageUrl = formData.imageUrl || (imageFile ? URL.createObjectURL(imageFile) : finalImageUrl);
 
         const updatedGadget: any = {
-          id: gadget?.id || `mock-${Math.random().toString(36).substr(2, 9)}`,
+          id: gadget?.id || crypto.randomUUID(),
           name: formData.name,
           description: formData.description,
           price: parseFloat(formData.price),
@@ -111,11 +111,13 @@ const AddGadgetModal = ({
         return;
       }
 
-      // If we are using Supabase but the user is the mock owner (Dammy), 
+      // If we are using Supabase but the user is using a mock account, 
       // we need to warn them that they must be logged into a real Supabase account
       // to save to the real database.
-      if (!isMockMode && user.id === '00000000-0000-0000-0000-000000000000') {
-        throw new Error('You are currently using the "Dammy" bypass account. To save to the real database and sync across devices, please sign out and create a real account in the Sign Up page.');
+      const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+      
+      if (!isMockMode && !isUUID(user.id)) {
+        throw new Error('You are currently using a mock account. To save to the real database and sync across devices, please sign out and create a real account in the Sign Up page.');
       }
 
       if (imageFile) {

@@ -58,7 +58,7 @@ export default function Signup() {
     }
     
     const newUser = {
-      id: Math.random().toString(36).substr(2, 9),
+      id: crypto.randomUUID(),
       username: formData.username.toLowerCase(),
       email: formData.email,
       fullName: formData.fullName,
