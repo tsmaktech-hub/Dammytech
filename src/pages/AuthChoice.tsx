@@ -47,7 +47,7 @@ export default function AuthChoice() {
           
           <h2 className="text-3xl font-black text-white mb-4 tracking-tight">New Explorer?</h2>
           <p className="text-gray-400 font-medium mb-10 leading-relaxed">
-            Join the elite community of tech enthusiasts. Start selling and buying futuristic gadgets today.
+            Join the elite community of tech enthusiasts. Explore and buy futuristic gadgets today.
           </p>
           
           <Link

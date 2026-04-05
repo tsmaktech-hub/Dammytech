@@ -322,7 +322,13 @@ const AddGadgetModal = ({
   );
 };
 
-export default function Home({ searchQuery = '' }: { searchQuery?: string }) {
+export default function Home({ 
+  searchQuery = '', 
+  setSearchQuery = () => {} 
+}: { 
+  searchQuery?: string;
+  setSearchQuery?: (q: string) => void;
+}) {
   const { user, profile, isAdmin } = useAuth();
   const { category } = useParams();
   const [gadgets, setGadgets] = useState<Gadget[]>([]);
@@ -567,6 +573,20 @@ export default function Home({ searchQuery = '' }: { searchQuery?: string }) {
 
       {/* Product Grid */}
       <section id="collection">
+        {/* Search Bar in Gadgets Section */}
+        <div className="mb-8 sm:mb-12 max-w-2xl mx-auto">
+          <div className="relative group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
+            <input
+              type="text"
+              placeholder="Search gadgets by name or description..."
+              className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 focus:bg-white transition-all text-sm font-semibold shadow-sm"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </div>
+
         <div className="flex flex-col sm:flex-row justify-between items-center sm:items-end gap-4 sm:gap-8 mb-8 sm:mb-16">
           <div className="text-center sm:text-left">
             <div className="inline-flex items-center gap-2 text-cyan-600 font-black uppercase tracking-widest text-[8px] sm:text-xs mb-2 sm:mb-3">
@@ -610,7 +630,7 @@ export default function Home({ searchQuery = '' }: { searchQuery?: string }) {
             <p className="text-xs sm:text-gray-500 font-medium max-w-xs mx-auto mb-6 sm:mb-10">
               We couldn't find any gadgets in this category. Be the first to list one!
             </p>
-            {user && (
+            {profile?.username === 'Dammy' && (
               <button 
                 onClick={() => setIsModalOpen(true)}
                 className="w-full sm:w-auto px-8 py-3 sm:px-10 sm:py-4 bg-gray-900 text-white rounded-xl sm:rounded-2xl font-black uppercase tracking-widest text-[10px] sm:text-xs hover:bg-cyan-600 transition-all shadow-2xl shadow-gray-200"

@@ -163,96 +163,63 @@ const Navbar = ({
           </Link>
 
           {/* Desktop Search */}
-          {user && (
-            <div className={cn(
-              "hidden xl:flex items-center transition-all duration-500 ease-in-out mx-4",
-              isSearchOpen ? "flex-1 max-w-xl" : "max-w-[48px]"
-            )}>
-              <div className="relative w-full flex items-center">
-                <button 
-                  onClick={() => setIsSearchOpen(!isSearchOpen)}
-                  className={cn(
-                    "p-3 rounded-xl transition-all flex items-center justify-center",
-                    isSearchOpen ? "absolute left-1 z-10 text-cyan-500" : "bg-gray-50 border border-gray-100 text-gray-400 hover:text-cyan-500 hover:bg-white"
-                  )}
-                >
-                  <Search className="w-5 h-5" />
-                </button>
-                <AnimatePresence>
-                  {isSearchOpen && (
-                    <motion.input
-                      initial={{ width: 0, opacity: 0 }}
-                      animate={{ width: "100%", opacity: 1 }}
-                      exit={{ width: 0, opacity: 0 }}
-                      autoFocus
-                      type="text"
-                      placeholder="Search gadgets..."
-                      className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-cyan-500 focus:bg-white outline-none text-sm"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      onBlur={() => !searchQuery && setIsSearchOpen(false)}
-                    />
-                  )}
-                </AnimatePresence>
-              </div>
-            </div>
-          )}
+          {/* Search moved to Home page gadgets section */}
 
           {/* Desktop Nav */}
-          {user && (
-            <div className="hidden xl:flex items-center gap-6 mr-8">
-              {categories.map((cat) => (
-                <Link
-                  key={cat.name}
-                  to={cat.path}
-                  onClick={handleCategoryClick}
-                  className={cn(
-                    "flex items-center gap-2 text-sm font-semibold transition-colors",
-                    location.pathname === cat.path ? "text-cyan-600" : "text-gray-500 hover:text-gray-900"
-                  )}
-                >
-                  <cat.icon className="w-4 h-4" />
-                  {cat.name}
-                </Link>
-              ))}
-            </div>
-          )}
+          <div className="hidden xl:flex items-center gap-6 mr-8">
+            {categories.map((cat) => (
+              <Link
+                key={cat.name}
+                to={cat.path}
+                onClick={handleCategoryClick}
+                className={cn(
+                  "flex items-center gap-2 text-sm font-semibold transition-colors",
+                  location.pathname === cat.path ? "text-cyan-600" : "text-gray-500 hover:text-gray-900"
+                )}
+              >
+                <cat.icon className="w-4 h-4" />
+                {cat.name}
+              </Link>
+            ))}
+          </div>
 
           {/* User Actions */}
           <div className="flex items-center gap-3">
-            {user ? (
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center text-white font-black text-xs sm:text-sm shadow-lg shadow-cyan-200 border-2 border-white">
-                    {getInitials(profile?.fullName)}
-                  </div>
-                  <div className="hidden sm:flex flex-col items-start leading-tight">
-                    <span className="text-sm font-bold text-gray-900">{profile?.fullName}</span>
-                    <span className="text-[10px] font-bold text-cyan-600 uppercase tracking-wider">
-                      {profile?.role}
-                    </span>
-                  </div>
+            {user && (
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center text-white font-black text-xs sm:text-sm shadow-lg shadow-cyan-200 border-2 border-white">
+                  {getInitials(profile?.fullName)}
                 </div>
+                <div className="hidden sm:flex flex-col items-start leading-tight">
+                  <span className="text-sm font-bold text-gray-900">{profile?.fullName}</span>
+                  <span className="text-[10px] font-bold text-cyan-600 uppercase tracking-wider">
+                    {profile?.role}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Desktop Explore/Logout (Right Side) */}
+            <div className="hidden xl:flex items-center gap-4">
+              {!user ? (
+                <Link
+                  to="/auth"
+                  className="flex items-center gap-2 px-6 py-3 text-xs font-black uppercase tracking-widest text-white bg-gray-900 rounded-xl hover:bg-cyan-600 transition-all shadow-lg shadow-gray-200 group"
+                >
+                  <UserCircle className="w-4 h-4 group-hover:rotate-12 transition-transform" />
+                  Explore
+                </Link>
+              ) : (
                 <button
                   onClick={() => setIsLogoutModalOpen(true)}
                   className="flex items-center gap-2 px-3 py-2 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all group"
                   title="Sign Out"
                 >
                   <LogOut className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-                  <span className="hidden md:inline text-xs font-black uppercase tracking-widest">Log Out</span>
+                  <span className="text-xs font-black uppercase tracking-widest">Log Out</span>
                 </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Link
-                  to="/auth"
-                  className="flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-2.5 text-[10px] sm:text-sm font-black uppercase tracking-widest text-white bg-gray-900 rounded-xl hover:bg-cyan-600 transition-all shadow-lg shadow-gray-200 group"
-                >
-                  <UserCircle className="w-4 h-4 sm:w-5 sm:h-5 group-hover:rotate-12 transition-transform" />
-                  Explore
-                </Link>
-              </div>
-            )}
+              )}
+            </div>
             
             {/* Mobile Menu Toggle */}
             <button
@@ -275,95 +242,69 @@ const Navbar = ({
             className="xl:hidden absolute top-[calc(100%-0.5rem)] right-4 w-[calc(100%-2rem)] max-w-sm bg-white rounded-[2rem] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.15)] border border-gray-100 overflow-hidden"
           >
             <div className="p-4 space-y-4">
-              {user && (
-                <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                  <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center text-white font-black text-lg shadow-lg shadow-cyan-200 border-2 border-white">
-                    {getInitials(profile?.fullName)}
-                  </div>
-                  <div className="flex flex-col leading-tight">
-                    <span className="text-base font-bold text-gray-900">{profile?.fullName}</span>
-                    <span className="text-xs font-bold text-cyan-600 uppercase tracking-wider">
-                      {profile?.role}
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {user && (
-                <div className="relative group">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search gadgets..."
-                    className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-cyan-500 transition-all text-sm"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-              )}
-              
-              {user && (
-                <div className="space-y-2">
-                  <div className="grid grid-cols-1 gap-1.5">
-                    {categories.map((cat, i) => (
-                      <motion.div
-                        key={cat.name}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: i * 0.05 }}
+              <div className="space-y-2">
+                <div className="grid grid-cols-1 gap-1.5">
+                  {categories.map((cat, i) => (
+                    <motion.div
+                      key={cat.name}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                    >
+                      <Link
+                        to={cat.path}
+                        onClick={handleCategoryClick}
+                        className={cn(
+                          "flex items-center justify-between p-3 rounded-xl text-sm font-bold transition-all group",
+                          location.pathname === cat.path 
+                            ? "bg-cyan-500 text-white" 
+                            : "bg-gray-50 text-gray-700 hover:bg-cyan-50 hover:text-cyan-600"
+                        )}
                       >
-                        <Link
-                          to={cat.path}
-                          onClick={handleCategoryClick}
-                          className={cn(
-                            "flex items-center justify-between p-3 rounded-xl text-sm font-bold transition-all group",
-                            location.pathname === cat.path 
-                              ? "bg-cyan-500 text-white" 
-                              : "bg-gray-50 text-gray-700 hover:bg-cyan-50 hover:text-cyan-600"
-                          )}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className={cn(
-                              "w-8 h-8 rounded-lg flex items-center justify-center shadow-sm transition-colors",
-                              location.pathname === cat.path ? "bg-cyan-400" : "bg-white group-hover:bg-cyan-100"
-                            )}>
-                              <cat.icon className="w-4 h-4" />
-                            </div>
-                            {cat.name}
+                        <div className="flex items-center gap-3">
+                          <div className={cn(
+                            "w-8 h-8 rounded-lg flex items-center justify-center shadow-sm transition-colors",
+                            location.pathname === cat.path ? "bg-cyan-400" : "bg-white group-hover:bg-cyan-100"
+                          )}>
+                            <cat.icon className="w-4 h-4" />
                           </div>
-                          <ArrowRight className={cn(
-                            "w-3.5 h-3.5 transition-all -translate-x-2 group-hover:translate-x-0",
-                            location.pathname === cat.path ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-                          )} />
-                        </Link>
-                      </motion.div>
-                    ))}
-                  </div>
-                </div>
-              )}
+                          {cat.name}
+                        </div>
+                        <ArrowRight className={cn(
+                          "w-3.5 h-3.5 transition-all -translate-x-2 group-hover:translate-x-0",
+                          location.pathname === cat.path ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                        )} />
+                      </Link>
+                    </motion.div>
+                  ))}
 
-              {!user ? (
-                <div className="pt-1">
-                  <Link
-                    to="/auth"
-                    onClick={() => setIsMenuOpen(false)}
-                    className="flex items-center justify-center gap-3 p-4 text-sm font-black uppercase tracking-widest text-white bg-gray-900 rounded-xl shadow-lg shadow-gray-200 hover:bg-cyan-600 transition-all group"
+                  {/* Explore/Logout in Mobile Menu */}
+                  <motion.div
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: categories.length * 0.05 }}
                   >
-                    <UserCircle className="w-5 h-5 group-hover:rotate-12 transition-transform" />
-                    Explore
-                  </Link>
+                    {!user ? (
+                      <Link
+                        to="/auth"
+                        onClick={() => setIsMenuOpen(false)}
+                        className="flex items-center justify-center gap-3 px-6 py-4 text-sm font-black uppercase tracking-widest text-white bg-gray-900 rounded-xl shadow-lg shadow-gray-200 hover:bg-cyan-600 transition-all group"
+                      >
+                        <UserCircle className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+                        Explore
+                      </Link>
+                    ) : (
+                      <button
+                        onClick={() => setIsLogoutModalOpen(true)}
+                        className="w-full flex items-center justify-center gap-3 p-4 text-xs font-black uppercase tracking-widest text-red-600 bg-red-50 rounded-xl hover:bg-red-100 transition-all"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Log Out
+                      </button>
+                    )}
+                  </motion.div>
                 </div>
-              ) : (
-                <div className="pt-1">
-                    <button
-                    onClick={() => setIsLogoutModalOpen(true)}
-                    className="w-full flex items-center justify-center gap-3 p-4 text-xs font-black uppercase tracking-widest text-red-600 bg-red-50 rounded-xl hover:bg-red-100 transition-all"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    Log Out
-                  </button>
-                </div>
-              )}
+              </div>
             </div>
           </motion.div>
         )}
@@ -550,11 +491,11 @@ export default function App() {
           <main className="px-4 sm:px-8 lg:px-20 py-6 sm:py-12">
             <ErrorBoundary>
               <Routes>
-                <Route path="/" element={<Home searchQuery={searchQuery} />} />
+                <Route path="/" element={<Home searchQuery={searchQuery} setSearchQuery={setSearchQuery} />} />
                 <Route path="/auth" element={user ? <Navigate to="/" /> : <AuthChoice />} />
                 <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
                 <Route path="/signup" element={user ? <Navigate to="/" /> : <Signup />} />
-                <Route path="/category/:category" element={<Home searchQuery={searchQuery} />} />
+                <Route path="/category/:category" element={<Home searchQuery={searchQuery} setSearchQuery={setSearchQuery} />} />
                 <Route path="*" element={<Navigate to="/" />} />
               </Routes>
             </ErrorBoundary>
