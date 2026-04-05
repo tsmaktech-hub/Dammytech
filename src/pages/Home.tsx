@@ -429,8 +429,8 @@ export default function Home({
 
         let finalData = mappedData;
 
-        // Only show mock gadgets if we are strictly in mock mode (no Supabase config)
-        if (isMockMode) {
+        // Only merge with mock gadgets if we are in mock mode or have no real data yet
+        if (isMockMode || mappedData.length === 0) {
           const mockGadgets = mockStorage.getGadgets();
           const filteredMock = category 
             ? mockGadgets.filter(g => g.category === category)
