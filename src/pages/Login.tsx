@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { supabase, isMockMode } from '../lib/supabase';
-import { mockStorage } from '../lib/mockStorage';
+import { supabase } from '../lib/supabase';
 import { motion } from 'motion/react';
 import { 
   LogIn, 
@@ -43,61 +42,6 @@ export default function Login() {
     setError('');
     setLoading(true);
 
-    // Check mock storage first (even if Supabase is active)
-    const users = mockStorage.getUsers();
-    
-    // Ensure default accounts are always available in the check
-    const defaultAccounts = [
-      { email: 'admin@example.com', username: 'admin', password: 'password' },
-      { email: 'Ibusari127@gmail.com', username: 'dammy', password: 'Broismail' }
-    ];
-
-    const isDefaultAccount = defaultAccounts.find(acc => 
-      acc.email.toLowerCase() === formData.email.toLowerCase() || 
-      acc.username.toLowerCase() === formData.email.toLowerCase()
-    );
-
-    let mockUser = users.find(u => 
-      u.email.toLowerCase() === formData.email.toLowerCase() || 
-      u.username.toLowerCase() === formData.email.toLowerCase()
-    ) as any;
-
-    // If it's a default account but not in storage for some reason, try to find it again or use fallback
-    if (isDefaultAccount && !mockUser) {
-      // This shouldn't happen normally as mockStorage initializes them, 
-      // but we'll be extra safe to ensure they can always log in.
-      mockUser = users.find(u => u.username.toLowerCase() === isDefaultAccount.username);
-    }
-
-    if (mockUser) {
-      const inputPassword = formData.password;
-      const isDammy = mockUser.username.toLowerCase() === 'dammy';
-      
-      const isValidPassword = 
-        inputPassword === 'password' || 
-        inputPassword === mockUser.password ||
-        (isDammy && (inputPassword === 'Broismail' || inputPassword === 'Bro ismail'));
-      
-      if (isValidPassword) {
-        await new Promise(resolve => setTimeout(resolve, 800));
-        mockStorage.setCurrentUser(mockUser);
-        navigate('/');
-        setLoading(false);
-        return;
-      }
-    }
-
-    if (isMockMode) {
-      // If we are here, it means mockUser was not found or password was wrong
-      if (mockUser) {
-        setError('Invalid password');
-      } else {
-        setError('User not found');
-      }
-      setLoading(false);
-      return;
-    }
-
     try {
       let loginEmail = formData.email;
 
@@ -122,10 +66,11 @@ export default function Login() {
         email: loginEmail,
         password: formData.password,
       });
+      
       if (error) throw error;
       
-      // Clear mock session when logging in via Supabase
-      mockStorage.setCurrentUser(null);
+      // Clear any existing session
+      await supabase.auth.signOut();
       
       navigate('/');
     } catch (err: any) {
@@ -133,7 +78,7 @@ export default function Login() {
       
       // Provide more helpful message for unconfirmed emails
       if (errorMessage.toLowerCase().includes('email not confirmed')) {
-        errorMessage = 'Email not confirmed. Please check your inbox for a confirmation link. \n\nTip: If you want to skip this, you can disable "Confirm email" in your Supabase Project Settings > Authentication > Providers > Email.';
+        errorMessage = 'Email not confirmed. Please check your inbox for a confirmation link.';
       } else if (errorMessage.toLowerCase().includes('invalid login credentials')) {
         errorMessage = 'Invalid email/username or password. Please try again.';
       }
@@ -277,30 +222,6 @@ export default function Login() {
           </form>
 
           <div className="mt-8 sm:mt-12 pt-8 sm:pt-12 border-t border-gray-50">
-            <div className="text-center mb-6">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-4">Quick Demo Access</p>
-              <div className="flex flex-wrap justify-center gap-3">
-                <button
-                  onClick={() => {
-                    setFormData({ email: 'admin', password: 'password' });
-                    setSuccessMessage('Demo Admin credentials loaded. Click Sign In.');
-                  }}
-                  className="px-4 py-2 bg-gray-50 hover:bg-cyan-50 border border-gray-100 hover:border-cyan-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-cyan-600 transition-all"
-                >
-                  Admin Demo
-                </button>
-                <button
-                  onClick={() => {
-                    setFormData({ email: 'Ibusari127@gmail.com', password: 'Broismail' });
-                    setSuccessMessage('Demo User credentials loaded. Click Sign In.');
-                  }}
-                  className="px-4 py-2 bg-gray-50 hover:bg-cyan-50 border border-gray-100 hover:border-cyan-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-cyan-600 transition-all"
-                >
-                  User Demo
-                </button>
-              </div>
-            </div>
-            
             <p className="text-gray-500 font-medium text-sm text-center">
               Don't have an account?{' '}
               <Link to="/signup" className="text-cyan-600 font-black uppercase tracking-widest text-[10px] sm:text-xs hover:underline ml-2">
