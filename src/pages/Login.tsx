@@ -49,7 +49,7 @@ export default function Login() {
     // Ensure default accounts are always available in the check
     const defaultAccounts = [
       { email: 'admin@example.com', username: 'admin', password: 'password' },
-      { email: 'dammystore@gmail.com', username: 'dammy', password: 'Broismail' }
+      { email: 'Ibusari127@gmail.com', username: 'dammy', password: 'Broismail' }
     ];
 
     const isDefaultAccount = defaultAccounts.find(acc => 
@@ -291,7 +291,7 @@ export default function Login() {
                 </button>
                 <button
                   onClick={() => {
-                    setFormData({ email: 'Dammy', password: 'Broismail' });
+                    setFormData({ email: 'Ibusari127@gmail.com', password: 'Broismail' });
                     setSuccessMessage('Demo User credentials loaded. Click Sign In.');
                   }}
                   className="px-4 py-2 bg-gray-50 hover:bg-cyan-50 border border-gray-100 hover:border-cyan-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-cyan-600 transition-all"

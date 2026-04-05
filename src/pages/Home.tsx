@@ -80,7 +80,11 @@ const AddGadgetModal = ({
     try {
       let finalImageUrl = gadget?.image || '';
 
-      if (isMockMode) {
+      // Determine if we should use mock logic for this specific operation
+      const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+      const useMockLogic = isMockMode || !isUUID(user.id);
+
+      if (useMockLogic) {
         // Simulate network delay
         await new Promise(resolve => setTimeout(resolve, 1000));
         
@@ -109,15 +113,6 @@ const AddGadgetModal = ({
         
         onClose();
         return;
-      }
-
-      // If we are using Supabase but the user is using a mock account, 
-      // we need to warn them that they must be logged into a real Supabase account
-      // to save to the real database.
-      const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
-      
-      if (!isMockMode && !isUUID(user.id)) {
-        throw new Error('You are currently using a mock account. To save to the real database and sync across devices, please sign out and create a real account in the Sign Up page.');
       }
 
       if (imageFile) {
@@ -432,12 +427,27 @@ export default function Home({
           }
         }));
 
+        // Merge with mock gadgets for a better demo experience
+        const mockGadgets = mockStorage.getGadgets();
+        const filteredMock = category 
+          ? mockGadgets.filter(g => g.category === category)
+          : mockGadgets;
+        
+        // Combine real and mock, avoiding duplicates by ID
+        const combined = [...mappedData];
+        filteredMock.forEach(mock => {
+          if (!combined.find(g => g.id === mock.id)) {
+            combined.push(mock);
+          }
+        });
+
         // Limit gadgets for guests
+        let finalData = combined;
         if (!user) {
-          mappedData = mappedData.slice(0, 4); // Show only first 4 gadgets to guests
+          finalData = finalData.slice(0, 4); // Show only first 4 gadgets to guests
         }
 
-        setGadgets(mappedData as any[]);
+        setGadgets(finalData as any[]);
       } catch (error) {
         console.error('Error fetching gadgets:', error);
         // Fallback to mock data on error
