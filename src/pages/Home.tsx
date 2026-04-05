@@ -82,7 +82,7 @@ const AddGadgetModal = ({
 
       // Determine if we should use mock logic for this specific operation
       const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
-      const useMockLogic = isMockMode || !isUUID(user.id);
+      const useMockLogic = isMockMode || (user.id === 'admin' || user.id === '00000000-0000-0000-0000-000000000000');
 
       if (useMockLogic) {
         // Simulate network delay
@@ -427,22 +427,26 @@ export default function Home({
           }
         }));
 
-        // Merge with mock gadgets for a better demo experience
-        const mockGadgets = mockStorage.getGadgets();
-        const filteredMock = category 
-          ? mockGadgets.filter(g => g.category === category)
-          : mockGadgets;
-        
-        // Combine real and mock, avoiding duplicates by ID
-        const combined = [...mappedData];
-        filteredMock.forEach(mock => {
-          if (!combined.find(g => g.id === mock.id)) {
-            combined.push(mock);
-          }
-        });
+        let finalData = mappedData;
+
+        // Only merge with mock gadgets if we are in mock mode or have no real data yet
+        if (isMockMode || mappedData.length === 0) {
+          const mockGadgets = mockStorage.getGadgets();
+          const filteredMock = category 
+            ? mockGadgets.filter(g => g.category === category)
+            : mockGadgets;
+          
+          // Combine real and mock, avoiding duplicates by ID
+          const combined = [...mappedData];
+          filteredMock.forEach(mock => {
+            if (!combined.find(g => g.id === mock.id)) {
+              combined.push(mock);
+            }
+          });
+          finalData = combined;
+        }
 
         // Limit gadgets for guests
-        let finalData = combined;
         if (!user) {
           finalData = finalData.slice(0, 4); // Show only first 4 gadgets to guests
         }
