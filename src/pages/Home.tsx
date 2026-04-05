@@ -80,18 +80,14 @@ const AddGadgetModal = ({
     try {
       let finalImageUrl = gadget?.image || '';
 
-      // Determine if we should use mock logic for this specific operation
-      const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
-      const useMockLogic = isMockMode || (user.id === 'admin' || user.id === '00000000-0000-0000-0000-000000000000');
-
-      if (useMockLogic) {
+      if (isMockMode) {
         // Simulate network delay
         await new Promise(resolve => setTimeout(resolve, 1000));
         
         finalImageUrl = formData.imageUrl || (imageFile ? URL.createObjectURL(imageFile) : finalImageUrl);
 
         const updatedGadget: any = {
-          id: gadget?.id || crypto.randomUUID(),
+          id: gadget?.id || `mock-${Math.random().toString(36).substr(2, 9)}`,
           name: formData.name,
           description: formData.description,
           price: parseFloat(formData.price),
@@ -113,6 +109,13 @@ const AddGadgetModal = ({
         
         onClose();
         return;
+      }
+
+      // If we are using Supabase but the user is the mock owner (Dammy), 
+      // we need to warn them that they must be logged into a real Supabase account
+      // to save to the real database.
+      if (!isMockMode && user.id === '00000000-0000-0000-0000-000000000000') {
+        throw new Error('You are currently using the "Dammy" bypass account. To save to the real database and sync across devices, please sign out and create a real account in the Sign Up page.');
       }
 
       if (imageFile) {
@@ -383,12 +386,6 @@ export default function Home({
   );
 
   useEffect(() => {
-    const handleOpenModal = () => setIsModalOpen(true);
-    window.addEventListener('open-add-gadget-modal', handleOpenModal);
-    return () => window.removeEventListener('open-add-gadget-modal', handleOpenModal);
-  }, []);
-
-  useEffect(() => {
     const fetchGadgets = async () => {
       setLoading(true);
       
@@ -427,31 +424,12 @@ export default function Home({
           }
         }));
 
-        let finalData = mappedData;
-
-        // Only merge with mock gadgets if we are in mock mode or have no real data yet
-        if (isMockMode || mappedData.length === 0) {
-          const mockGadgets = mockStorage.getGadgets();
-          const filteredMock = category 
-            ? mockGadgets.filter(g => g.category === category)
-            : mockGadgets;
-          
-          // Combine real and mock, avoiding duplicates by ID
-          const combined = [...mappedData];
-          filteredMock.forEach(mock => {
-            if (!combined.find(g => g.id === mock.id)) {
-              combined.push(mock);
-            }
-          });
-          finalData = combined;
-        }
-
         // Limit gadgets for guests
         if (!user) {
-          finalData = finalData.slice(0, 4); // Show only first 4 gadgets to guests
+          mappedData = mappedData.slice(0, 4); // Show only first 4 gadgets to guests
         }
 
-        setGadgets(finalData as any[]);
+        setGadgets(mappedData as any[]);
       } catch (error) {
         console.error('Error fetching gadgets:', error);
         // Fallback to mock data on error
@@ -584,15 +562,13 @@ export default function Home({
               <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
             </button>
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-              {isAdmin && (
-                <button 
-                  onClick={handleListGadget}
-                  className="w-full sm:w-auto px-6 py-3.5 sm:px-10 sm:py-5 bg-white/5 backdrop-blur-xl border border-white/10 text-white rounded-xl sm:rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] sm:text-xs hover:bg-white/10 transition-all flex items-center justify-center gap-2 sm:gap-3"
-                >
-                  <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
-                  List a Gadget
-                </button>
-              )}
+              <button 
+                onClick={handleListGadget}
+                className="w-full sm:w-auto px-6 py-3.5 sm:px-10 sm:py-5 bg-white/5 backdrop-blur-xl border border-white/10 text-white rounded-xl sm:rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] sm:text-xs hover:bg-white/10 transition-all flex items-center justify-center gap-2 sm:gap-3"
+              >
+                <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+                List a Gadget
+              </button>
               {profile?.username === 'Dammy' && (
                 <button 
                   onClick={() => {
@@ -713,16 +689,14 @@ export default function Home({
             </div>
             <h3 className="text-lg sm:text-2xl font-black text-gray-900 mb-2 sm:mb-3">No gadgets found</h3>
             <p className="text-xs sm:text-gray-500 font-medium max-w-xs mx-auto mb-6 sm:mb-10">
-              We couldn't find any gadgets in this category.
+              We couldn't find any gadgets in this category. Be the first to list one!
             </p>
-            {isAdmin && (
-              <button 
-                onClick={handleListGadget}
-                className="w-full sm:w-auto px-8 py-3 sm:px-10 sm:py-4 bg-gray-900 text-white rounded-xl sm:rounded-2xl font-black uppercase tracking-widest text-[10px] sm:text-xs hover:bg-cyan-600 transition-all shadow-2xl shadow-gray-200"
-              >
-                Start Selling
-              </button>
-            )}
+            <button 
+              onClick={handleListGadget}
+              className="w-full sm:w-auto px-8 py-3 sm:px-10 sm:py-4 bg-gray-900 text-white rounded-xl sm:rounded-2xl font-black uppercase tracking-widest text-[10px] sm:text-xs hover:bg-cyan-600 transition-all shadow-2xl shadow-gray-200"
+            >
+              Start Selling
+            </button>
           </div>
         ) : filteredGadgets.length === 0 ? (
           <div className="text-center py-12 sm:py-32 bg-gray-50 rounded-2xl sm:rounded-[3rem] border-2 border-dashed border-gray-200 px-4 sm:px-6">

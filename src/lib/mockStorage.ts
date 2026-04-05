@@ -18,7 +18,7 @@ if (isBrowser) {
   let users: UserProfile[] = existingUsers ? JSON.parse(existingUsers) : [];
   
   const defaultAdmin: UserProfile & { password?: string } = {
-    id: '11111111-1111-1111-1111-111111111111', // Valid UUID format
+    id: 'admin',
     username: 'admin',
     email: 'admin@example.com',
     fullName: 'Admin User',
@@ -33,7 +33,7 @@ if (isBrowser) {
   const dammyAdmin: UserProfile & { password?: string } = {
     id: '00000000-0000-0000-0000-000000000000', // Valid UUID format
     username: 'Dammy',
-    email: 'Ibusari127@gmail.com',
+    email: 'dammystore@gmail.com',
     fullName: 'Ismail Dammy',
     phoneNumber: '09071498194',
     role: 'admin',
@@ -44,7 +44,7 @@ if (isBrowser) {
   };
 
   // Add or update default admin
-  const adminIndex = users.findIndex(u => u.username === 'admin' || u.id === 'admin');
+  const adminIndex = users.findIndex(u => u.username === 'admin');
   if (adminIndex >= 0) {
     users[adminIndex] = { ...users[adminIndex], ...defaultAdmin };
   } else {

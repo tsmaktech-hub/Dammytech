@@ -466,14 +466,11 @@ export default function App() {
   }
 
   const logout = async () => {
-    // Always clear mock session
-    mockStorage.setCurrentUser(null);
-    
-    // Clear Supabase session if not in mock mode
-    if (!isMockMode) {
+    if (isMockMode) {
+      mockStorage.setCurrentUser(null);
+    } else {
       await supabase.auth.signOut();
     }
-    
     setUser(null);
     setProfile(null);
     setSearchQuery('');
@@ -485,7 +482,7 @@ export default function App() {
       user, 
       profile, 
       loading, 
-      isAdmin: profile?.role === 'admin' || user?.email === 'Ibusari127@gmail.com', 
+      isAdmin: profile?.role === 'admin', 
       refreshProfile,
       logout
     }}>
