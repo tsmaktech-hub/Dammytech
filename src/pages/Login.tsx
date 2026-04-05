@@ -46,12 +46,13 @@ export default function Login() {
     // Check mock storage first (even if Supabase is active)
     const users = mockStorage.getUsers();
     
-    // Default accounts that should use mock storage only if Supabase is not configured
-    const mockOnlyAccounts = [
-      { email: 'admin@example.com', username: 'admin', password: 'password' }
+    // Ensure default accounts are always available in the check
+    const defaultAccounts = [
+      { email: 'admin@example.com', username: 'admin', password: 'password' },
+      { email: 'Ibusari127@gmail.com', username: 'dammy', password: 'Broismail' }
     ];
 
-    const isMockOnlyAccount = mockOnlyAccounts.find(acc => 
+    const isDefaultAccount = defaultAccounts.find(acc => 
       acc.email.toLowerCase() === formData.email.toLowerCase() || 
       acc.username.toLowerCase() === formData.email.toLowerCase()
     );
@@ -61,8 +62,14 @@ export default function Login() {
       u.username.toLowerCase() === formData.email.toLowerCase()
     ) as any;
 
-    // Only use mock login for 'admin' or if we are strictly in mock mode
-    if (mockUser && (isMockOnlyAccount || isMockMode)) {
+    // If it's a default account but not in storage for some reason, try to find it again or use fallback
+    if (isDefaultAccount && !mockUser) {
+      // This shouldn't happen normally as mockStorage initializes them, 
+      // but we'll be extra safe to ensure they can always log in.
+      mockUser = users.find(u => u.username.toLowerCase() === isDefaultAccount.username);
+    }
+
+    if (mockUser) {
       const inputPassword = formData.password;
       const isDammy = mockUser.username.toLowerCase() === 'dammy';
       
