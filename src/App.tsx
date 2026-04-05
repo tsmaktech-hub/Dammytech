@@ -370,11 +370,6 @@ export default function App() {
     // Check mock storage first even if not in mock mode (for owner bypass)
     const mockProfile = mockStorage.getUserById(id);
     if (mockProfile) {
-      // Grant admin role to the real account of Ismail Dammy even in mock storage
-      if (mockProfile.email.toLowerCase() === 'ibusari127@gmail.com' || 
-          mockProfile.username.toLowerCase() === 'dammy') {
-        mockProfile.role = 'admin';
-      }
       setProfile(mockProfile);
       return;
     }
@@ -387,16 +382,7 @@ export default function App() {
         .single();
       
       if (error) throw error;
-      
-      const profileData = data as UserProfile;
-      
-      // Grant admin role to the real account of Ismail Dammy
-      if (profileData.email.toLowerCase() === 'ibusari127@gmail.com' || 
-          profileData.username.toLowerCase() === 'dammy') {
-        profileData.role = 'admin';
-      }
-      
-      setProfile(profileData);
+      setProfile(data as UserProfile);
     } catch (error) {
       console.error("Error fetching profile:", error);
       setProfile(null);
@@ -415,31 +401,23 @@ export default function App() {
       }
     };
 
-    // If not in mock mode, prioritize Supabase session
-    if (!isMockMode) {
+    // Check mock storage first (for owner bypass)
+    const mockUser = mockStorage.getCurrentUser();
+    if (mockUser) {
+      handleAuthChange(mockUser);
+      setLoading(false);
+    } else if (!isMockMode) {
+      // Only check Supabase if no mock user
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (session?.user) {
           handleAuthChange(session.user);
-          setLoading(false);
-        } else {
-          // If no Supabase session, check mock storage (for owner bypass)
-          const mockUser = mockStorage.getCurrentUser();
-          if (mockUser) {
-            handleAuthChange(mockUser);
-          }
-          setLoading(false);
         }
+        setLoading(false);
       });
 
       const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-        // Only update from Supabase if we don't have a mock user, 
-        // OR if the Supabase session is valid (which should override mock)
-        if (session?.user) {
-          handleAuthChange(session.user);
-          // If we have a real session, clear any mock session to avoid confusion
-          mockStorage.setCurrentUser(null);
-        } else if (!mockStorage.getCurrentUser()) {
-          handleAuthChange(null);
+        if (!mockStorage.getCurrentUser()) { // Only update from Supabase if no mock user
+          handleAuthChange(session?.user);
         }
       });
 
@@ -463,18 +441,14 @@ export default function App() {
       };
     } else {
       // Pure mock mode
-      const mockUser = mockStorage.getCurrentUser();
-      handleAuthChange(mockUser);
       setLoading(false);
-
       const handleMockAuthChange = () => {
         handleAuthChange(mockStorage.getCurrentUser());
       };
-
       window.addEventListener('mock-auth-change', handleMockAuthChange);
       return () => window.removeEventListener('mock-auth-change', handleMockAuthChange);
     }
-  }, [isMockMode]);
+  }, []);
 
   if (loading) {
     return (
