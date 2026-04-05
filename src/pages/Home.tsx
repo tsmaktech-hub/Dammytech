@@ -81,8 +81,9 @@ const AddGadgetModal = ({
       let finalImageUrl = gadget?.image || '';
 
       // Determine if we should use mock logic for this specific operation
+      // Real accounts (UUIDs) should always use Supabase if not in strict mock mode
       const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
-      const useMockLogic = isMockMode || (user.id === 'admin' || user.id === '00000000-0000-0000-0000-000000000000');
+      const useMockLogic = isMockMode || (user.id === 'admin');
 
       if (useMockLogic) {
         // Simulate network delay
@@ -115,8 +116,12 @@ const AddGadgetModal = ({
         return;
       }
 
-      if (imageFile) {
-        // Upload image to Supabase Storage
+      // REAL SUPABASE LOGIC
+      // If a URL is provided, use it directly and skip storage upload
+      if (formData.imageUrl) {
+        finalImageUrl = formData.imageUrl;
+      } else if (imageFile) {
+        // Only upload if no URL is provided
         const fileExt = imageFile.name.split('.').pop();
         const fileName = `${Math.random()}.${fileExt}`;
         const filePath = `${user.id}/${fileName}`;
@@ -127,8 +132,6 @@ const AddGadgetModal = ({
 
         if (uploadError) throw uploadError;
         finalImageUrl = filePath;
-      } else if (formData.imageUrl) {
-        finalImageUrl = formData.imageUrl;
       }
 
       if (gadget) {
