@@ -12,18 +12,16 @@ export const supabase = createClient(
   supabaseAnonKey || 'placeholder-key',
   {
     auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-      detectSessionInUrl: false
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true
     }
   }
 );
 
-export const isMockMode = !supabaseUrl || !supabaseAnonKey;
-
 // Helper to get file URL from Supabase storage
 export const getFileUrl = (bucket: string, path: string) => {
-  if (isMockMode || path.startsWith('http')) return path;
+  if (!path || path.startsWith('http')) return path;
   const { data } = supabase.storage.from(bucket).getPublicUrl(path);
   return data.publicUrl;
 };

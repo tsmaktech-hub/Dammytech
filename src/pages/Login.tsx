@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { supabase, isMockMode } from '../lib/supabase';
-import { mockStorage } from '../lib/mockStorage';
+import { supabase } from '../lib/supabase';
 import { motion } from 'motion/react';
 import { 
   LogIn, 
@@ -43,40 +42,6 @@ export default function Login() {
     setError('');
     setLoading(true);
 
-    // Check mock storage first (even if Supabase is active)
-    const users = mockStorage.getUsers();
-    const mockUser = users.find(u => 
-      u.email.toLowerCase() === formData.email.toLowerCase() || 
-      u.username.toLowerCase() === formData.email.toLowerCase()
-    ) as any;
-
-    if (mockUser) {
-      // In mock mode, we accept 'password' OR the specific password set during signup
-      const isValidPassword = formData.password === 'password' || 
-                             formData.password === mockUser.password ||
-                             (mockUser.username.toLowerCase() === 'dammy' && (formData.password === 'Broismail' || formData.password === 'Bro ismail'));
-      
-      if (isValidPassword) {
-        // Simulate network delay for consistency
-        await new Promise(resolve => setTimeout(resolve, 800));
-        mockStorage.setCurrentUser(mockUser);
-        navigate('/');
-        setLoading(false);
-        return;
-      }
-    }
-
-    if (isMockMode) {
-      // If we are here, it means mockUser was not found or password was wrong
-      if (mockUser) {
-        setError('Invalid password');
-      } else {
-        setError('User not found');
-      }
-      setLoading(false);
-      return;
-    }
-
     try {
       let loginEmail = formData.email;
 
@@ -101,14 +66,19 @@ export default function Login() {
         email: loginEmail,
         password: formData.password,
       });
+      
       if (error) throw error;
+      
+      // Clear any existing session
+      await supabase.auth.signOut();
+      
       navigate('/');
     } catch (err: any) {
       let errorMessage = err.message || 'Invalid email or password';
       
       // Provide more helpful message for unconfirmed emails
       if (errorMessage.toLowerCase().includes('email not confirmed')) {
-        errorMessage = 'Please check your email and confirm your account before signing in.';
+        errorMessage = 'Email not confirmed. Please check your inbox for a confirmation link.';
       } else if (errorMessage.toLowerCase().includes('invalid login credentials')) {
         errorMessage = 'Invalid email/username or password. Please try again.';
       }
@@ -251,8 +221,8 @@ export default function Login() {
             </button>
           </form>
 
-          <div className="mt-8 sm:mt-12 pt-8 sm:pt-12 border-t border-gray-50 text-center">
-            <p className="text-gray-500 font-medium text-sm">
+          <div className="mt-8 sm:mt-12 pt-8 sm:pt-12 border-t border-gray-50">
+            <p className="text-gray-500 font-medium text-sm text-center">
               Don't have an account?{' '}
               <Link to="/signup" className="text-cyan-600 font-black uppercase tracking-widest text-[10px] sm:text-xs hover:underline ml-2">
                 Create Account

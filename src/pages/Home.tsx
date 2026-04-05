@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { supabase, getFileUrl, isMockMode } from '../lib/supabase';
-import { mockStorage } from '../lib/mockStorage';
+import { supabase, getFileUrl } from '../lib/supabase';
 import { Gadget } from '../types';
 import { useAuth } from '../App';
 import { motion, AnimatePresence } from 'motion/react';
@@ -79,44 +78,6 @@ const AddGadgetModal = ({
 
     try {
       let finalImageUrl = gadget?.image || '';
-
-      if (isMockMode) {
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        finalImageUrl = formData.imageUrl || (imageFile ? URL.createObjectURL(imageFile) : finalImageUrl);
-
-        const updatedGadget: any = {
-          id: gadget?.id || `mock-${Math.random().toString(36).substr(2, 9)}`,
-          name: formData.name,
-          description: formData.description,
-          price: parseFloat(formData.price),
-          category: formData.category,
-          image: finalImageUrl,
-          author: gadget?.author || user.id,
-          created: gadget?.created || new Date().toISOString(),
-          updated: new Date().toISOString(),
-          expand: gadget?.expand || {
-            author: {
-              fullName: user.fullName || 'User',
-              username: user.username || 'user'
-            }
-          }
-        };
-        
-        mockStorage.saveGadget(updatedGadget);
-        window.dispatchEvent(new Event('mock-gadgets-updated'));
-        
-        onClose();
-        return;
-      }
-
-      // If we are using Supabase but the user is the mock owner (Dammy), 
-      // we need to warn them that they must be logged into a real Supabase account
-      // to save to the real database.
-      if (!isMockMode && user.id === '00000000-0000-0000-0000-000000000000') {
-        throw new Error('You are currently using the "Dammy" bypass account. To save to the real database and sync across devices, please sign out and create a real account in the Sign Up page.');
-      }
 
       if (imageFile) {
         // Upload image to Supabase Storage
@@ -386,21 +347,15 @@ export default function Home({
   );
 
   useEffect(() => {
+    const handleOpenModal = () => setIsModalOpen(true);
+    window.addEventListener('open-add-gadget-modal', handleOpenModal);
+    return () => window.removeEventListener('open-add-gadget-modal', handleOpenModal);
+  }, []);
+
+  useEffect(() => {
     const fetchGadgets = async () => {
       setLoading(true);
       
-      if (isMockMode) {
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 500));
-        const allGadgets = mockStorage.getGadgets();
-        const filtered = category 
-          ? allGadgets.filter(g => g.category === category)
-          : allGadgets;
-        setGadgets(filtered);
-        setLoading(false);
-        return;
-      }
-
       try {
         let query = supabase
           .from('gadgets')
@@ -425,25 +380,15 @@ export default function Home({
         }));
 
         // Limit gadgets for guests
+        let finalData = mappedData;
         if (!user) {
-          mappedData = mappedData.slice(0, 4); // Show only first 4 gadgets to guests
+          finalData = finalData.slice(0, 4); // Show only first 4 gadgets to guests
         }
 
-        setGadgets(mappedData as any[]);
+        setGadgets(finalData as any[]);
       } catch (error) {
         console.error('Error fetching gadgets:', error);
-        // Fallback to mock data on error
-        const allGadgets = mockStorage.getGadgets();
-        let filtered = category 
-          ? allGadgets.filter(g => g.category === category)
-          : allGadgets;
-        
-        // Limit gadgets for guests
-        if (!user) {
-          filtered = filtered.slice(0, 4);
-        }
-        
-        setGadgets(filtered);
+        setGadgets([]);
       } finally {
         setLoading(false);
       }
@@ -460,22 +405,18 @@ export default function Home({
     }
     
     const handleUpdate = () => fetchGadgets();
-    window.addEventListener('mock-gadgets-updated', handleUpdate);
     window.addEventListener('gadgets-updated', handleUpdate);
     
     // Real-time subscription
     let subscription: any;
-    if (!isMockMode) {
-      subscription = supabase
-        .channel('gadgets-changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'gadgets' }, () => {
-          fetchGadgets();
-        })
-        .subscribe();
-    }
+    subscription = supabase
+      .channel('gadgets-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'gadgets' }, () => {
+        fetchGadgets();
+      })
+      .subscribe();
 
     return () => {
-      window.removeEventListener('mock-gadgets-updated', handleUpdate);
       window.removeEventListener('gadgets-updated', handleUpdate);
       if (subscription) {
         supabase.removeChannel(subscription);
@@ -486,11 +427,6 @@ export default function Home({
   const handleDelete = async (id: string) => {
     if (!window.confirm('Are you sure you want to delete this gadget?')) return;
     try {
-      if (isMockMode) {
-        mockStorage.deleteGadget(id);
-        window.dispatchEvent(new Event('mock-gadgets-updated'));
-        return;
-      }
       const { error } = await supabase
         .from('gadgets')
         .delete()
@@ -562,25 +498,13 @@ export default function Home({
               <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
             </button>
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-              <button 
-                onClick={handleListGadget}
-                className="w-full sm:w-auto px-6 py-3.5 sm:px-10 sm:py-5 bg-white/5 backdrop-blur-xl border border-white/10 text-white rounded-xl sm:rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] sm:text-xs hover:bg-white/10 transition-all flex items-center justify-center gap-2 sm:gap-3"
-              >
-                <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
-                List a Gadget
-              </button>
-              {profile?.username === 'Dammy' && (
+              {isAdmin && (
                 <button 
-                  onClick={() => {
-                    if (window.confirm('Are you sure you want to clear all user data and gadgets? Only the owner account will be kept.')) {
-                      mockStorage.resetDatabase();
-                      alert('Database reset successfully. Please refresh the page if changes don\'t appear immediately.');
-                    }
-                  }}
-                  className="w-full sm:w-auto px-6 py-3.5 sm:px-10 sm:py-5 bg-red-500/10 backdrop-blur-xl border border-red-500/20 text-red-400 rounded-xl sm:rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] sm:text-xs hover:bg-red-500/20 transition-all flex items-center justify-center gap-2 sm:gap-3"
+                  onClick={handleListGadget}
+                  className="w-full sm:w-auto px-6 py-3.5 sm:px-10 sm:py-5 bg-white/5 backdrop-blur-xl border border-white/10 text-white rounded-xl sm:rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] sm:text-xs hover:bg-white/10 transition-all flex items-center justify-center gap-2 sm:gap-3"
                 >
-                  <RefreshCcw className="w-4 h-4 sm:w-5 sm:h-5" />
-                  Reset App Data
+                  <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+                  List a Gadget
                 </button>
               )}
             </div>
@@ -689,14 +613,16 @@ export default function Home({
             </div>
             <h3 className="text-lg sm:text-2xl font-black text-gray-900 mb-2 sm:mb-3">No gadgets found</h3>
             <p className="text-xs sm:text-gray-500 font-medium max-w-xs mx-auto mb-6 sm:mb-10">
-              We couldn't find any gadgets in this category. Be the first to list one!
+              We couldn't find any gadgets in this category.
             </p>
-            <button 
-              onClick={handleListGadget}
-              className="w-full sm:w-auto px-8 py-3 sm:px-10 sm:py-4 bg-gray-900 text-white rounded-xl sm:rounded-2xl font-black uppercase tracking-widest text-[10px] sm:text-xs hover:bg-cyan-600 transition-all shadow-2xl shadow-gray-200"
-            >
-              Start Selling
-            </button>
+            {isAdmin && (
+              <button 
+                onClick={handleListGadget}
+                className="w-full sm:w-auto px-8 py-3 sm:px-10 sm:py-4 bg-gray-900 text-white rounded-xl sm:rounded-2xl font-black uppercase tracking-widest text-[10px] sm:text-xs hover:bg-cyan-600 transition-all shadow-2xl shadow-gray-200"
+              >
+                Start Selling
+              </button>
+            )}
           </div>
         ) : filteredGadgets.length === 0 ? (
           <div className="text-center py-12 sm:py-32 bg-gray-50 rounded-2xl sm:rounded-[3rem] border-2 border-dashed border-gray-200 px-4 sm:px-6">
