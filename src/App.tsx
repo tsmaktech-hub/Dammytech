@@ -134,13 +134,14 @@ const Navbar = ({
     { name: 'Components', icon: Cpu, path: '/category/components' },
   ];
 
-  const getInitials = (name?: string) => {
-    if (!name) return '??';
-    const parts = name.trim().split(/\s+/);
-    if (parts.length === 0) return '??';
-    if (parts.length === 1) return parts[0].substring(0, 1).toUpperCase();
-    // First letter of surname (last part) and first letter of name (first part)
-    return (parts[parts.length - 1][0] + parts[0][0]).toUpperCase();
+  const getInitials = (name?: string, email?: string) => {
+    if (name && name.trim()) {
+      const parts = name.trim().split(/\s+/);
+      if (parts.length === 1) return parts[0][0].toUpperCase();
+      if (parts.length >= 2) return (parts[parts.length - 1][0] + parts[0][0]).toUpperCase();
+    }
+    if (email) return email[0].toUpperCase();
+    return '?';
   };
 
   return (
@@ -188,7 +189,7 @@ const Navbar = ({
             {user && (
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center text-white font-black text-xs sm:text-sm shadow-lg shadow-cyan-200 border-2 border-white">
-                  {getInitials(profile?.fullName)}
+                  {getInitials(profile?.fullName, user?.email)}
                 </div>
                 <div className="hidden sm:flex flex-col items-start leading-tight">
                   <span className="text-sm font-bold text-gray-900">{profile?.fullName}</span>
