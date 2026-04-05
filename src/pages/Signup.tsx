@@ -55,21 +55,24 @@ export default function Signup() {
         setLoading(false);
         return;
       }
-      
-      const newUser = {
-        id: Math.random().toString(36).substr(2, 9),
-        username: formData.username.toLowerCase(),
-        email: formData.email,
-        fullName: formData.fullName,
-        phoneNumber: formData.phoneNumber,
-        role: 'user',
-        avatar: '',
-        created: new Date().toISOString(),
-        updated: new Date().toISOString(),
-        password: formData.password, // Store password for mock mode
-      };
-      
-      mockStorage.saveUser(newUser as any);
+    }
+    
+    const newUser = {
+      id: Math.random().toString(36).substr(2, 9),
+      username: formData.username.toLowerCase(),
+      email: formData.email,
+      fullName: formData.fullName,
+      phoneNumber: formData.phoneNumber,
+      role: 'user',
+      avatar: '',
+      created: new Date().toISOString(),
+      updated: new Date().toISOString(),
+      password: formData.password, // Store password for mock mode fallback
+    };
+    
+    mockStorage.saveUser(newUser as any);
+
+    if (isMockMode) {
       mockStorage.setCurrentUser(newUser as any);
       
       // In mock mode, we just navigate. The App component handles the mock user.

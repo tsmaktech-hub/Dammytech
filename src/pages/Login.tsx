@@ -43,50 +43,33 @@ export default function Login() {
     setError('');
     setLoading(true);
 
-    // Owner bypass check - works even if Supabase is active
+    // Check mock storage first (even if Supabase is active)
     const users = mockStorage.getUsers();
-    const owner = users.find(u => 
-      u.username.toLowerCase() === 'dammy' || 
-      u.email.toLowerCase() === 'dammystore@gmail.com'
-    );
+    const mockUser = users.find(u => 
+      u.email.toLowerCase() === formData.email.toLowerCase() || 
+      u.username.toLowerCase() === formData.email.toLowerCase()
+    ) as any;
 
-    const isDammyLogin = (formData.email.toLowerCase() === 'dammy' || 
-                         formData.email.toLowerCase() === 'dammystore@gmail.com') &&
-                        (formData.password === 'Broismail' || formData.password === 'Bro ismail');
-
-    if (isDammyLogin && owner) {
-      // Simulate network delay for consistency
-      await new Promise(resolve => setTimeout(resolve, 800));
+    if (mockUser) {
+      // In mock mode, we accept 'password' OR the specific password set during signup
+      const isValidPassword = formData.password === 'password' || 
+                             formData.password === mockUser.password ||
+                             (mockUser.username.toLowerCase() === 'dammy' && (formData.password === 'Broismail' || formData.password === 'Bro ismail'));
       
-      // If Supabase is active, we should ideally be logged into Supabase too
-      // But for now, we'll use the mock owner with the valid UUID we set
-      mockStorage.setCurrentUser(owner);
-      navigate('/');
-      setLoading(false);
-      return;
+      if (isValidPassword) {
+        // Simulate network delay for consistency
+        await new Promise(resolve => setTimeout(resolve, 800));
+        mockStorage.setCurrentUser(mockUser);
+        navigate('/');
+        setLoading(false);
+        return;
+      }
     }
 
     if (isMockMode) {
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      const users = mockStorage.getUsers();
-      const user = users.find(u => 
-        u.email.toLowerCase() === formData.email.toLowerCase() || 
-        u.username.toLowerCase() === formData.email.toLowerCase()
-      ) as any;
-      
-      if (user) {
-        // In mock mode, we accept 'password' OR the specific password set during signup
-        const isValidPassword = formData.password === 'password' || 
-                               formData.password === user.password ||
-                               (user.username.toLowerCase() === 'dammy' && (formData.password === 'Broismail' || formData.password === 'Bro ismail'));
-        
-        if (isValidPassword) {
-          mockStorage.setCurrentUser(user);
-          navigate('/');
-        } else {
-          setError('Invalid password');
-        }
+      // If we are here, it means mockUser was not found or password was wrong
+      if (mockUser) {
+        setError('Invalid password');
       } else {
         setError('User not found');
       }

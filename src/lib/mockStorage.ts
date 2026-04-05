@@ -5,6 +5,7 @@ const isBrowser = typeof window !== 'undefined';
 
 const USERS_KEY = 'mock_users';
 const GADGETS_KEY = 'mock_gadgets';
+const CURRENT_USER_KEY = 'mock_current_user';
 
 // Initialize gadgets in localStorage if not present
 if (isBrowser && !localStorage.getItem(GADGETS_KEY)) {
@@ -16,7 +17,7 @@ if (isBrowser) {
   const existingUsers = localStorage.getItem(USERS_KEY);
   let users: UserProfile[] = existingUsers ? JSON.parse(existingUsers) : [];
   
-  const defaultAdmin: UserProfile = {
+  const defaultAdmin: UserProfile & { password?: string } = {
     id: 'admin',
     username: 'admin',
     email: 'admin@example.com',
@@ -26,6 +27,7 @@ if (isBrowser) {
     avatar: '',
     created: new Date().toISOString(),
     updated: new Date().toISOString(),
+    password: 'password',
   };
   
   const dammyAdmin: UserProfile & { password?: string } = {
@@ -59,8 +61,6 @@ if (isBrowser) {
 
   localStorage.setItem(USERS_KEY, JSON.stringify(users));
 }
-
-let currentMockUser: UserProfile | null = null;
 
 export const mockStorage = {
   getUsers: (): UserProfile[] => {
@@ -125,12 +125,18 @@ export const mockStorage = {
   },
   
   getCurrentUser: (): UserProfile | null => {
-    return currentMockUser;
+    if (!isBrowser) return null;
+    const data = localStorage.getItem(CURRENT_USER_KEY);
+    return data ? JSON.parse(data) : null;
   },
   
   setCurrentUser: (user: UserProfile | null) => {
-    currentMockUser = user;
     if (isBrowser) {
+      if (user) {
+        localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
+      } else {
+        localStorage.removeItem(CURRENT_USER_KEY);
+      }
       window.dispatchEvent(new Event('mock-auth-change'));
     }
   },
@@ -150,7 +156,7 @@ export const mockStorage = {
     
     localStorage.setItem(USERS_KEY, JSON.stringify(keepers));
     localStorage.setItem(GADGETS_KEY, JSON.stringify(MOCK_GADGETS));
-    currentMockUser = null;
+    localStorage.removeItem(CURRENT_USER_KEY);
     
     window.dispatchEvent(new Event('mock-auth-change'));
     window.dispatchEvent(new Event('mock-gadgets-updated'));

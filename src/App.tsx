@@ -367,6 +367,13 @@ export default function App() {
       return;
     }
 
+    // Check mock storage first even if not in mock mode (for owner bypass)
+    const mockProfile = mockStorage.getUserById(id);
+    if (mockProfile) {
+      setProfile(mockProfile);
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('profiles')
