@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
-import { supabase } from './lib/supabase';
+import { supabase, isMockMode } from './lib/supabase';
+import { mockStorage } from './lib/mockStorage';
 import { UserProfile } from './types';
 import { ErrorBoundary } from './components/errorboundary';
 import { 
@@ -360,6 +361,19 @@ export default function App() {
       return;
     }
 
+    if (isMockMode) {
+      const profile = mockStorage.getUserById(id);
+      setProfile(profile || null);
+      return;
+    }
+
+    // Check mock storage first even if not in mock mode (for owner bypass)
+    const mockProfile = mockStorage.getUserById(id);
+    if (mockProfile) {
+      setProfile(mockProfile);
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -387,21 +401,53 @@ export default function App() {
       }
     };
 
-    // Check Supabase session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        handleAuthChange(session.user);
-      }
+    // Check mock storage first (for owner bypass)
+    const mockUser = mockStorage.getCurrentUser();
+    if (mockUser) {
+      handleAuthChange(mockUser);
       setLoading(false);
-    });
+    } else if (!isMockMode) {
+      // Only check Supabase if no mock user
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) {
+          handleAuthChange(session.user);
+        }
+        setLoading(false);
+      });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      handleAuthChange(session?.user);
-    });
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (!mockStorage.getCurrentUser()) { // Only update from Supabase if no mock user
+          handleAuthChange(session?.user);
+        }
+      });
 
-    return () => {
-      subscription.unsubscribe();
-    };
+      // Still need to listen for mock auth changes in case owner logs in/out
+      const handleMockAuthChange = () => {
+        const updatedMockUser = mockStorage.getCurrentUser();
+        if (updatedMockUser) {
+          handleAuthChange(updatedMockUser);
+        } else {
+          // If mock user logged out, check Supabase again
+          supabase.auth.getSession().then(({ data: { session } }) => {
+            handleAuthChange(session?.user);
+          });
+        }
+      };
+
+      window.addEventListener('mock-auth-change', handleMockAuthChange);
+      return () => {
+        subscription.unsubscribe();
+        window.removeEventListener('mock-auth-change', handleMockAuthChange);
+      };
+    } else {
+      // Pure mock mode
+      setLoading(false);
+      const handleMockAuthChange = () => {
+        handleAuthChange(mockStorage.getCurrentUser());
+      };
+      window.addEventListener('mock-auth-change', handleMockAuthChange);
+      return () => window.removeEventListener('mock-auth-change', handleMockAuthChange);
+    }
   }, []);
 
   if (loading) {
@@ -420,7 +466,13 @@ export default function App() {
   }
 
   const logout = async () => {
-    await supabase.auth.signOut();
+    // Always clear mock session
+    mockStorage.setCurrentUser(null);
+    
+    // Clear Supabase session if not in mock mode
+    if (!isMockMode) {
+      await supabase.auth.signOut();
+    }
     
     setUser(null);
     setProfile(null);

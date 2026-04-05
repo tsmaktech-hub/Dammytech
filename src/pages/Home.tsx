@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { supabase, getFileUrl } from '../lib/supabase';
+import { supabase, getFileUrl, isMockMode } from '../lib/supabase';
+import { mockStorage } from '../lib/mockStorage';
 import { Gadget } from '../types';
 import { useAuth } from '../App';
 import { motion, AnimatePresence } from 'motion/react';
@@ -78,6 +79,41 @@ const AddGadgetModal = ({
 
     try {
       let finalImageUrl = gadget?.image || '';
+
+      // Determine if we should use mock logic for this specific operation
+      const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+      const useMockLogic = isMockMode || (user.id === 'admin' || user.id === '00000000-0000-0000-0000-000000000000');
+
+      if (useMockLogic) {
+        // Simulate network delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        finalImageUrl = formData.imageUrl || (imageFile ? URL.createObjectURL(imageFile) : finalImageUrl);
+
+        const updatedGadget: any = {
+          id: gadget?.id || crypto.randomUUID(),
+          name: formData.name,
+          description: formData.description,
+          price: parseFloat(formData.price),
+          category: formData.category,
+          image: finalImageUrl,
+          author: gadget?.author || user.id,
+          created: gadget?.created || new Date().toISOString(),
+          updated: new Date().toISOString(),
+          expand: gadget?.expand || {
+            author: {
+              fullName: user.fullName || 'User',
+              username: user.username || 'user'
+            }
+          }
+        };
+        
+        mockStorage.saveGadget(updatedGadget);
+        window.dispatchEvent(new Event('mock-gadgets-updated'));
+        
+        onClose();
+        return;
+      }
 
       if (imageFile) {
         // Upload image to Supabase Storage
@@ -356,6 +392,18 @@ export default function Home({
     const fetchGadgets = async () => {
       setLoading(true);
       
+      if (isMockMode) {
+        // Simulate network delay
+        await new Promise(resolve => setTimeout(resolve, 500));
+        const allGadgets = mockStorage.getGadgets();
+        const filtered = category 
+          ? allGadgets.filter(g => g.category === category)
+          : allGadgets;
+        setGadgets(filtered);
+        setLoading(false);
+        return;
+      }
+
       try {
         let query = supabase
           .from('gadgets')
@@ -379,8 +427,26 @@ export default function Home({
           }
         }));
 
-        // Limit gadgets for guests
         let finalData = mappedData;
+
+        // Only merge with mock gadgets if we are in mock mode or have no real data yet
+        if (isMockMode || mappedData.length === 0) {
+          const mockGadgets = mockStorage.getGadgets();
+          const filteredMock = category 
+            ? mockGadgets.filter(g => g.category === category)
+            : mockGadgets;
+          
+          // Combine real and mock, avoiding duplicates by ID
+          const combined = [...mappedData];
+          filteredMock.forEach(mock => {
+            if (!combined.find(g => g.id === mock.id)) {
+              combined.push(mock);
+            }
+          });
+          finalData = combined;
+        }
+
+        // Limit gadgets for guests
         if (!user) {
           finalData = finalData.slice(0, 4); // Show only first 4 gadgets to guests
         }
@@ -388,7 +454,18 @@ export default function Home({
         setGadgets(finalData as any[]);
       } catch (error) {
         console.error('Error fetching gadgets:', error);
-        setGadgets([]);
+        // Fallback to mock data on error
+        const allGadgets = mockStorage.getGadgets();
+        let filtered = category 
+          ? allGadgets.filter(g => g.category === category)
+          : allGadgets;
+        
+        // Limit gadgets for guests
+        if (!user) {
+          filtered = filtered.slice(0, 4);
+        }
+        
+        setGadgets(filtered);
       } finally {
         setLoading(false);
       }
@@ -405,18 +482,22 @@ export default function Home({
     }
     
     const handleUpdate = () => fetchGadgets();
+    window.addEventListener('mock-gadgets-updated', handleUpdate);
     window.addEventListener('gadgets-updated', handleUpdate);
     
     // Real-time subscription
     let subscription: any;
-    subscription = supabase
-      .channel('gadgets-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'gadgets' }, () => {
-        fetchGadgets();
-      })
-      .subscribe();
+    if (!isMockMode) {
+      subscription = supabase
+        .channel('gadgets-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'gadgets' }, () => {
+          fetchGadgets();
+        })
+        .subscribe();
+    }
 
     return () => {
+      window.removeEventListener('mock-gadgets-updated', handleUpdate);
       window.removeEventListener('gadgets-updated', handleUpdate);
       if (subscription) {
         supabase.removeChannel(subscription);
@@ -427,6 +508,11 @@ export default function Home({
   const handleDelete = async (id: string) => {
     if (!window.confirm('Are you sure you want to delete this gadget?')) return;
     try {
+      if (isMockMode) {
+        mockStorage.deleteGadget(id);
+        window.dispatchEvent(new Event('mock-gadgets-updated'));
+        return;
+      }
       const { error } = await supabase
         .from('gadgets')
         .delete()
@@ -505,6 +591,20 @@ export default function Home({
                 >
                   <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
                   List a Gadget
+                </button>
+              )}
+              {profile?.username === 'Dammy' && (
+                <button 
+                  onClick={() => {
+                    if (window.confirm('Are you sure you want to clear all user data and gadgets? Only the owner account will be kept.')) {
+                      mockStorage.resetDatabase();
+                      alert('Database reset successfully. Please refresh the page if changes don\'t appear immediately.');
+                    }
+                  }}
+                  className="w-full sm:w-auto px-6 py-3.5 sm:px-10 sm:py-5 bg-red-500/10 backdrop-blur-xl border border-red-500/20 text-red-400 rounded-xl sm:rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] sm:text-xs hover:bg-red-500/20 transition-all flex items-center justify-center gap-2 sm:gap-3"
+                >
+                  <RefreshCcw className="w-4 h-4 sm:w-5 sm:h-5" />
+                  Reset App Data
                 </button>
               )}
             </div>

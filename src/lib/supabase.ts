@@ -19,9 +19,11 @@ export const supabase = createClient(
   }
 );
 
+export const isMockMode = !supabaseUrl || !supabaseAnonKey;
+
 // Helper to get file URL from Supabase storage
 export const getFileUrl = (bucket: string, path: string) => {
-  if (!path || path.startsWith('http')) return path;
+  if (isMockMode || path.startsWith('http')) return path;
   const { data } = supabase.storage.from(bucket).getPublicUrl(path);
   return data.publicUrl;
 };
