@@ -11,6 +11,7 @@ import {
   Search, 
   Menu, 
   X, 
+  Plus,
   Smartphone, 
   Laptop, 
   Watch, 
@@ -110,7 +111,7 @@ const Navbar = ({
   isSearchOpen: boolean;
   setIsSearchOpen: (o: boolean) => void;
 }) => {
-  const { user, profile, logout } = useAuth();
+  const { user, profile, isAdmin, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const location = useLocation();
@@ -202,6 +203,15 @@ const Navbar = ({
 
             {/* Desktop Explore/Logout (Right Side) */}
             <div className="hidden xl:flex items-center gap-4">
+              {isAdmin && (
+                <button
+                  onClick={() => window.dispatchEvent(new Event('open-add-gadget-modal'))}
+                  className="flex items-center gap-2 px-4 py-2 text-xs font-black uppercase tracking-widest text-cyan-600 bg-cyan-50 rounded-xl hover:bg-cyan-100 transition-all group"
+                >
+                  <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform" />
+                  List Gadget
+                </button>
+              )}
               {!user ? (
                 <Link
                   to="/auth"
@@ -285,6 +295,18 @@ const Navbar = ({
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: categories.length * 0.05 }}
                   >
+                    {isAdmin && (
+                      <button
+                        onClick={() => {
+                          setIsMenuOpen(false);
+                          window.dispatchEvent(new Event('open-add-gadget-modal'));
+                        }}
+                        className="w-full flex items-center justify-center gap-3 px-6 py-4 mb-3 text-sm font-black uppercase tracking-widest text-cyan-600 bg-cyan-50 rounded-xl shadow-lg shadow-cyan-100 hover:bg-cyan-100 transition-all group"
+                      >
+                        <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
+                        List Gadget
+                      </button>
+                    )}
                     {!user ? (
                       <Link
                         to="/auth"
@@ -364,13 +386,6 @@ export default function App() {
     if (isMockMode) {
       const profile = mockStorage.getUserById(id);
       setProfile(profile || null);
-      return;
-    }
-
-    // Check mock storage first even if not in mock mode (for owner bypass)
-    const mockProfile = mockStorage.getUserById(id);
-    if (mockProfile) {
-      setProfile(mockProfile);
       return;
     }
 
