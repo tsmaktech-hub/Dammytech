@@ -1,164 +1,67 @@
-import { UserProfile, Gadget } from '../types';
-import { MOCK_GADGETS } from './mockData';
+// Mock storage for local development
+const STORAGE_KEY = 'gadget-store-mock-data';
 
-const isBrowser = typeof window !== 'undefined';
-
-const USERS_KEY = 'mock_users';
-const GADGETS_KEY = 'mock_gadgets';
-const CURRENT_USER_KEY = 'mock_current_user';
-
-// Initialize gadgets in localStorage if not present
-if (isBrowser && !localStorage.getItem(GADGETS_KEY)) {
-  localStorage.setItem(GADGETS_KEY, JSON.stringify(MOCK_GADGETS));
+interface MockData {
+  users: any[];
+  gadgets: any[];
+  currentUser: any | null;
+  savedCredentials: Record<string, any>;
 }
 
-// Initialize users in localStorage if not present (with default admin)
-if (isBrowser) {
-  const existingUsers = localStorage.getItem(USERS_KEY);
-  let users: UserProfile[] = existingUsers ? JSON.parse(existingUsers) : [];
-  
-  const defaultAdmin: UserProfile & { password?: string } = {
-    id: 'admin',
-    username: 'admin',
-    email: 'admin@example.com',
-    fullName: 'Admin User',
-    phoneNumber: '1234567890',
-    role: 'admin',
-    avatar: '',
-    created: new Date().toISOString(),
-    updated: new Date().toISOString(),
-    password: 'password',
-  };
-  
-  const dammyAdmin: UserProfile & { password?: string } = {
-    id: '00000000-0000-0000-0000-000000000000', // Valid UUID format
-    username: 'Dammy',
-    email: 'dammystore@gmail.com',
-    fullName: 'Ismail Dammy',
-    phoneNumber: '09071498194',
-    role: 'admin',
-    avatar: '',
-    created: new Date().toISOString(),
-    updated: new Date().toISOString(),
-    password: 'Broismail',
-  };
+const initialData: MockData = {
+  users: [],
+  gadgets: [],
+  currentUser: null,
+  savedCredentials: {}
+};
 
-  // Add or update default admin
-  const adminIndex = users.findIndex(u => u.username === 'admin');
-  if (adminIndex >= 0) {
-    users[adminIndex] = { ...users[adminIndex], ...defaultAdmin };
-  } else {
-    users.push(defaultAdmin);
-  }
-  
-  // Add or update Dammy
-  const dammyIndex = users.findIndex(u => u.username === 'Dammy');
-  if (dammyIndex >= 0) {
-    users[dammyIndex] = { ...users[dammyIndex], ...dammyAdmin };
-  } else {
-    users.push(dammyAdmin);
-  }
+const getStorageData = (): MockData => {
+  const data = localStorage.getItem(STORAGE_KEY);
+  return data ? JSON.parse(data) : initialData;
+};
 
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-}
+const saveStorageData = (data: MockData) => {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+};
 
 export const mockStorage = {
-  getUsers: (): UserProfile[] => {
-    if (!isBrowser) return [];
-    try {
-      const data = localStorage.getItem(USERS_KEY);
-      return data ? JSON.parse(data) : [];
-    } catch (e) {
-      console.error('Error parsing mock users:', e);
-      return [];
-    }
+  getUsers: () => getStorageData().users,
+  saveUser: (user: any) => {
+    const data = getStorageData();
+    data.users.push(user);
+    saveStorageData(data);
   },
-  
-  saveUser: (user: UserProfile) => {
-    if (!isBrowser) return;
-    const users = mockStorage.getUsers();
-    const index = users.findIndex(u => u.id === user.id || u.email === user.email);
+  getUserById: (id: string) => getStorageData().users.find(u => u.id === id),
+  getCurrentUser: () => getStorageData().currentUser,
+  setCurrentUser: (user: any | null) => {
+    const data = getStorageData();
+    data.currentUser = user;
+    saveStorageData(data);
+  },
+  getSavedCredentials: (deviceId: string) => getStorageData().savedCredentials[deviceId],
+  saveCredentials: (deviceId: string, creds: any) => {
+    const data = getStorageData();
+    data.savedCredentials[deviceId] = creds;
+    saveStorageData(data);
+  },
+  getGadgets: () => getStorageData().gadgets,
+  saveGadget: (gadget: any) => {
+    const data = getStorageData();
+    const index = data.gadgets.findIndex(g => g.id === gadget.id);
     if (index >= 0) {
-      users[index] = user;
+      data.gadgets[index] = gadget;
     } else {
-      users.push(user);
+      data.gadgets.push(gadget);
     }
-    localStorage.setItem(USERS_KEY, JSON.stringify(users));
+    saveStorageData(data);
   },
-  
-  getUserByEmail: (email: string): UserProfile | undefined => {
-    return mockStorage.getUsers().find(u => u.email === email);
-  },
-  
-  getUserById: (id: string): UserProfile | undefined => {
-    return mockStorage.getUsers().find(u => u.id === id);
-  },
-  
-  getGadgets: (): Gadget[] => {
-    if (!isBrowser) return [];
-    try {
-      const data = localStorage.getItem(GADGETS_KEY);
-      return data ? JSON.parse(data) : [];
-    } catch (e) {
-      console.error('Error parsing mock gadgets:', e);
-      return [];
-    }
-  },
-  
-  saveGadget: (gadget: Gadget) => {
-    if (!isBrowser) return;
-    const gadgets = mockStorage.getGadgets();
-    const index = gadgets.findIndex(g => g.id === gadget.id);
-    if (index >= 0) {
-      gadgets[index] = gadget;
-    } else {
-      gadgets.push(gadget);
-    }
-    localStorage.setItem(GADGETS_KEY, JSON.stringify(gadgets));
-  },
-  
   deleteGadget: (id: string) => {
-    if (!isBrowser) return;
-    const gadgets = mockStorage.getGadgets();
-    const updated = gadgets.filter(g => g.id !== id);
-    localStorage.setItem(GADGETS_KEY, JSON.stringify(updated));
+    const data = getStorageData();
+    data.gadgets = data.gadgets.filter(g => g.id !== id);
+    saveStorageData(data);
   },
-  
-  getCurrentUser: (): UserProfile | null => {
-    if (!isBrowser) return null;
-    const data = localStorage.getItem(CURRENT_USER_KEY);
-    return data ? JSON.parse(data) : null;
-  },
-  
-  setCurrentUser: (user: UserProfile | null) => {
-    if (isBrowser) {
-      if (user) {
-        localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
-      } else {
-        localStorage.removeItem(CURRENT_USER_KEY);
-      }
-      window.dispatchEvent(new Event('mock-auth-change'));
-    }
-  },
-
   resetDatabase: () => {
-    if (!isBrowser) return;
-    
-    // Get current users to find Dammy
-    const users = mockStorage.getUsers();
-    const dammy = users.find(u => u.username.toLowerCase() === 'dammy');
-    const admin = users.find(u => u.username.toLowerCase() === 'admin');
-    
-    // Keep only Dammy and default admin
-    const keepers = [];
-    if (dammy) keepers.push(dammy);
-    if (admin) keepers.push(admin);
-    
-    localStorage.setItem(USERS_KEY, JSON.stringify(keepers));
-    localStorage.setItem(GADGETS_KEY, JSON.stringify(MOCK_GADGETS));
-    localStorage.removeItem(CURRENT_USER_KEY);
-    
-    window.dispatchEvent(new Event('mock-auth-change'));
-    window.dispatchEvent(new Event('mock-gadgets-updated'));
+    saveStorageData(initialData);
+    window.location.reload();
   }
 };
