@@ -19,14 +19,12 @@ import {
   ShoppingBag,
   ArrowRight,
   Home as HomeIcon,
-  UserCircle,
-  LayoutDashboard
+  UserCircle
 } from 'lucide-react';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import AuthChoice from './pages/AuthChoice';
-import Dashboard from './pages/Dashboard';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
 
@@ -129,7 +127,6 @@ const Navbar = ({
 
   const categories = [
     { name: 'Home', icon: HomeIcon, path: '/' },
-    { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', authRequired: true },
     { name: 'Phones', icon: Smartphone, path: '/category/phones' },
     { name: 'Laptops', icon: Laptop, path: '/category/laptops' },
     { name: 'Watches', icon: Watch, path: '/category/watches' },
@@ -171,7 +168,7 @@ const Navbar = ({
 
           {/* Desktop Nav */}
           <div className="hidden xl:flex items-center gap-6 mr-8">
-            {categories.filter(cat => !cat.authRequired || user).map((cat) => (
+            {categories.map((cat) => (
               <Link
                 key={cat.name}
                 to={cat.path}
@@ -190,17 +187,17 @@ const Navbar = ({
           {/* User Actions */}
           <div className="flex items-center gap-3">
             {user && (
-              <Link to="/dashboard" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+              <div className="flex items-center gap-3">
                 <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center text-white font-black text-xs sm:text-sm shadow-lg shadow-cyan-200 border-2 border-white">
-                  {getInitials(profile?.full_name, user?.email)}
+                  {getInitials(profile?.fullName, user?.email)}
                 </div>
                 <div className="hidden sm:flex flex-col items-start leading-tight">
-                  <span className="text-sm font-bold text-gray-900">{profile?.full_name}</span>
+                  <span className="text-sm font-bold text-gray-900">{profile?.fullName}</span>
                   <span className="text-[10px] font-bold text-cyan-600 uppercase tracking-wider">
                     {profile?.role}
                   </span>
                 </div>
-              </Link>
+              </div>
             )}
 
             {/* Desktop Explore/Logout (Right Side) */}
@@ -248,7 +245,7 @@ const Navbar = ({
             <div className="p-4 space-y-4">
               <div className="space-y-2">
                 <div className="grid grid-cols-1 gap-1.5">
-                  {categories.filter(cat => !cat.authRequired || user).map((cat, i) => (
+                  {categories.map((cat, i) => (
                     <motion.div
                       key={cat.name}
                       initial={{ opacity: 0, x: -10 }}
@@ -332,32 +329,20 @@ const ScrollToTop = () => {
 };
 
 const AuthRedirectHandler = () => {
-  const { logout, loading } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const hasInitialActionRun = useRef(false);
+  const hasChecked = useRef(false);
 
   useEffect(() => {
-    // This effect runs ONLY ONCE when the app first finishes loading (on refresh/initial load)
-    if (!loading && !hasInitialActionRun.current) {
-      hasInitialActionRun.current = true;
-      
-      const performInitialAction = async () => {
-        // If user has a persisted session on refresh, log them out as requested
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          await logout();
-        }
-        
-        // Always redirect to home page on refresh/initial load if not already there
-        if (location.pathname !== '/') {
-          navigate('/', { replace: true });
-        }
-      };
-      
-      performInitialAction();
+    if (!loading && !hasChecked.current) {
+      // If we are on a category page and not logged in (e.g. after reload), redirect to home
+      if (!user && location.pathname.startsWith('/category/')) {
+        navigate('/', { replace: true });
+      }
+      hasChecked.current = true;
     }
-  }, [loading, logout, navigate]); // Removed 'user' and 'location.pathname' to prevent re-triggering during login
+  }, [user, loading, location.pathname, navigate]);
 
   return null;
 };
@@ -397,7 +382,7 @@ export default function App() {
         .single();
       
       if (error) throw error;
-      setProfile(data as unknown as UserProfile);
+      setProfile(data as UserProfile);
     } catch (error) {
       console.error("Error fetching profile:", error);
       setProfile(null);
@@ -424,13 +409,15 @@ export default function App() {
     } else if (!isMockMode) {
       // Only check Supabase if no mock user
       supabase.auth.getSession().then(({ data: { session } }) => {
-        handleAuthChange(session?.user ?? null);
+        if (session?.user) {
+          handleAuthChange(session.user);
+        }
         setLoading(false);
       });
 
       const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
         if (!mockStorage.getCurrentUser()) { // Only update from Supabase if no mock user
-          handleAuthChange(session?.user ?? null);
+          handleAuthChange(session?.user);
         }
       });
 
@@ -441,8 +428,8 @@ export default function App() {
           handleAuthChange(updatedMockUser);
         } else {
           // If mock user logged out, check Supabase again
-          supabase.auth.getUser().then(({ data: { user } }) => {
-            handleAuthChange(user);
+          supabase.auth.getSession().then(({ data: { session } }) => {
+            handleAuthChange(session?.user);
           });
         }
       };
@@ -479,11 +466,14 @@ export default function App() {
   }
 
   const logout = async () => {
-    if (isMockMode) {
-      mockStorage.setCurrentUser(null);
-    } else {
+    // Always clear mock session
+    mockStorage.setCurrentUser(null);
+    
+    // Clear Supabase session if not in mock mode
+    if (!isMockMode) {
       await supabase.auth.signOut();
     }
+    
     setUser(null);
     setProfile(null);
     setSearchQuery('');
@@ -495,7 +485,7 @@ export default function App() {
       user, 
       profile, 
       loading, 
-      isAdmin: profile?.role === 'admin', 
+      isAdmin: profile?.role === 'admin' || user?.email === 'Ibusari127@gmail.com', 
       refreshProfile,
       logout
     }}>
@@ -513,10 +503,9 @@ export default function App() {
             <ErrorBoundary>
               <Routes>
                 <Route path="/" element={<Home searchQuery={searchQuery} setSearchQuery={setSearchQuery} />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/auth" element={user ? <Navigate to="/dashboard" /> : <AuthChoice />} />
-                <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login />} />
-                <Route path="/signup" element={user ? <Navigate to="/dashboard" /> : <Signup />} />
+                <Route path="/auth" element={user ? <Navigate to="/" /> : <AuthChoice />} />
+                <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
+                <Route path="/signup" element={user ? <Navigate to="/" /> : <Signup />} />
                 <Route path="/category/:category" element={<Home searchQuery={searchQuery} setSearchQuery={setSearchQuery} />} />
                 <Route path="*" element={<Navigate to="/" />} />
               </Routes>

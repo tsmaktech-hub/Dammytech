@@ -1,13 +1,13 @@
 export interface UserProfile {
   id: string;
-  full_name: string;
-  phone_number: string;
+  fullName: string;
+  phoneNumber: string;
   email: string;
   username: string;
   role: 'user' | 'admin';
-  avatar_url?: string;
-  created_at: string;
-  updated_at: string;
+  avatar?: string;
+  created: string;
+  updated: string;
 }
 
 export interface Gadget {
@@ -17,8 +17,8 @@ export interface Gadget {
   price: number;
   image: string;
   category: string;
-  created_at: string;
-  updated_at: string;
+  created: string;
+  updated: string;
   author: string;
   expand?: {
     author: UserProfile;

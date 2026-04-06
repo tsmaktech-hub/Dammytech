@@ -9,15 +9,21 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder-key'
+  supabaseAnonKey || 'placeholder-key',
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true
+    }
+  }
 );
 
-// Mock mode logic
-export const isMockMode = !supabaseUrl || supabaseUrl === 'https://placeholder.supabase.co';
+export const isMockMode = !supabaseUrl || !supabaseAnonKey;
 
-// Helper to get public URL for images
+// Helper to get file URL from Supabase storage
 export const getFileUrl = (bucket: string, path: string) => {
-  if (!path || path.startsWith('http')) return path;
+  if (isMockMode || path.startsWith('http')) return path;
   const { data } = supabase.storage.from(bucket).getPublicUrl(path);
   return data.publicUrl;
 };

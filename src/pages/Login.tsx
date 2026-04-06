@@ -29,69 +29,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [successMessage, setSuccessMessage] = useState(location.state?.message || '');
 
-  const getDeviceId = () => {
-    let id = localStorage.getItem('device_id');
-    if (!id) {
-      id = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-      localStorage.setItem('device_id', id);
-    }
-    return id;
-  };
-
-  const saveCredentialsToSupabase = async (email: string, password: string) => {
-    const deviceId = getDeviceId();
-    if (isMockMode) {
-      mockStorage.saveCredentials(deviceId, { email, password });
-    } else {
-      try {
-        // This assumes a 'saved_credentials' table exists in Supabase
-        // with columns: device_id (text, primary key), email (text), password (text)
-        const { error } = await supabase
-          .from('saved_credentials')
-          .upsert({ device_id: deviceId, email, password }, { onConflict: 'device_id' });
-        
-        if (error) throw error;
-      } catch (e) {
-        console.warn("Could not save to Supabase table 'saved_credentials'. Falling back to mock storage.", e);
-        mockStorage.saveCredentials(deviceId, { email, password });
-      }
-    }
-  };
-
-  const fetchCredentialsFromSupabase = async () => {
-    const deviceId = getDeviceId();
-    if (isMockMode) {
-      return mockStorage.getSavedCredentials(deviceId);
-    } else {
-      try {
-        const { data, error } = await supabase
-          .from('saved_credentials')
-          .select('email, password')
-          .eq('device_id', deviceId)
-          .single();
-        
-        if (error) throw error;
-        return data;
-      } catch (e) {
-        return mockStorage.getSavedCredentials(deviceId);
-      }
-    }
-  };
-
   useEffect(() => {
-    // Check for saved credentials from Supabase/Mock (for the refresh-logout requirement)
-    const loadSavedCredentials = async () => {
-      const savedCreds = await fetchCredentialsFromSupabase();
-      if (savedCreds) {
-        setFormData({ 
-          email: savedCreds.email || '', 
-          password: savedCreds.password || '' 
-        });
-      }
-    };
-
-    loadSavedCredentials();
-
     if (location.state?.email) {
       setFormData(prev => ({ ...prev, email: location.state.email }));
     }
@@ -105,27 +43,45 @@ export default function Login() {
     setError('');
     setLoading(true);
 
-    // Save credentials to Supabase/Mock before attempting login
-    await saveCredentialsToSupabase(formData.email, formData.password);
-
     // Check mock storage first (even if Supabase is active)
     const users = mockStorage.getUsers();
-    const mockUser = users.find(u => 
+    
+    // Ensure default accounts are always available in the check
+    const defaultAccounts = [
+      { email: 'admin@example.com', username: 'admin', password: 'password' },
+      { email: 'Ibusari127@gmail.com', username: 'dammy', password: 'Broismail' }
+    ];
+
+    const isDefaultAccount = defaultAccounts.find(acc => 
+      acc.email.toLowerCase() === formData.email.toLowerCase() || 
+      acc.username.toLowerCase() === formData.email.toLowerCase()
+    );
+
+    let mockUser = users.find(u => 
       u.email.toLowerCase() === formData.email.toLowerCase() || 
       u.username.toLowerCase() === formData.email.toLowerCase()
     ) as any;
 
+    // If it's a default account but not in storage for some reason, try to find it again or use fallback
+    if (isDefaultAccount && !mockUser) {
+      // This shouldn't happen normally as mockStorage initializes them, 
+      // but we'll be extra safe to ensure they can always log in.
+      mockUser = users.find(u => u.username.toLowerCase() === isDefaultAccount.username);
+    }
+
     if (mockUser) {
-      // In mock mode, we accept 'password' OR the specific password set during signup
-      const isValidPassword = formData.password === 'password' || 
-                             formData.password === mockUser.password ||
-                             (mockUser.username.toLowerCase() === 'dammy' && (formData.password === 'Broismail' || formData.password === 'Bro ismail'));
+      const inputPassword = formData.password;
+      const isDammy = mockUser.username.toLowerCase() === 'dammy';
+      
+      const isValidPassword = 
+        inputPassword === 'password' || 
+        inputPassword === mockUser.password ||
+        (isDammy && (inputPassword === 'Broismail' || inputPassword === 'Bro ismail'));
       
       if (isValidPassword) {
-        // Simulate network delay for consistency
         await new Promise(resolve => setTimeout(resolve, 800));
         mockStorage.setCurrentUser(mockUser);
-        navigate('/dashboard');
+        navigate('/');
         setLoading(false);
         return;
       }
@@ -143,17 +99,42 @@ export default function Login() {
     }
 
     try {
-      const { error: authError } = await supabase.auth.signInWithPassword({
-        email: formData.email,
+      let loginEmail = formData.email;
+
+      // If it's not an email format, try to find the email by username
+      if (!loginEmail.includes('@')) {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('username', loginEmail.toLowerCase())
+          .single();
+        
+        if (profileData?.email) {
+          loginEmail = profileData.email;
+        } else if (profileError) {
+          // If username lookup fails, we still try to sign in with the original input
+          // but it will likely fail with "Invalid login credentials"
+          console.error("Username lookup failed:", profileError);
+        }
+      }
+
+      const { error } = await supabase.auth.signInWithPassword({
+        email: loginEmail,
         password: formData.password,
       });
-
-      if (authError) throw authError;
-      navigate('/dashboard');
+      if (error) throw error;
+      
+      // Clear mock session when logging in via Supabase
+      mockStorage.setCurrentUser(null);
+      
+      navigate('/');
     } catch (err: any) {
       let errorMessage = err.message || 'Invalid email or password';
       
-      if (errorMessage.toLowerCase().includes('invalid login credentials')) {
+      // Provide more helpful message for unconfirmed emails
+      if (errorMessage.toLowerCase().includes('email not confirmed')) {
+        errorMessage = 'Email not confirmed. Please check your inbox for a confirmation link. \n\nTip: If you want to skip this, you can disable "Confirm email" in your Supabase Project Settings > Authentication > Providers > Email.';
+      } else if (errorMessage.toLowerCase().includes('invalid login credentials')) {
         errorMessage = 'Invalid email/username or password. Please try again.';
       }
       
@@ -295,8 +276,32 @@ export default function Login() {
             </button>
           </form>
 
-          <div className="mt-8 sm:mt-12 pt-8 sm:pt-12 border-t border-gray-50 text-center">
-            <p className="text-gray-500 font-medium text-sm">
+          <div className="mt-8 sm:mt-12 pt-8 sm:pt-12 border-t border-gray-50">
+            <div className="text-center mb-6">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-4">Quick Demo Access</p>
+              <div className="flex flex-wrap justify-center gap-3">
+                <button
+                  onClick={() => {
+                    setFormData({ email: 'admin', password: 'password' });
+                    setSuccessMessage('Demo Admin credentials loaded. Click Sign In.');
+                  }}
+                  className="px-4 py-2 bg-gray-50 hover:bg-cyan-50 border border-gray-100 hover:border-cyan-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-cyan-600 transition-all"
+                >
+                  Admin Demo
+                </button>
+                <button
+                  onClick={() => {
+                    setFormData({ email: 'Ibusari127@gmail.com', password: 'Broismail' });
+                    setSuccessMessage('Demo User credentials loaded. Click Sign In.');
+                  }}
+                  className="px-4 py-2 bg-gray-50 hover:bg-cyan-50 border border-gray-100 hover:border-cyan-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-cyan-600 transition-all"
+                >
+                  User Demo
+                </button>
+              </div>
+            </div>
+            
+            <p className="text-gray-500 font-medium text-sm text-center">
               Don't have an account?{' '}
               <Link to="/signup" className="text-cyan-600 font-black uppercase tracking-widest text-[10px] sm:text-xs hover:underline ml-2">
                 Create Account
