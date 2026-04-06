@@ -21,7 +21,7 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const [formData, setFormData] = useState({
-    email: localStorage.getItem('last_login_email') || location.state?.email || 'tsmaktech@gmail.com',
+    email: location.state?.email || '',
     password: '',
   });
   const [error, setError] = useState('');
@@ -29,7 +29,69 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [successMessage, setSuccessMessage] = useState(location.state?.message || '');
 
+  const getDeviceId = () => {
+    let id = localStorage.getItem('device_id');
+    if (!id) {
+      id = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      localStorage.setItem('device_id', id);
+    }
+    return id;
+  };
+
+  const saveCredentialsToSupabase = async (email: string, password: string) => {
+    const deviceId = getDeviceId();
+    if (isMockMode) {
+      mockStorage.saveCredentials(deviceId, { email, password });
+    } else {
+      try {
+        // This assumes a 'saved_credentials' table exists in Supabase
+        // with columns: device_id (text, primary key), email (text), password (text)
+        const { error } = await supabase
+          .from('saved_credentials')
+          .upsert({ device_id: deviceId, email, password }, { onConflict: 'device_id' });
+        
+        if (error) throw error;
+      } catch (e) {
+        console.warn("Could not save to Supabase table 'saved_credentials'. Falling back to mock storage.", e);
+        mockStorage.saveCredentials(deviceId, { email, password });
+      }
+    }
+  };
+
+  const fetchCredentialsFromSupabase = async () => {
+    const deviceId = getDeviceId();
+    if (isMockMode) {
+      return mockStorage.getSavedCredentials(deviceId);
+    } else {
+      try {
+        const { data, error } = await supabase
+          .from('saved_credentials')
+          .select('email, password')
+          .eq('device_id', deviceId)
+          .single();
+        
+        if (error) throw error;
+        return data;
+      } catch (e) {
+        return mockStorage.getSavedCredentials(deviceId);
+      }
+    }
+  };
+
   useEffect(() => {
+    // Check for saved credentials from Supabase/Mock (for the refresh-logout requirement)
+    const loadSavedCredentials = async () => {
+      const savedCreds = await fetchCredentialsFromSupabase();
+      if (savedCreds) {
+        setFormData({ 
+          email: savedCreds.email || '', 
+          password: savedCreds.password || '' 
+        });
+      }
+    };
+
+    loadSavedCredentials();
+
     if (location.state?.email) {
       setFormData(prev => ({ ...prev, email: location.state.email }));
     }
@@ -42,6 +104,9 @@ export default function Login() {
     e.preventDefault();
     setError('');
     setLoading(true);
+
+    // Save credentials to Supabase/Mock before attempting login
+    await saveCredentialsToSupabase(formData.email, formData.password);
 
     // Check mock storage first (even if Supabase is active)
     const users = mockStorage.getUsers();
@@ -60,7 +125,6 @@ export default function Login() {
         // Simulate network delay for consistency
         await new Promise(resolve => setTimeout(resolve, 800));
         mockStorage.setCurrentUser(mockUser);
-        localStorage.setItem('last_login_email', formData.email);
         navigate('/dashboard');
         setLoading(false);
         return;
@@ -85,7 +149,6 @@ export default function Login() {
       });
 
       if (authError) throw authError;
-      localStorage.setItem('last_login_email', formData.email);
       navigate('/dashboard');
     } catch (err: any) {
       let errorMessage = err.message || 'Invalid email or password';

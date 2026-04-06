@@ -332,26 +332,20 @@ const ScrollToTop = () => {
 };
 
 const AuthRedirectHandler = () => {
-  const { user, loading } = useAuth();
+  const { loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const hasInitialRedirected = useRef(false);
 
   useEffect(() => {
     if (!loading && !hasInitialRedirected.current) {
-      // If we are logged in and just refreshed/loaded the app, go to login as requested
-      if (user && location.pathname !== '/login' && location.pathname !== '/signup' && location.pathname !== '/auth') {
-        navigate('/login', { replace: true });
-      }
-      
-      // If we are on a category page and not logged in, redirect to home
-      if (!user && location.pathname.startsWith('/category/')) {
+      // Always redirect to home page on refresh/initial load if not already there
+      if (location.pathname !== '/') {
         navigate('/', { replace: true });
       }
-      
       hasInitialRedirected.current = true;
     }
-  }, [user, loading, location.pathname, navigate]);
+  }, [loading, location.pathname, navigate]);
 
   return null;
 };
@@ -509,7 +503,7 @@ export default function App() {
                 <Route path="/" element={<Home searchQuery={searchQuery} setSearchQuery={setSearchQuery} />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/auth" element={user ? <Navigate to="/dashboard" /> : <AuthChoice />} />
-                <Route path="/login" element={<Login />} />
+                <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login />} />
                 <Route path="/signup" element={user ? <Navigate to="/dashboard" /> : <Signup />} />
                 <Route path="/category/:category" element={<Home searchQuery={searchQuery} setSearchQuery={setSearchQuery} />} />
                 <Route path="*" element={<Navigate to="/" />} />
