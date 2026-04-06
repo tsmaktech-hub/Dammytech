@@ -28,6 +28,11 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [gadgets, setGadgets] = useState<Gadget[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const isAuthorizedSeller = profile?.email === 'tsmaktech@gmail.com' && 
+                            profile?.username === 'Dammy' && 
+                            profile?.full_name === 'Busari Ismail' &&
+                            profile?.phone_number === '09071498194';
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
@@ -150,13 +155,15 @@ export default function Dashboard() {
           >
             Browse Store
           </Link>
-          <button
-            onClick={() => navigate('/', { state: { openAddModal: true } })}
-            className="flex-1 sm:flex-none px-8 py-4 bg-gray-900 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] sm:text-xs hover:bg-cyan-600 transition-all shadow-xl shadow-gray-200 flex items-center justify-center gap-2 group"
-          >
-            <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform" />
-            New Listing
-          </button>
+          {isAuthorizedSeller && (
+            <button
+              onClick={() => navigate('/', { state: { openAddModal: true } })}
+              className="flex-1 sm:flex-none px-8 py-4 bg-gray-900 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] sm:text-xs hover:bg-cyan-600 transition-all shadow-xl shadow-gray-200 flex items-center justify-center gap-2 group"
+            >
+              <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform" />
+              New Listing
+            </button>
+          )}
         </div>
       </div>
 
