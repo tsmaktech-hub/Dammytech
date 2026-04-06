@@ -332,20 +332,29 @@ const ScrollToTop = () => {
 };
 
 const AuthRedirectHandler = () => {
-  const { loading } = useAuth();
+  const { user, loading, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const hasInitialRedirected = useRef(false);
 
   useEffect(() => {
     if (!loading && !hasInitialRedirected.current) {
-      // Always redirect to home page on refresh/initial load if not already there
-      if (location.pathname !== '/') {
-        navigate('/', { replace: true });
-      }
-      hasInitialRedirected.current = true;
+      const performInitialAction = async () => {
+        // If user is logged in on refresh, log them out
+        if (user) {
+          await logout();
+        }
+        
+        // Always redirect to home page on refresh/initial load if not already there
+        if (location.pathname !== '/') {
+          navigate('/', { replace: true });
+        }
+        hasInitialRedirected.current = true;
+      };
+      
+      performInitialAction();
     }
-  }, [loading, location.pathname, navigate]);
+  }, [user, loading, logout, location.pathname, navigate]);
 
   return null;
 };
