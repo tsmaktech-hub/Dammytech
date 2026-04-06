@@ -332,16 +332,20 @@ const ScrollToTop = () => {
 };
 
 const AuthRedirectHandler = () => {
-  const { user, loading, logout } = useAuth();
+  const { logout, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const hasInitialRedirected = useRef(false);
+  const hasInitialActionRun = useRef(false);
 
   useEffect(() => {
-    if (!loading && !hasInitialRedirected.current) {
+    // This effect runs ONLY ONCE when the app first finishes loading (on refresh/initial load)
+    if (!loading && !hasInitialActionRun.current) {
+      hasInitialActionRun.current = true;
+      
       const performInitialAction = async () => {
-        // If user is logged in on refresh, log them out
-        if (user) {
+        // If user has a persisted session on refresh, log them out as requested
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
           await logout();
         }
         
@@ -349,12 +353,11 @@ const AuthRedirectHandler = () => {
         if (location.pathname !== '/') {
           navigate('/', { replace: true });
         }
-        hasInitialRedirected.current = true;
       };
       
       performInitialAction();
     }
-  }, [user, loading, logout, location.pathname, navigate]);
+  }, [loading, logout, navigate]); // Removed 'user' and 'location.pathname' to prevent re-triggering during login
 
   return null;
 };
