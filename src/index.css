@@ -5,11 +5,9 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
 }
 
-@layer base {
-  @media (min-width: 1024px) {
-    html {
-      zoom: 0.9;
-    }
-  }
+body {
+  zoom: 0.9;
+  -moz-transform: scale(0.9);
+  -moz-transform-origin: 0 0;
 }
 

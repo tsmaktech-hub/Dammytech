@@ -58,7 +58,7 @@ export default function Signup() {
     }
     
     const newUser = {
-      id: crypto.randomUUID(),
+      id: Math.random().toString(36).substr(2, 9),
       username: formData.username.toLowerCase(),
       email: formData.email,
       fullName: formData.fullName,
@@ -76,34 +76,27 @@ export default function Signup() {
       mockStorage.setCurrentUser(newUser as any);
       
       // In mock mode, we just navigate. The App component handles the mock user.
-      navigate('/');
+      navigate('/dashboard');
       setLoading(false);
       return;
     }
 
     try {
-      // Sign up with Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
           data: {
             full_name: formData.fullName,
-            phone_number: formData.phoneNumber,
             username: formData.username.toLowerCase(),
+            phone_number: formData.phoneNumber,
           }
         }
       });
 
       if (authError) throw authError;
-      
-      // Profile is now created automatically by the database trigger!
-      navigate('/login', { 
-        state: { 
-          email: formData.email, 
-          message: 'Account created successfully! Please sign in with your credentials.' 
-        } 
-      });
+
+      navigate('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Failed to create account');
     } finally {
