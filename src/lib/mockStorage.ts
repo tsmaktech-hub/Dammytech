@@ -5,14 +5,12 @@ interface MockData {
   users: any[];
   gadgets: any[];
   currentUser: any | null;
-  savedCredentials: Record<string, any>;
 }
 
 const initialData: MockData = {
   users: [],
   gadgets: [],
-  currentUser: null,
-  savedCredentials: {}
+  currentUser: null
 };
 
 const getStorageData = (): MockData => {
@@ -36,12 +34,6 @@ export const mockStorage = {
   setCurrentUser: (user: any | null) => {
     const data = getStorageData();
     data.currentUser = user;
-    saveStorageData(data);
-  },
-  getSavedCredentials: (deviceId: string) => getStorageData().savedCredentials[deviceId],
-  saveCredentials: (deviceId: string, creds: any) => {
-    const data = getStorageData();
-    data.savedCredentials[deviceId] = creds;
     saveStorageData(data);
   },
   getGadgets: () => getStorageData().gadgets,

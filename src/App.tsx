@@ -335,41 +335,23 @@ const AuthRedirectHandler = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const hasChecked = useRef(false);
+  const hasInitialRedirected = useRef(false);
 
   useEffect(() => {
-    if (!loading && !hasChecked.current) {
-      // If we are on a category page and not logged in (e.g. after reload), redirect to home
+    if (!loading && !hasInitialRedirected.current) {
+      // If we are logged in and just refreshed/loaded the app, go to login as requested
+      if (user && location.pathname !== '/login' && location.pathname !== '/signup' && location.pathname !== '/auth') {
+        navigate('/login', { replace: true });
+      }
+      
+      // If we are on a category page and not logged in, redirect to home
       if (!user && location.pathname.startsWith('/category/')) {
         navigate('/', { replace: true });
       }
-      hasChecked.current = true;
+      
+      hasInitialRedirected.current = true;
     }
   }, [user, loading, location.pathname, navigate]);
-
-  return null;
-};
-
-const RefreshLogoutHandler = () => {
-  const { user, loading, logout } = useAuth();
-  const navigate = useNavigate();
-  const hasChecked = useRef(false);
-
-  useEffect(() => {
-    if (loading) return;
-    if (hasChecked.current) return;
-    hasChecked.current = true;
-
-    // Check if the page was reloaded
-    const navigationEntries = performance.getEntriesByType('navigation');
-    const isReload = navigationEntries.length > 0 && (navigationEntries[0] as any).type === 'reload';
-    
-    if (isReload && user) {
-      logout().then(() => {
-        navigate('/login');
-      });
-    }
-  }, [loading, user, logout, navigate]);
 
   return null;
 };
@@ -514,7 +496,6 @@ export default function App() {
       <Router>
         <ScrollToTop />
         <AuthRedirectHandler />
-        <RefreshLogoutHandler />
         <div className="min-h-screen bg-white font-sans selection:bg-cyan-100 selection:text-cyan-900">
           <Navbar 
             searchQuery={searchQuery} 
@@ -528,7 +509,7 @@ export default function App() {
                 <Route path="/" element={<Home searchQuery={searchQuery} setSearchQuery={setSearchQuery} />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/auth" element={user ? <Navigate to="/dashboard" /> : <AuthChoice />} />
-                <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login />} />
+                <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={user ? <Navigate to="/dashboard" /> : <Signup />} />
                 <Route path="/category/:category" element={<Home searchQuery={searchQuery} setSearchQuery={setSearchQuery} />} />
                 <Route path="*" element={<Navigate to="/" />} />
