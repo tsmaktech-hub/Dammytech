@@ -350,6 +350,30 @@ const AuthRedirectHandler = () => {
   return null;
 };
 
+const RefreshLogoutHandler = () => {
+  const { user, loading, logout } = useAuth();
+  const navigate = useNavigate();
+  const hasChecked = useRef(false);
+
+  useEffect(() => {
+    if (loading) return;
+    if (hasChecked.current) return;
+    hasChecked.current = true;
+
+    // Check if the page was reloaded
+    const navigationEntries = performance.getEntriesByType('navigation');
+    const isReload = navigationEntries.length > 0 && (navigationEntries[0] as any).type === 'reload';
+    
+    if (isReload && user) {
+      logout().then(() => {
+        navigate('/login');
+      });
+    }
+  }, [loading, user, logout, navigate]);
+
+  return null;
+};
+
 export default function App() {
   const [user, setUser] = useState<any | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -490,6 +514,7 @@ export default function App() {
       <Router>
         <ScrollToTop />
         <AuthRedirectHandler />
+        <RefreshLogoutHandler />
         <div className="min-h-screen bg-white font-sans selection:bg-cyan-100 selection:text-cyan-900">
           <Navbar 
             searchQuery={searchQuery} 
