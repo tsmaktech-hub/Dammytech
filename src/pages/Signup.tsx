@@ -96,6 +96,21 @@ export default function Signup() {
 
       if (authError) throw authError;
 
+      if (authData.user) {
+        // Create profile record
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert([{
+            id: authData.user.id,
+            full_name: formData.fullName,
+            username: formData.username.toLowerCase(),
+            phone_number: formData.phoneNumber,
+            role: 'user'
+          }]);
+        
+        if (profileError) throw profileError;
+      }
+
       navigate('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Failed to create account');

@@ -21,7 +21,7 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const [formData, setFormData] = useState({
-    email: localStorage.getItem('last_login_email') || location.state?.email || 'tsmaktech@gmail.com',
+    email: location.state?.email || '',
     password: '',
   });
   const [error, setError] = useState('');
@@ -60,7 +60,6 @@ export default function Login() {
         // Simulate network delay for consistency
         await new Promise(resolve => setTimeout(resolve, 800));
         mockStorage.setCurrentUser(mockUser);
-        localStorage.setItem('last_login_email', formData.email);
         navigate('/dashboard');
         setLoading(false);
         return;
@@ -85,7 +84,6 @@ export default function Login() {
       });
 
       if (authError) throw authError;
-      localStorage.setItem('last_login_email', formData.email);
       navigate('/dashboard');
     } catch (err: any) {
       let errorMessage = err.message || 'Invalid email or password';
