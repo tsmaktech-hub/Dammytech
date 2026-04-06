@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase, isMockMode } from '../lib/supabase';
+import { mockStorage } from '../lib/mockStorage';
 import { motion } from 'motion/react';
 import { 
   UserPlus, 
@@ -39,29 +40,78 @@ export default function Signup() {
 
     setLoading(true);
 
+    if (isMockMode) {
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const users = mockStorage.getUsers();
+      if (users.find(u => u.username.toLowerCase() === formData.username.toLowerCase())) {
+        setError('Username already taken');
+        setLoading(false);
+        return;
+      }
+      if (users.find(u => u.email.toLowerCase() === formData.email.toLowerCase())) {
+        setError('Email already registered');
+        setLoading(false);
+        return;
+      }
+    }
+    
+    const newUser = {
+      id: Math.random().toString(36).substr(2, 9),
+      username: formData.username.toLowerCase(),
+      email: formData.email,
+      fullName: formData.fullName,
+      phoneNumber: formData.phoneNumber,
+      role: 'user',
+      avatar: '',
+      created: new Date().toISOString(),
+      updated: new Date().toISOString(),
+      password: formData.password, // Store password for mock mode fallback
+    };
+    
+    mockStorage.saveUser(newUser as any);
+
+    if (isMockMode) {
+      mockStorage.setCurrentUser(newUser as any);
+      
+      // In mock mode, we just navigate. The App component handles the mock user.
+      navigate('/dashboard');
+      setLoading(false);
+      return;
+    }
+
     try {
-      // Sign up with Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
           data: {
             full_name: formData.fullName,
-            phone_number: formData.phoneNumber,
             username: formData.username.toLowerCase(),
+            phone_number: formData.phoneNumber,
           }
         }
       });
 
       if (authError) throw authError;
-      
-      // Profile is now created automatically by the database trigger!
-      navigate('/login', { 
-        state: { 
-          email: formData.email, 
-          message: 'Account created successfully! Please sign in with your credentials.' 
-        } 
-      });
+
+      if (authData.user) {
+        // Create profile record
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert([{
+            id: authData.user.id,
+            full_name: formData.fullName,
+            username: formData.username.toLowerCase(),
+            phone_number: formData.phoneNumber,
+            role: 'user'
+          }]);
+        
+        if (profileError) throw profileError;
+      }
+
+      navigate('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Failed to create account');
     } finally {

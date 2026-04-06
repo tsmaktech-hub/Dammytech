@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { supabase, getFileUrl } from '../lib/supabase';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
+import { supabase, getFileUrl, isMockMode } from '../lib/supabase';
+import { mockStorage } from '../lib/mockStorage';
 import { Gadget } from '../types';
 import { useAuth } from '../App';
 import { motion, AnimatePresence } from 'motion/react';
@@ -44,7 +45,6 @@ const AddGadgetModal = ({
     category: 'phones',
     imageUrl: '',
   });
-  const [imageFile, setImageFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -55,7 +55,7 @@ const AddGadgetModal = ({
         description: gadget.description,
         price: gadget.price.toString(),
         category: gadget.category,
-        imageUrl: gadget.image.startsWith('http') ? gadget.image : '',
+        imageUrl: gadget.image,
       });
     } else {
       setFormData({
@@ -65,67 +65,74 @@ const AddGadgetModal = ({
         category: 'phones',
         imageUrl: '',
       });
-      setImageFile(null);
     }
   }, [gadget, isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-    if (!imageFile && !formData.imageUrl && !gadget) return setError('Please select an image or provide a link');
+    if (!formData.imageUrl) return setError('Please provide an image link');
     setError('');
     setLoading(true);
 
     try {
-      let finalImageUrl = gadget?.image || '';
+      if (isMockMode) {
+        // Simulate network delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        const finalImageUrl = formData.imageUrl;
 
-      if (imageFile) {
-        // Upload image to Supabase Storage
-        const fileExt = imageFile.name.split('.').pop();
-        const fileName = `${Math.random()}.${fileExt}`;
-        const filePath = `${user.id}/${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('gadgets')
-          .upload(filePath, imageFile);
-
-        if (uploadError) throw uploadError;
-        finalImageUrl = filePath;
-      } else if (formData.imageUrl) {
-        finalImageUrl = formData.imageUrl;
+        const updatedGadget: any = {
+          id: gadget?.id || `mock-${Math.random().toString(36).substr(2, 9)}`,
+          name: formData.name,
+          description: formData.description,
+          price: parseFloat(formData.price),
+          category: formData.category,
+          image: finalImageUrl,
+          author: gadget?.author || user.id,
+          created: gadget?.created || new Date().toISOString(),
+          updated: new Date().toISOString(),
+          expand: gadget?.expand || {
+            author: {
+              full_name: user.full_name || 'User',
+              username: user.username || 'user'
+            }
+          }
+        };
+        
+        mockStorage.saveGadget(updatedGadget);
+        window.dispatchEvent(new Event('mock-gadgets-updated'));
+        
+        onClose();
+        return;
       }
 
       if (gadget) {
-        // Update existing gadget
-        const { error: dbError } = await supabase
+        const { error: updateError } = await supabase
           .from('gadgets')
           .update({
             name: formData.name,
             description: formData.description,
             price: parseFloat(formData.price),
             category: formData.category,
-            image: finalImageUrl,
-            updated_at: new Date().toISOString(),
+            image_url: formData.imageUrl,
           })
           .eq('id', gadget.id);
-
-        if (dbError) throw dbError;
+        
+        if (updateError) throw updateError;
       } else {
-        // Create gadget record in database
-        const { error: dbError } = await supabase
+        const { error: insertError } = await supabase
           .from('gadgets')
-          .insert([
-            {
-              name: formData.name,
-              description: formData.description,
-              price: parseFloat(formData.price),
-              category: formData.category,
-              image: finalImageUrl,
-              author: user.id,
-            }
-          ]);
-
-        if (dbError) throw dbError;
+          .insert([{
+            name: formData.name,
+            description: formData.description,
+            price: parseFloat(formData.price),
+            category: formData.category,
+            image_url: formData.imageUrl,
+            author: user.id
+          }]);
+        
+        if (insertError) throw insertError;
       }
 
       onClose();
@@ -213,52 +220,25 @@ const AddGadgetModal = ({
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Gadget Image</label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="relative">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      setImageFile(e.target.files?.[0] || null);
-                      if (e.target.files?.[0]) setFormData({ ...formData, imageUrl: '' });
-                    }}
-                    className="hidden"
-                    id="gadget-image"
-                  />
-                  <label
-                    htmlFor="gadget-image"
-                    className="w-full h-full flex flex-col items-center justify-center gap-2 px-5 py-8 bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl cursor-pointer hover:bg-gray-100 hover:border-cyan-500/50 transition-all font-semibold text-gray-500 text-center"
-                  >
-                    <ImageIcon className="w-8 h-8 text-cyan-500 mb-1" />
-                    <span className="text-xs">{imageFile ? imageFile.name : 'Upload File'}</span>
-                  </label>
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="relative group">
-                    <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
-                    <input
-                      type="url"
-                      className="w-full pl-12 pr-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm"
-                      placeholder="Paste image link here..."
-                      value={formData.imageUrl}
-                      onChange={(e) => {
-                        setFormData({ ...formData, imageUrl: e.target.value });
-                        if (e.target.value) setImageFile(null);
-                      }}
-                    />
-                  </div>
-                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider ml-1">OR PASTE A DIRECT IMAGE LINK</p>
-                </div>
+              <label className="text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Gadget Image Link</label>
+              <div className="relative group">
+                <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
+                <input
+                  type="url"
+                  required
+                  className="w-full pl-12 pr-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm"
+                  placeholder="Paste direct image link here (e.g. https://example.com/image.jpg)"
+                  value={formData.imageUrl}
+                  onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                />
               </div>
             </div>
 
             {/* Image Preview */}
-            {(imageFile || formData.imageUrl || gadget?.image) && (
+            {(formData.imageUrl || gadget?.image) && (
               <div className="relative aspect-video rounded-2xl overflow-hidden bg-gray-100 border border-gray-100">
                 <img 
-                  src={imageFile ? URL.createObjectURL(imageFile) : (formData.imageUrl || getFileUrl('gadgets', gadget?.image || ''))} 
+                  src={formData.imageUrl || (gadget ? getFileUrl('gadgets', gadget.image) : '')} 
                   alt="Preview" 
                   className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"
@@ -319,6 +299,7 @@ export default function Home({
   setSearchQuery?: (q: string) => void;
 }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, profile, isAdmin } = useAuth();
   const { category } = useParams();
   const [gadgets, setGadgets] = useState<Gadget[]>([]);
@@ -347,48 +328,80 @@ export default function Home({
   );
 
   useEffect(() => {
-    const handleOpenModal = () => setIsModalOpen(true);
-    window.addEventListener('open-add-gadget-modal', handleOpenModal);
-    return () => window.removeEventListener('open-add-gadget-modal', handleOpenModal);
-  }, []);
+    // Handle state passed from navigation (e.g., from Dashboard)
+    if (location.state) {
+      const { openAddModal, editingGadget: stateGadget } = location.state as any;
+      if (openAddModal) {
+        setIsModalOpen(true);
+      }
+      if (stateGadget) {
+        setEditingGadget(stateGadget);
+        setIsModalOpen(true);
+      }
+      // Clear state after handling
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, location.pathname, navigate]);
 
   useEffect(() => {
     const fetchGadgets = async () => {
       setLoading(true);
       
+      if (isMockMode) {
+        // Simulate network delay
+        await new Promise(resolve => setTimeout(resolve, 500));
+        const allGadgets = mockStorage.getGadgets();
+        const filtered = category 
+          ? allGadgets.filter(g => g.category === category)
+          : allGadgets;
+        setGadgets(filtered);
+        setLoading(false);
+        return;
+      }
+
       try {
         let query = supabase
           .from('gadgets')
-          .select('*, profiles(*)');
-        
+          .select('*, profiles!gadgets_author_fkey(*)')
+          .order('created_at', { ascending: false });
+
         if (category) {
           query = query.eq('category', category);
         }
 
-        const { data, error } = await query.order('created_at', { ascending: false });
+        const { data, error } = await query;
         
         if (error) throw error;
-        
+
         // Map Supabase data to our Gadget type
-        let mappedData = (data || []).map(item => ({
+        let mappedData = data.map(item => ({
           ...item,
-          created: item.created_at,
-          updated: item.updated_at,
+          image: item.image_url,
           expand: {
             author: item.profiles
           }
         }));
 
         // Limit gadgets for guests
-        let finalData = mappedData;
         if (!user) {
-          finalData = finalData.slice(0, 4); // Show only first 4 gadgets to guests
+          mappedData = mappedData.slice(0, 4); // Show only first 4 gadgets to guests
         }
 
-        setGadgets(finalData as any[]);
+        setGadgets(mappedData as any[]);
       } catch (error) {
         console.error('Error fetching gadgets:', error);
-        setGadgets([]);
+        // Fallback to mock data on error
+        const allGadgets = mockStorage.getGadgets();
+        let filtered = category 
+          ? allGadgets.filter(g => g.category === category)
+          : allGadgets;
+        
+        // Limit gadgets for guests
+        if (!user) {
+          filtered = filtered.slice(0, 4);
+        }
+        
+        setGadgets(filtered);
       } finally {
         setLoading(false);
       }
@@ -405,18 +418,22 @@ export default function Home({
     }
     
     const handleUpdate = () => fetchGadgets();
+    window.addEventListener('mock-gadgets-updated', handleUpdate);
     window.addEventListener('gadgets-updated', handleUpdate);
     
     // Real-time subscription
     let subscription: any;
-    subscription = supabase
-      .channel('gadgets-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'gadgets' }, () => {
-        fetchGadgets();
-      })
-      .subscribe();
+    if (!isMockMode) {
+      subscription = supabase
+        .channel('gadgets-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'gadgets' }, () => {
+          fetchGadgets();
+        })
+        .subscribe();
+    }
 
     return () => {
+      window.removeEventListener('mock-gadgets-updated', handleUpdate);
       window.removeEventListener('gadgets-updated', handleUpdate);
       if (subscription) {
         supabase.removeChannel(subscription);
@@ -427,6 +444,11 @@ export default function Home({
   const handleDelete = async (id: string) => {
     if (!window.confirm('Are you sure you want to delete this gadget?')) return;
     try {
+      if (isMockMode) {
+        mockStorage.deleteGadget(id);
+        window.dispatchEvent(new Event('mock-gadgets-updated'));
+        return;
+      }
       const { error } = await supabase
         .from('gadgets')
         .delete()
@@ -498,13 +520,25 @@ export default function Home({
               <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
             </button>
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-              {isAdmin && (
+              <button 
+                onClick={handleListGadget}
+                className="w-full sm:w-auto px-6 py-3.5 sm:px-10 sm:py-5 bg-white/5 backdrop-blur-xl border border-white/10 text-white rounded-xl sm:rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] sm:text-xs hover:bg-white/10 transition-all flex items-center justify-center gap-2 sm:gap-3"
+              >
+                <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+                List a Gadget
+              </button>
+              {profile?.username === 'Dammy' && (
                 <button 
-                  onClick={handleListGadget}
-                  className="w-full sm:w-auto px-6 py-3.5 sm:px-10 sm:py-5 bg-white/5 backdrop-blur-xl border border-white/10 text-white rounded-xl sm:rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] sm:text-xs hover:bg-white/10 transition-all flex items-center justify-center gap-2 sm:gap-3"
+                  onClick={() => {
+                    if (window.confirm('Are you sure you want to clear all user data and gadgets? Only the owner account will be kept.')) {
+                      mockStorage.resetDatabase();
+                      alert('Database reset successfully. Please refresh the page if changes don\'t appear immediately.');
+                    }
+                  }}
+                  className="w-full sm:w-auto px-6 py-3.5 sm:px-10 sm:py-5 bg-red-500/10 backdrop-blur-xl border border-red-500/20 text-red-400 rounded-xl sm:rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] sm:text-xs hover:bg-red-500/20 transition-all flex items-center justify-center gap-2 sm:gap-3"
                 >
-                  <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
-                  List a Gadget
+                  <RefreshCcw className="w-4 h-4 sm:w-5 sm:h-5" />
+                  Reset App Data
                 </button>
               )}
             </div>
@@ -613,16 +647,14 @@ export default function Home({
             </div>
             <h3 className="text-lg sm:text-2xl font-black text-gray-900 mb-2 sm:mb-3">No gadgets found</h3>
             <p className="text-xs sm:text-gray-500 font-medium max-w-xs mx-auto mb-6 sm:mb-10">
-              We couldn't find any gadgets in this category.
+              We couldn't find any gadgets in this category. Be the first to list one!
             </p>
-            {isAdmin && (
-              <button 
-                onClick={handleListGadget}
-                className="w-full sm:w-auto px-8 py-3 sm:px-10 sm:py-4 bg-gray-900 text-white rounded-xl sm:rounded-2xl font-black uppercase tracking-widest text-[10px] sm:text-xs hover:bg-cyan-600 transition-all shadow-2xl shadow-gray-200"
-              >
-                Start Selling
-              </button>
-            )}
+            <button 
+              onClick={handleListGadget}
+              className="w-full sm:w-auto px-8 py-3 sm:px-10 sm:py-4 bg-gray-900 text-white rounded-xl sm:rounded-2xl font-black uppercase tracking-widest text-[10px] sm:text-xs hover:bg-cyan-600 transition-all shadow-2xl shadow-gray-200"
+            >
+              Start Selling
+            </button>
           </div>
         ) : filteredGadgets.length === 0 ? (
           <div className="text-center py-12 sm:py-32 bg-gray-50 rounded-2xl sm:rounded-[3rem] border-2 border-dashed border-gray-200 px-4 sm:px-6">
@@ -723,7 +755,7 @@ export default function Home({
                     <div className="flex items-center justify-between pt-2 sm:pt-4 border-t border-gray-50">
                       <div className="flex items-center gap-1.5 sm:gap-2">
                         <div className="w-5 h-5 sm:w-8 sm:h-8 bg-gray-100 rounded-full flex items-center justify-center text-[6px] sm:text-[10px] font-black text-gray-400">
-                          {gadget.expand?.author?.fullName?.charAt(0) || 'U'}
+                          {gadget.expand?.author?.full_name?.charAt(0) || 'U'}
                         </div>
                         <span className="text-[6px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                           {gadget.expand?.author?.username || 'Anonymous'}

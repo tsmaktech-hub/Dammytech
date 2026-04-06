@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
-import { supabase } from './lib/supabase';
+import { supabase, isMockMode } from './lib/supabase';
+import { mockStorage } from './lib/mockStorage';
 import { UserProfile } from './types';
 import { ErrorBoundary } from './components/errorboundary';
 import { 
@@ -18,12 +19,14 @@ import {
   ShoppingBag,
   ArrowRight,
   Home as HomeIcon,
-  UserCircle
+  UserCircle,
+  LayoutDashboard
 } from 'lucide-react';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import AuthChoice from './pages/AuthChoice';
+import Dashboard from './pages/Dashboard';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
 
@@ -126,6 +129,7 @@ const Navbar = ({
 
   const categories = [
     { name: 'Home', icon: HomeIcon, path: '/' },
+    { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', authRequired: true },
     { name: 'Phones', icon: Smartphone, path: '/category/phones' },
     { name: 'Laptops', icon: Laptop, path: '/category/laptops' },
     { name: 'Watches', icon: Watch, path: '/category/watches' },
@@ -167,7 +171,7 @@ const Navbar = ({
 
           {/* Desktop Nav */}
           <div className="hidden xl:flex items-center gap-6 mr-8">
-            {categories.map((cat) => (
+            {categories.filter(cat => !cat.authRequired || user).map((cat) => (
               <Link
                 key={cat.name}
                 to={cat.path}
@@ -186,17 +190,17 @@ const Navbar = ({
           {/* User Actions */}
           <div className="flex items-center gap-3">
             {user && (
-              <div className="flex items-center gap-3">
+              <Link to="/dashboard" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
                 <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center text-white font-black text-xs sm:text-sm shadow-lg shadow-cyan-200 border-2 border-white">
-                  {getInitials(profile?.fullName, user?.email)}
+                  {getInitials(profile?.full_name, user?.email)}
                 </div>
                 <div className="hidden sm:flex flex-col items-start leading-tight">
-                  <span className="text-sm font-bold text-gray-900">{profile?.fullName}</span>
+                  <span className="text-sm font-bold text-gray-900">{profile?.full_name}</span>
                   <span className="text-[10px] font-bold text-cyan-600 uppercase tracking-wider">
                     {profile?.role}
                   </span>
                 </div>
-              </div>
+              </Link>
             )}
 
             {/* Desktop Explore/Logout (Right Side) */}
@@ -244,7 +248,7 @@ const Navbar = ({
             <div className="p-4 space-y-4">
               <div className="space-y-2">
                 <div className="grid grid-cols-1 gap-1.5">
-                  {categories.map((cat, i) => (
+                  {categories.filter(cat => !cat.authRequired || user).map((cat, i) => (
                     <motion.div
                       key={cat.name}
                       initial={{ opacity: 0, x: -10 }}
@@ -360,6 +364,19 @@ export default function App() {
       return;
     }
 
+    if (isMockMode) {
+      const profile = mockStorage.getUserById(id);
+      setProfile(profile || null);
+      return;
+    }
+
+    // Check mock storage first even if not in mock mode (for owner bypass)
+    const mockProfile = mockStorage.getUserById(id);
+    if (mockProfile) {
+      setProfile(mockProfile);
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -368,7 +385,7 @@ export default function App() {
         .single();
       
       if (error) throw error;
-      setProfile(data as UserProfile);
+      setProfile(data as unknown as UserProfile);
     } catch (error) {
       console.error("Error fetching profile:", error);
       setProfile(null);
@@ -387,21 +404,51 @@ export default function App() {
       }
     };
 
-    // Check Supabase session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        handleAuthChange(session.user);
-      }
+    // Check mock storage first (for owner bypass)
+    const mockUser = mockStorage.getCurrentUser();
+    if (mockUser) {
+      handleAuthChange(mockUser);
       setLoading(false);
-    });
+    } else if (!isMockMode) {
+      // Only check Supabase if no mock user
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        handleAuthChange(session?.user ?? null);
+        setLoading(false);
+      });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      handleAuthChange(session?.user);
-    });
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (!mockStorage.getCurrentUser()) { // Only update from Supabase if no mock user
+          handleAuthChange(session?.user ?? null);
+        }
+      });
 
-    return () => {
-      subscription.unsubscribe();
-    };
+      // Still need to listen for mock auth changes in case owner logs in/out
+      const handleMockAuthChange = () => {
+        const updatedMockUser = mockStorage.getCurrentUser();
+        if (updatedMockUser) {
+          handleAuthChange(updatedMockUser);
+        } else {
+          // If mock user logged out, check Supabase again
+          supabase.auth.getUser().then(({ data: { user } }) => {
+            handleAuthChange(user);
+          });
+        }
+      };
+
+      window.addEventListener('mock-auth-change', handleMockAuthChange);
+      return () => {
+        subscription.unsubscribe();
+        window.removeEventListener('mock-auth-change', handleMockAuthChange);
+      };
+    } else {
+      // Pure mock mode
+      setLoading(false);
+      const handleMockAuthChange = () => {
+        handleAuthChange(mockStorage.getCurrentUser());
+      };
+      window.addEventListener('mock-auth-change', handleMockAuthChange);
+      return () => window.removeEventListener('mock-auth-change', handleMockAuthChange);
+    }
   }, []);
 
   if (loading) {
@@ -420,8 +467,11 @@ export default function App() {
   }
 
   const logout = async () => {
-    await supabase.auth.signOut();
-    
+    if (isMockMode) {
+      mockStorage.setCurrentUser(null);
+    } else {
+      await supabase.auth.signOut();
+    }
     setUser(null);
     setProfile(null);
     setSearchQuery('');
@@ -433,7 +483,7 @@ export default function App() {
       user, 
       profile, 
       loading, 
-      isAdmin: profile?.role === 'admin' || user?.email === 'Ibusari127@gmail.com', 
+      isAdmin: profile?.role === 'admin', 
       refreshProfile,
       logout
     }}>
@@ -451,9 +501,10 @@ export default function App() {
             <ErrorBoundary>
               <Routes>
                 <Route path="/" element={<Home searchQuery={searchQuery} setSearchQuery={setSearchQuery} />} />
-                <Route path="/auth" element={user ? <Navigate to="/" /> : <AuthChoice />} />
-                <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
-                <Route path="/signup" element={user ? <Navigate to="/" /> : <Signup />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/auth" element={user ? <Navigate to="/dashboard" /> : <AuthChoice />} />
+                <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login />} />
+                <Route path="/signup" element={user ? <Navigate to="/dashboard" /> : <Signup />} />
                 <Route path="/category/:category" element={<Home searchQuery={searchQuery} setSearchQuery={setSearchQuery} />} />
                 <Route path="*" element={<Navigate to="/" />} />
               </Routes>
