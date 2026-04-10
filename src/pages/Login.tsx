@@ -125,7 +125,7 @@ export default function Login() {
         // Simulate network delay for consistency
         await new Promise(resolve => setTimeout(resolve, 800));
         mockStorage.setCurrentUser(mockUser);
-        navigate('/dashboard');
+        navigate('/');
         setLoading(false);
         return;
       }
@@ -149,7 +149,7 @@ export default function Login() {
       });
 
       if (authError) throw authError;
-      navigate('/dashboard');
+      navigate('/');
     } catch (err: any) {
       let errorMessage = err.message || 'Invalid email or password';
       
