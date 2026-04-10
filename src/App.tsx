@@ -464,7 +464,7 @@ export default function App() {
       user, 
       profile, 
       loading, 
-      isAdmin: profile?.role === 'admin' || profile?.username === 'Dammy', 
+      isAdmin: profile?.role === 'admin' || profile?.username?.toLowerCase() === 'dammy', 
       refreshProfile,
       logout
     }}>
