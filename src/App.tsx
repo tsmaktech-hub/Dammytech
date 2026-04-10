@@ -328,37 +328,6 @@ const ScrollToTop = () => {
   return null;
 };
 
-const AuthRedirectHandler = () => {
-  const { logout, loading } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const hasInitialActionRun = useRef(false);
-
-  useEffect(() => {
-    // This effect runs ONLY ONCE when the app first finishes loading (on refresh/initial load)
-    if (!loading && !hasInitialActionRun.current) {
-      hasInitialActionRun.current = true;
-      
-      const performInitialAction = async () => {
-        // If user has a persisted session on refresh, log them out as requested
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          await logout();
-        }
-        
-        // Always redirect to home page on refresh/initial load if not already there
-        if (location.pathname !== '/') {
-          navigate('/', { replace: true });
-        }
-      };
-      
-      performInitialAction();
-    }
-  }, [loading, logout, navigate]); // Removed 'user' and 'location.pathname' to prevent re-triggering during login
-
-  return null;
-};
-
 export default function App() {
   const [user, setUser] = useState<any | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -498,7 +467,6 @@ export default function App() {
     }}>
       <Router>
         <ScrollToTop />
-        <AuthRedirectHandler />
         <div className="min-h-screen bg-white font-sans selection:bg-cyan-100 selection:text-cyan-900">
           <Navbar 
             searchQuery={searchQuery} 
