@@ -107,39 +107,60 @@ const AddGadgetModal = ({
         return;
       }
 
+      // Supabase mode
+      // Get the current Supabase user to ensure we have the correct UID for RLS
+      const { data: { user: sbUser }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !sbUser) {
+        throw new Error('You must be logged in to your account to list gadgets. Please log out and log back in.');
+      }
+
       if (gadget) {
-        const { error: updateError } = await supabase
-          .from('gadgets')
-          .update({
+        const response = await fetch(`/api/gadgets/${gadget.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
             name: formData.name,
             description: formData.description,
             price: parseFloat(formData.price),
             category: formData.category,
             image: formData.imageUrl,
-          })
-          .eq('id', gadget.id);
+          }),
+        });
         
-        if (updateError) throw updateError;
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to update gadget');
+        }
       } else {
-        const { error: insertError } = await supabase
-          .from('gadgets')
-          .insert([{
+        const response = await fetch('/api/gadgets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
             name: formData.name,
             description: formData.description,
             price: parseFloat(formData.price),
             category: formData.category,
             image: formData.imageUrl,
-            author: user.id
-          }]);
+            author: sbUser.id
+          }),
+        });
         
-        if (insertError) throw insertError;
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to create gadget');
+        }
       }
 
       onClose();
       // Trigger a refresh of the gadgets list
       window.dispatchEvent(new Event('gadgets-updated'));
     } catch (err: any) {
-      setError(err.message || 'Failed to save gadget');
+      let msg = err.message || 'Failed to save gadget';
+      if (msg.includes('row-level security policy')) {
+        msg = 'Permission denied. Please try logging out and logging back in to refresh your session.';
+      }
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -370,34 +391,29 @@ export default function Home({
       }
 
       try {
-        let query = supabase
-          .from('gadgets')
-          .select('*, profiles!gadgets_author_fkey(*)')
-          .order('created_at', { ascending: false });
+        const response = await fetch(`/api/gadgets${category ? `?category=${category}` : ''}`);
+        if (!response.ok) throw new Error('Failed to fetch gadgets');
+        const data = await response.json();
 
-        if (category) {
-          query = query.eq('category', category);
-        }
-
-        const { data, error } = await query;
-        
-        if (error) throw error;
-
-        // Map Supabase data to our Gadget type
-        let mappedData = data.map(item => ({
+        // Map API data to our Gadget type
+        let mappedData = data.map((item: any) => ({
           ...item,
-          image: item.image,
           expand: {
-            author: item.profiles
+            author: item.author
           }
         }));
 
-        // Limit gadgets for guests
-        if (!user) {
-          mappedData = mappedData.slice(0, 4); // Show only first 4 gadgets to guests
+        // Client-side filtering if needed (though backend could do it)
+        if (category) {
+          mappedData = mappedData.filter((g: any) => g.category === category);
         }
 
-        setGadgets(mappedData as any[]);
+        // Limit gadgets for guests
+        if (!user) {
+          mappedData = mappedData.slice(0, 4);
+        }
+
+        setGadgets(mappedData);
       } catch (error) {
         console.error('Error fetching gadgets:', error);
         // Fallback to mock data on error
@@ -459,12 +475,16 @@ export default function Home({
         window.dispatchEvent(new Event('mock-gadgets-updated'));
         return;
       }
-      const { error } = await supabase
-        .from('gadgets')
-        .delete()
-        .eq('id', id);
       
-      if (error) throw error;
+      const response = await fetch(`/api/gadgets/${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete gadget');
+      }
+      
       setGadgets(prev => prev.filter(g => g.id !== id));
     } catch (error) {
       console.error('Error deleting gadget:', error);

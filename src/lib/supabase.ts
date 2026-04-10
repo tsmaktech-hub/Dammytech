@@ -3,10 +3,6 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://esqukfrytkoiwbagfqsn.supabase.co';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzcXVrZnJ5dGtvaXdiYWdmcXNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0OTkxNDMsImV4cCI6MjA5MTA3NTE0M30.JhbPocWBF3UZLOA9Fy5CpW3egFR470Fs-dRXKJxM1QU';
 
-if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
-  console.info('Using hardcoded Supabase credentials. For better security, set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your environment variables.');
-}
-
 export const supabase = createClient(
   supabaseUrl,
   supabaseAnonKey,

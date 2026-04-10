@@ -392,35 +392,39 @@ export default function App() {
       }
     };
 
-    // Check mock storage first (for owner bypass)
-    const mockUser = mockStorage.getCurrentUser();
-    if (mockUser) {
-      handleAuthChange(mockUser);
-      setLoading(false);
-    } else if (!isMockMode) {
-      // Only check Supabase if no mock user
+    // Handle auth state
+    if (!isMockMode) {
+      // Initial session check
       supabase.auth.getSession().then(({ data: { session } }) => {
-        handleAuthChange(session?.user ?? null);
+        if (session?.user) {
+          handleAuthChange(session.user);
+        } else {
+          // Fallback to mock user if no Supabase session (for dev convenience)
+          const mockUser = mockStorage.getCurrentUser();
+          handleAuthChange(mockUser);
+        }
         setLoading(false);
       });
 
+      // Listen for changes
       const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-        if (!mockStorage.getCurrentUser()) { // Only update from Supabase if no mock user
-          handleAuthChange(session?.user ?? null);
+        if (session?.user) {
+          handleAuthChange(session.user);
+        } else {
+          const mockUser = mockStorage.getCurrentUser();
+          handleAuthChange(mockUser);
         }
       });
 
-      // Still need to listen for mock auth changes in case owner logs in/out
+      // Also listen for mock auth changes
       const handleMockAuthChange = () => {
-        const updatedMockUser = mockStorage.getCurrentUser();
-        if (updatedMockUser) {
-          handleAuthChange(updatedMockUser);
-        } else {
-          // If mock user logged out, check Supabase again
-          supabase.auth.getUser().then(({ data: { user } }) => {
-            handleAuthChange(user);
-          });
-        }
+        const mockUser = mockStorage.getCurrentUser();
+        // Only switch to mock if no active Supabase session
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (!session?.user) {
+            handleAuthChange(mockUser);
+          }
+        });
       };
 
       window.addEventListener('mock-auth-change', handleMockAuthChange);
@@ -430,7 +434,10 @@ export default function App() {
       };
     } else {
       // Pure mock mode
+      const mockUser = mockStorage.getCurrentUser();
+      handleAuthChange(mockUser);
       setLoading(false);
+      
       const handleMockAuthChange = () => {
         handleAuthChange(mockStorage.getCurrentUser());
       };

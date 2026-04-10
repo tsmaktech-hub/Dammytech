@@ -44,7 +44,47 @@ export default function Login() {
     setLoading(true);
 
     try {
-      // Check mock storage first (even if Supabase is active)
+      // If not in mock mode, we MUST log into Supabase to satisfy RLS policies
+      if (!isMockMode) {
+        // Find email if username was entered
+        const users = mockStorage.getUsers();
+        const mockUser = users.find(u => 
+          u.email.toLowerCase() === formData.email.toLowerCase() || 
+          u.username.toLowerCase() === formData.email.toLowerCase()
+        ) as any;
+
+        let loginEmail = formData.email;
+        if (mockUser && mockUser.email) {
+          loginEmail = mockUser.email;
+        }
+
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+          email: loginEmail,
+          password: formData.password,
+        });
+
+        if (authError) throw authError;
+
+        if (authData.user) {
+          // Sync mock storage with Supabase user
+          const existingMockUser = mockUser || users.find(u => u.email === authData.user.email);
+          const syncedUser = {
+            ...(existingMockUser || {}),
+            id: authData.user.id,
+            email: authData.user.email,
+            username: existingMockUser?.username || authData.user.user_metadata?.username || authData.user.email?.split('@')[0],
+            fullName: existingMockUser?.fullName || authData.user.user_metadata?.full_name || 'User',
+            password: formData.password,
+          };
+          mockStorage.saveUser(syncedUser);
+          mockStorage.setCurrentUser(syncedUser);
+        }
+
+        navigate('/');
+        return;
+      }
+
+      // Pure mock mode logic
       const users = mockStorage.getUsers();
       const mockUser = users.find(u => 
         u.email.toLowerCase() === formData.email.toLowerCase() || 
@@ -52,50 +92,19 @@ export default function Login() {
       ) as any;
 
       if (mockUser) {
-        // In mock mode, we accept 'password' OR the specific password set during signup
         const isValidPassword = formData.password === 'password' || 
                                formData.password === mockUser.password ||
                                (mockUser.username.toLowerCase() === 'dammy' && (formData.password === 'Broismail' || formData.password === 'Bro ismail'));
         
         if (isValidPassword) {
-          // Ensure ID is a valid UUID for Supabase compatibility
-          const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(mockUser.id);
-          if (!isUUID) {
-            mockUser.id = crypto.randomUUID();
-            mockStorage.saveUser(mockUser);
-          }
-          
-          // Simulate network delay for consistency
           await new Promise(resolve => setTimeout(resolve, 800));
           mockStorage.setCurrentUser(mockUser);
           navigate('/');
           return;
         }
+        throw new Error('Invalid password');
       }
-
-      if (isMockMode) {
-        if (mockUser) {
-          throw new Error('Invalid password');
-        } else {
-          throw new Error('User not found');
-        }
-      }
-
-      // Supabase login (requires email)
-      // If user entered a username, we try to find their email in mock storage first
-      let loginEmail = formData.email;
-      if (mockUser && mockUser.email) {
-        loginEmail = mockUser.email;
-      }
-
-      const { error: authError } = await supabase.auth.signInWithPassword({
-        email: loginEmail,
-        password: formData.password,
-      });
-
-      if (authError) throw authError;
-      
-      navigate('/');
+      throw new Error('User not found');
     } catch (err: any) {
       let errorMessage = err.message || 'Invalid email or password';
       

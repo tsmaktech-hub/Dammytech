@@ -3,13 +3,101 @@ import { createServer as createViteServer } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs/promises";
+import { createClient } from "@supabase/supabase-js";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Initialize Supabase with Service Role Key (Server-side only)
+const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://esqukfrytkoiwbagfqsn.supabase.co';
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseServiceKey) {
+  console.warn("⚠️ SUPABASE_SERVICE_ROLE_KEY is not set. Database operations might fail.");
+}
+
+const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey || "", {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
+  }
+});
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
+
+  app.use(express.json());
+
+  // API Routes
+  app.get("/api/gadgets", async (req, res) => {
+    try {
+      const { data, error } = await supabaseAdmin
+        .from("gadgets")
+        .select(`
+          *,
+          author:profiles(*)
+        `)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      res.json(data);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/gadgets", async (req, res) => {
+    try {
+      const gadget = req.body;
+      const { data, error } = await supabaseAdmin
+        .from("gadgets")
+        .insert([gadget])
+        .select()
+        .single();
+
+      if (error) throw error;
+      res.json(data);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.put("/api/gadgets/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      const { data, error } = await supabaseAdmin
+        .from("gadgets")
+        .update(updates)
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      res.json(data);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/gadgets/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { error } = await supabaseAdmin
+        .from("gadgets")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
 
   // Log requests for debugging
   app.use((req, res, next) => {

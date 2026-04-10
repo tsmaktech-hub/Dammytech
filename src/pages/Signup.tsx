@@ -57,45 +57,59 @@ export default function Signup() {
       }
     }
     
-    const newUser = {
-      id: crypto.randomUUID(),
-      username: formData.username.toLowerCase(),
-      email: formData.email,
-      fullName: formData.fullName,
-      phoneNumber: formData.phoneNumber,
-      role: 'user',
-      avatar: '',
-      created: new Date().toISOString(),
-      updated: new Date().toISOString(),
-      password: formData.password, // Store password for mock mode fallback
-    };
-    
-    mockStorage.saveUser(newUser as any);
-
-    if (isMockMode) {
-      mockStorage.setCurrentUser(newUser as any);
-      
-      // In mock mode, we just navigate. The App component handles the mock user.
-      navigate('/');
-      setLoading(false);
-      return;
-    }
-
     try {
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            full_name: formData.fullName,
-            username: formData.username.toLowerCase(),
-            phone_number: formData.phoneNumber,
+      if (!isMockMode) {
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            data: {
+              full_name: formData.fullName,
+              username: formData.username.toLowerCase(),
+              phone_number: formData.phoneNumber,
+            }
           }
+        });
+
+        if (authError) throw authError;
+
+        if (authData.user) {
+          const newUser = {
+            id: authData.user.id, // Use Supabase ID
+            username: formData.username.toLowerCase(),
+            email: formData.email,
+            fullName: formData.fullName,
+            phoneNumber: formData.phoneNumber,
+            role: 'user',
+            avatar: '',
+            created: new Date().toISOString(),
+            updated: new Date().toISOString(),
+            password: formData.password,
+          };
+          mockStorage.saveUser(newUser as any);
+          mockStorage.setCurrentUser(newUser as any);
         }
-      });
+        
+        navigate('/');
+        return;
+      }
 
-      if (authError) throw authError;
-
+      // Pure mock mode
+      const newUser = {
+        id: crypto.randomUUID(),
+        username: formData.username.toLowerCase(),
+        email: formData.email,
+        fullName: formData.fullName,
+        phoneNumber: formData.phoneNumber,
+        role: 'user',
+        avatar: '',
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+        password: formData.password,
+      };
+      
+      mockStorage.saveUser(newUser as any);
+      mockStorage.setCurrentUser(newUser as any);
       navigate('/');
     } catch (err: any) {
       setError(err.message || 'Failed to create account');
