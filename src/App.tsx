@@ -445,11 +445,14 @@ export default function App() {
   }
 
   const logout = async () => {
-    if (isMockMode) {
-      mockStorage.setCurrentUser(null);
-    } else {
+    // Always clear mock session
+    mockStorage.setCurrentUser(null);
+    
+    // Clear Supabase session if not in mock mode
+    if (!isMockMode) {
       await supabase.auth.signOut();
     }
+    
     setUser(null);
     setProfile(null);
     setSearchQuery('');
