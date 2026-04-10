@@ -37,6 +37,7 @@ export const mockStorage = {
     const data = getStorageData();
     data.currentUser = user;
     saveStorageData(data);
+    window.dispatchEvent(new Event('mock-auth-change'));
   },
   getSavedCredentials: (deviceId: string) => getStorageData().savedCredentials[deviceId],
   saveCredentials: (deviceId: string, creds: any) => {
