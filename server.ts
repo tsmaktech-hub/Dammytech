@@ -13,7 +13,7 @@ const __dirname = path.dirname(__filename);
 
 // Initialize Supabase with Service Role Key (Server-side only)
 const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://esqukfrytkoiwbagfqsn.supabase.co';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseServiceKey) {
   console.warn("⚠️ SUPABASE_SERVICE_ROLE_KEY is not set. Database operations might fail.");
@@ -32,8 +32,18 @@ async function startServer() {
 
   app.use(express.json());
 
+  // Health check
+  app.get("/api/health", (req, res) => {
+    res.json({ 
+      status: "ok", 
+      supabaseUrl: supabaseUrl ? "Set" : "Missing",
+      supabaseKey: supabaseServiceKey ? "Set" : "Missing"
+    });
+  });
+
   // API Routes
   app.get("/api/gadgets", async (req, res) => {
+    console.log("[Server] Fetching gadgets...");
     try {
       const { data, error } = await supabaseAdmin
         .from("gadgets")
@@ -43,14 +53,19 @@ async function startServer() {
         `)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("[Server] Supabase error fetching gadgets:", error);
+        throw error;
+      }
       res.json(data);
     } catch (error: any) {
+      console.error("[Server] Catch error fetching gadgets:", error);
       res.status(500).json({ error: error.message });
     }
   });
 
   app.post("/api/gadgets", async (req, res) => {
+    console.log("[Server] Creating gadget:", req.body);
     try {
       const gadget = req.body;
       const { data, error } = await supabaseAdmin
@@ -59,9 +74,13 @@ async function startServer() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("[Server] Supabase error creating gadget:", error);
+        throw error;
+      }
       res.json(data);
     } catch (error: any) {
+      console.error("[Server] Catch error creating gadget:", error);
       res.status(500).json({ error: error.message });
     }
   });

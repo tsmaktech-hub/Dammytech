@@ -129,8 +129,15 @@ const AddGadgetModal = ({
         });
         
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to update gadget');
+          let errorMessage = 'Failed to update gadget';
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorMessage;
+          } catch (e) {
+            const text = await response.text();
+            errorMessage = text || `Server returned ${response.status}`;
+          }
+          throw new Error(errorMessage);
         }
       } else {
         const response = await fetch('/api/gadgets', {
@@ -147,8 +154,15 @@ const AddGadgetModal = ({
         });
         
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to create gadget');
+          let errorMessage = 'Failed to create gadget';
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorMessage;
+          } catch (e) {
+            const text = await response.text();
+            errorMessage = text || `Server returned ${response.status}`;
+          }
+          throw new Error(errorMessage);
         }
       }
 
@@ -392,7 +406,17 @@ export default function Home({
 
       try {
         const response = await fetch(`/api/gadgets${category ? `?category=${category}` : ''}`);
-        if (!response.ok) throw new Error('Failed to fetch gadgets');
+        if (!response.ok) {
+          let msg = 'Failed to fetch gadgets';
+          try {
+            const err = await response.json();
+            msg = err.error || msg;
+          } catch (e) {
+            const text = await response.text();
+            msg = text || `Server returned ${response.status}`;
+          }
+          throw new Error(msg);
+        }
         const data = await response.json();
 
         // Map API data to our Gadget type
