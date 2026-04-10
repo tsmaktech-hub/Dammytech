@@ -83,7 +83,7 @@ const AddGadgetModal = ({
         const finalImageUrl = formData.imageUrl;
 
         const updatedGadget: any = {
-          id: gadget?.id || `mock-${Math.random().toString(36).substr(2, 9)}`,
+          id: gadget?.id || crypto.randomUUID(),
           name: formData.name,
           description: formData.description,
           price: parseFloat(formData.price),

@@ -58,6 +58,13 @@ export default function Login() {
                                (mockUser.username.toLowerCase() === 'dammy' && (formData.password === 'Broismail' || formData.password === 'Bro ismail'));
         
         if (isValidPassword) {
+          // Ensure ID is a valid UUID for Supabase compatibility
+          const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(mockUser.id);
+          if (!isUUID) {
+            mockUser.id = crypto.randomUUID();
+            mockStorage.saveUser(mockUser);
+          }
+          
           // Simulate network delay for consistency
           await new Promise(resolve => setTimeout(resolve, 800));
           mockStorage.setCurrentUser(mockUser);

@@ -28,7 +28,12 @@ export const mockStorage = {
   getUsers: () => getStorageData().users,
   saveUser: (user: any) => {
     const data = getStorageData();
-    data.users.push(user);
+    const index = data.users.findIndex(u => u.username === user.username || u.email === user.email);
+    if (index >= 0) {
+      data.users[index] = { ...data.users[index], ...user };
+    } else {
+      data.users.push(user);
+    }
     saveStorageData(data);
   },
   getUserById: (id: string) => getStorageData().users.find(u => u.id === id),

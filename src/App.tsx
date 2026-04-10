@@ -373,6 +373,15 @@ export default function App() {
 
   useEffect(() => {
     const handleAuthChange = (updatedUser: any) => {
+      if (updatedUser && updatedUser.username) {
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(updatedUser.id);
+        if (!isUUID) {
+          const fixedUser = { ...updatedUser, id: crypto.randomUUID() };
+          mockStorage.saveUser(fixedUser);
+          mockStorage.setCurrentUser(fixedUser);
+          return;
+        }
+      }
       setUser(updatedUser ? { id: updatedUser.id, email: updatedUser.email } : null);
       if (updatedUser) {
         refreshProfile(updatedUser.id);
