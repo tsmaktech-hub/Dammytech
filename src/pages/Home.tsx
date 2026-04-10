@@ -769,7 +769,7 @@ export default function Home({
                     <div className="flex items-center justify-between pt-2 sm:pt-4 border-t border-gray-50">
                       <div className="flex items-center gap-1.5 sm:gap-2">
                         <div className="w-5 h-5 sm:w-8 sm:h-8 bg-gray-100 rounded-full flex items-center justify-center text-[6px] sm:text-[10px] font-black text-gray-400">
-                          {gadget.expand?.author?.full_name?.charAt(0) || (gadget.expand?.author?.username?.toLowerCase() === 'dammy' ? 'B' : 'U')}
+                          {gadget.expand?.author?.username?.toLowerCase() === 'dammy' ? 'BI' : (gadget.expand?.author?.full_name?.charAt(0) || 'U')}
                         </div>
                         <span className="text-[6px] sm:text-[10px] font-bold text-cyan-600 uppercase tracking-widest">
                           {gadget.expand?.author?.username?.toLowerCase() === 'dammy' ? 'Admin' : (gadget.expand?.author?.username || 'Anonymous')}
