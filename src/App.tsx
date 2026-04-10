@@ -187,14 +187,14 @@ const Navbar = ({
           {/* User Actions */}
           <div className="flex items-center gap-3">
             {user && (
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center text-white font-black text-xs sm:text-sm shadow-lg shadow-cyan-200 border-2 border-white">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center text-white font-black text-xs sm:text-sm shadow-lg shadow-cyan-200 border-2 border-white flex-shrink-0">
                   {getInitials(profile?.full_name, user?.email)}
                 </div>
-                <div className="hidden sm:flex flex-col items-start leading-tight">
-                  <span className="text-sm font-bold text-gray-900">{profile?.full_name}</span>
-                  <span className="text-[10px] font-bold text-cyan-600 uppercase tracking-wider">
-                    {profile?.role}
+                <div className="flex flex-col items-start leading-tight">
+                  <span className="text-[10px] sm:text-sm font-bold text-gray-900 line-clamp-1">{profile?.full_name || 'User'}</span>
+                  <span className="text-[8px] sm:text-[10px] font-bold text-cyan-600 uppercase tracking-wider">
+                    {profile?.username?.toLowerCase() === 'dammy' ? 'Admin' : (profile?.role || 'User')}
                   </span>
                 </div>
               </div>

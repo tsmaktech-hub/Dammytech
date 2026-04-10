@@ -771,8 +771,8 @@ export default function Home({
                         <div className="w-5 h-5 sm:w-8 sm:h-8 bg-gray-100 rounded-full flex items-center justify-center text-[6px] sm:text-[10px] font-black text-gray-400">
                           {gadget.expand?.author?.full_name?.charAt(0) || 'U'}
                         </div>
-                        <span className="text-[6px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                          {gadget.expand?.author?.username || 'Anonymous'}
+                        <span className="text-[6px] sm:text-[10px] font-bold text-cyan-600 uppercase tracking-widest">
+                          {gadget.expand?.author?.username?.toLowerCase() === 'dammy' ? 'Admin' : (gadget.expand?.author?.username || 'Anonymous')}
                         </span>
                       </div>
                       <button className="text-[8px] sm:text-xs font-black uppercase tracking-widest text-cyan-600 flex items-center gap-0.5 sm:gap-1 group/btn">
