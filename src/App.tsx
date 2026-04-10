@@ -192,7 +192,7 @@ const Navbar = ({
                   {getInitials(profile?.full_name, user?.email)}
                 </div>
                 <div className="flex flex-col items-start leading-tight">
-                  <span className="text-[10px] sm:text-sm font-bold text-gray-900 line-clamp-1">{profile?.full_name || 'User'}</span>
+                  <span className="text-[10px] sm:text-sm font-bold text-gray-900 line-clamp-1">{profile?.full_name || (profile?.username?.toLowerCase() === 'dammy' ? 'Busari Ismail' : 'User')}</span>
                   <span className="text-[8px] sm:text-[10px] font-bold text-cyan-600 uppercase tracking-wider">
                     {profile?.username?.toLowerCase() === 'dammy' ? 'Admin' : (profile?.role || 'User')}
                   </span>
