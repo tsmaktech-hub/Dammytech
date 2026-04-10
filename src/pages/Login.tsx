@@ -44,7 +44,30 @@ export default function Login() {
     setLoading(true);
 
     try {
-      // Check mock storage first (even if Supabase is active)
+      // Special check for Dammy owner account
+      if (formData.email.toLowerCase() === 'dammy' && (formData.password === 'Broismail' || formData.password === 'Bro ismail')) {
+        const users = mockStorage.getUsers();
+        let dammyUser = users.find(u => u.username.toLowerCase() === 'dammy');
+        
+        if (!dammyUser) {
+          dammyUser = {
+            id: 'dammy-owner-id',
+            username: 'Dammy',
+            email: 'tsmaktech@gmail.com',
+            full_name: 'Busari Ismail',
+            role: 'admin',
+            password: 'Broismail'
+          };
+          mockStorage.saveUser(dammyUser);
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 800));
+        mockStorage.setCurrentUser(dammyUser);
+        navigate('/');
+        return;
+      }
+
+      // Check mock storage for other users
       const users = mockStorage.getUsers();
       const mockUser = users.find(u => 
         u.email.toLowerCase() === formData.email.toLowerCase() || 
@@ -54,8 +77,7 @@ export default function Login() {
       if (mockUser) {
         // In mock mode, we accept 'password' OR the specific password set during signup
         const isValidPassword = formData.password === 'password' || 
-                               formData.password === mockUser.password ||
-                               (mockUser.username.toLowerCase() === 'dammy' && (formData.password === 'Broismail' || formData.password === 'Bro ismail'));
+                               formData.password === mockUser.password;
         
         if (isValidPassword) {
           // Simulate network delay for consistency

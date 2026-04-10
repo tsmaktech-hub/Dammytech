@@ -307,10 +307,7 @@ export default function Home({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingGadget, setEditingGadget] = useState<Gadget | null>(null);
 
-  const isAuthorizedSeller = profile?.email === 'tsmaktech@gmail.com' && 
-                            profile?.username === 'Dammy' && 
-                            profile?.full_name === 'Busari Ismail' &&
-                            profile?.phone_number === '09071498194';
+  const isAuthorizedSeller = isAdmin || profile?.username === 'Dammy';
 
   const scrollToCollection = () => {
     const element = document.getElementById('collection');
@@ -528,8 +525,8 @@ export default function Home({
               Explore Collection
               <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
             </button>
-            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-              {isAuthorizedSeller && (
+            {isAuthorizedSeller && (
+              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                 <button 
                   onClick={handleListGadget}
                   className="w-full sm:w-auto px-6 py-3.5 sm:px-10 sm:py-5 bg-white/5 backdrop-blur-xl border border-white/10 text-white rounded-xl sm:rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] sm:text-xs hover:bg-white/10 transition-all flex items-center justify-center gap-2 sm:gap-3"
@@ -537,22 +534,8 @@ export default function Home({
                   <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
                   List a Gadget
                 </button>
-              )}
-              {profile?.username === 'Dammy' && (
-                <button 
-                  onClick={() => {
-                    if (window.confirm('Are you sure you want to clear all user data and gadgets? Only the owner account will be kept.')) {
-                      mockStorage.resetDatabase();
-                      alert('Database reset successfully. Please refresh the page if changes don\'t appear immediately.');
-                    }
-                  }}
-                  className="w-full sm:w-auto px-6 py-3.5 sm:px-10 sm:py-5 bg-red-500/10 backdrop-blur-xl border border-red-500/20 text-red-400 rounded-xl sm:rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] sm:text-xs hover:bg-red-500/20 transition-all flex items-center justify-center gap-2 sm:gap-3"
-                >
-                  <RefreshCcw className="w-4 h-4 sm:w-5 sm:h-5" />
-                  Reset App Data
-                </button>
-              )}
-            </div>
+              </div>
+            )}
           </motion.div>
 
           {/* Mobile Stats */}
