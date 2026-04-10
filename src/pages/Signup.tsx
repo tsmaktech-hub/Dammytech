@@ -76,7 +76,7 @@ export default function Signup() {
       mockStorage.setCurrentUser(newUser as any);
       
       // In mock mode, we just navigate. The App component handles the mock user.
-      navigate('/');
+      navigate('/dashboard');
       setLoading(false);
       return;
     }
@@ -96,7 +96,7 @@ export default function Signup() {
 
       if (authError) throw authError;
 
-      navigate('/');
+      navigate('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Failed to create account');
     } finally {
