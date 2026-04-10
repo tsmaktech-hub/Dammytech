@@ -65,23 +65,30 @@ async function startServer() {
   });
 
   app.post("/api/gadgets", async (req, res) => {
-    console.log("[Server] Creating gadget:", req.body);
+    console.log("[Server] POST /api/gadgets - Body:", JSON.stringify(req.body, null, 2));
     try {
       const gadget = req.body;
+      
+      if (!supabaseServiceKey) {
+        console.error("[Server] ERROR: SUPABASE_SERVICE_ROLE_KEY is missing!");
+        return res.status(500).json({ error: "Server configuration error: Missing API Key" });
+      }
+
       const { data, error } = await supabaseAdmin
         .from("gadgets")
         .insert([gadget])
-        .select()
-        .single();
+        .select();
 
       if (error) {
-        console.error("[Server] Supabase error creating gadget:", error);
-        throw error;
+        console.error("[Server] Supabase INSERT error:", JSON.stringify(error, null, 2));
+        return res.status(400).json({ error: error.message, details: error });
       }
-      res.json(data);
+
+      console.log("[Server] Gadget created successfully:", JSON.stringify(data[0], null, 2));
+      res.json(data[0]);
     } catch (error: any) {
-      console.error("[Server] Catch error creating gadget:", error);
-      res.status(500).json({ error: error.message });
+      console.error("[Server] Unexpected catch error:", error);
+      res.status(500).json({ error: error.message || "An unexpected server error occurred" });
     }
   });
 

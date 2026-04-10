@@ -130,11 +130,11 @@ const AddGadgetModal = ({
         
         if (!response.ok) {
           let errorMessage = 'Failed to update gadget';
+          const text = await response.text();
           try {
-            const errorData = await response.json();
+            const errorData = JSON.parse(text);
             errorMessage = errorData.error || errorMessage;
           } catch (e) {
-            const text = await response.text();
             errorMessage = text || `Server returned ${response.status}`;
           }
           throw new Error(errorMessage);
@@ -155,11 +155,11 @@ const AddGadgetModal = ({
         
         if (!response.ok) {
           let errorMessage = 'Failed to create gadget';
+          const text = await response.text();
           try {
-            const errorData = await response.json();
+            const errorData = JSON.parse(text);
             errorMessage = errorData.error || errorMessage;
           } catch (e) {
-            const text = await response.text();
             errorMessage = text || `Server returned ${response.status}`;
           }
           throw new Error(errorMessage);
@@ -408,11 +408,11 @@ export default function Home({
         const response = await fetch(`/api/gadgets${category ? `?category=${category}` : ''}`);
         if (!response.ok) {
           let msg = 'Failed to fetch gadgets';
+          const text = await response.text();
           try {
-            const err = await response.json();
+            const err = JSON.parse(text);
             msg = err.error || msg;
           } catch (e) {
-            const text = await response.text();
             msg = text || `Server returned ${response.status}`;
           }
           throw new Error(msg);
