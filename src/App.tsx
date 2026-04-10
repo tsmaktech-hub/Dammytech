@@ -19,14 +19,12 @@ import {
   ShoppingBag,
   ArrowRight,
   Home as HomeIcon,
-  UserCircle,
-  LayoutDashboard
+  UserCircle
 } from 'lucide-react';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import AuthChoice from './pages/AuthChoice';
-import Dashboard from './pages/Dashboard';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
 
@@ -129,7 +127,6 @@ const Navbar = ({
 
   const categories = [
     { name: 'Home', icon: HomeIcon, path: '/' },
-    { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', authRequired: true },
     { name: 'Phones', icon: Smartphone, path: '/category/phones' },
     { name: 'Laptops', icon: Laptop, path: '/category/laptops' },
     { name: 'Watches', icon: Watch, path: '/category/watches' },
@@ -171,7 +168,7 @@ const Navbar = ({
 
           {/* Desktop Nav */}
           <div className="hidden xl:flex items-center gap-6 mr-8">
-            {categories.filter(cat => !cat.authRequired || user).map((cat) => (
+            {categories.map((cat) => (
               <Link
                 key={cat.name}
                 to={cat.path}
@@ -190,7 +187,7 @@ const Navbar = ({
           {/* User Actions */}
           <div className="flex items-center gap-3">
             {user && (
-              <Link to="/dashboard" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+              <div className="flex items-center gap-3">
                 <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center text-white font-black text-xs sm:text-sm shadow-lg shadow-cyan-200 border-2 border-white">
                   {getInitials(profile?.full_name, user?.email)}
                 </div>
@@ -200,7 +197,7 @@ const Navbar = ({
                     {profile?.role}
                   </span>
                 </div>
-              </Link>
+              </div>
             )}
 
             {/* Desktop Explore/Logout (Right Side) */}
@@ -248,7 +245,7 @@ const Navbar = ({
             <div className="p-4 space-y-4">
               <div className="space-y-2">
                 <div className="grid grid-cols-1 gap-1.5">
-                  {categories.filter(cat => !cat.authRequired || user).map((cat, i) => (
+                  {categories.map((cat, i) => (
                     <motion.div
                       key={cat.name}
                       initial={{ opacity: 0, x: -10 }}
@@ -513,10 +510,9 @@ export default function App() {
             <ErrorBoundary>
               <Routes>
                 <Route path="/" element={<Home searchQuery={searchQuery} setSearchQuery={setSearchQuery} />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/auth" element={user ? <Navigate to="/dashboard" /> : <AuthChoice />} />
-                <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login />} />
-                <Route path="/signup" element={user ? <Navigate to="/dashboard" /> : <Signup />} />
+                <Route path="/auth" element={user ? <Navigate to="/" /> : <AuthChoice />} />
+                <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
+                <Route path="/signup" element={user ? <Navigate to="/" /> : <Signup />} />
                 <Route path="/category/:category" element={<Home searchQuery={searchQuery} setSearchQuery={setSearchQuery} />} />
                 <Route path="*" element={<Navigate to="/" />} />
               </Routes>
