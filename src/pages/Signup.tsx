@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { supabase, isMockMode } from '../lib/supabase';
-import { mockStorage } from '../lib/mockStorage';
+import { auth, db } from '../lib/firebase';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc, collection, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
 import { motion } from 'motion/react';
 import { 
   UserPlus, 
@@ -39,79 +40,36 @@ export default function Signup() {
     }
 
     setLoading(true);
-
-    if (isMockMode) {
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const users = mockStorage.getUsers();
-      if (users.find(u => u.username.toLowerCase() === formData.username.toLowerCase())) {
-        setError('Username already taken');
-        setLoading(false);
-        return;
-      }
-      if (users.find(u => u.email.toLowerCase() === formData.email.toLowerCase())) {
-        setError('Email already registered');
-        setLoading(false);
-        return;
-      }
-    }
     
     try {
-      if (!isMockMode) {
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-          email: formData.email,
-          password: formData.password,
-          options: {
-            data: {
-              full_name: formData.fullName,
-              username: formData.username.toLowerCase(),
-              phone_number: formData.phoneNumber,
-            }
-          }
-        });
-
-        if (authError) throw authError;
-
-        if (authData.user) {
-          const newUser = {
-            id: authData.user.id, // Use Supabase ID
-            username: formData.username.toLowerCase(),
-            email: formData.email,
-            fullName: formData.fullName,
-            phoneNumber: formData.phoneNumber,
-            role: 'user',
-            avatar: '',
-            created: new Date().toISOString(),
-            updated: new Date().toISOString(),
-            password: formData.password,
-          };
-          mockStorage.saveUser(newUser as any);
-          mockStorage.setCurrentUser(newUser as any);
-        }
-        
-        navigate('/');
-        return;
+      // Check if username is taken
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, where('username', '==', formData.username.toLowerCase()));
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        throw new Error('Username already taken');
       }
 
-      // Pure mock mode
-      const newUser = {
-        id: crypto.randomUUID(),
+      // Create auth user
+      const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+      const user = userCredential.user;
+
+      // Create user profile in Firestore
+      await setDoc(doc(db, 'users', user.uid), {
+        id: user.uid,
         username: formData.username.toLowerCase(),
         email: formData.email,
-        fullName: formData.fullName,
-        phoneNumber: formData.phoneNumber,
+        full_name: formData.fullName,
+        phone_number: formData.phoneNumber,
         role: 'user',
-        avatar: '',
-        created: new Date().toISOString(),
-        updated: new Date().toISOString(),
-        password: formData.password,
-      };
+        avatar_url: '',
+        updated_at: serverTimestamp()
+      });
       
-      mockStorage.saveUser(newUser as any);
-      mockStorage.setCurrentUser(newUser as any);
       navigate('/');
     } catch (err: any) {
+      console.error("Signup error:", err);
       setError(err.message || 'Failed to create account');
     } finally {
       setLoading(false);

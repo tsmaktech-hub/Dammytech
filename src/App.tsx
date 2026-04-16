@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
-import { supabase, isMockMode } from './lib/supabase';
-import { mockStorage } from './lib/mockStorage';
+import { auth, db, onAuthStateChanged, doc, getDoc, signOut, User } from './lib/firebase';
 import { UserProfile } from './types';
 import { ErrorBoundary } from './components/errorboundary';
 import { 
@@ -29,7 +28,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
 
 interface AuthContextType {
-  user: any | null;
+  user: User | null;
   profile: UserProfile | null;
   loading: boolean;
   isAdmin: boolean;
@@ -164,9 +163,6 @@ const Navbar = ({
             </div>
           </Link>
 
-          {/* Desktop Search */}
-          {/* Search moved to Home page gadgets section */}
-
           {/* Desktop Nav */}
           <div className="hidden xl:flex items-center gap-6 mr-8">
             {categories.map((cat) => (
@@ -190,7 +186,7 @@ const Navbar = ({
             {user && (
               <div className="flex items-center gap-2 sm:gap-3">
                 <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center text-white font-black text-xs sm:text-sm shadow-lg shadow-cyan-200 border-2 border-white flex-shrink-0">
-                  {getInitials(profile?.full_name, user?.email)}
+                  {getInitials(profile?.full_name, user?.email || undefined)}
                 </div>
                 <div className="flex flex-col items-start leading-tight">
                   <span className="text-[10px] sm:text-sm font-bold text-gray-900 line-clamp-1">{profile?.full_name || (profile?.username?.toLowerCase() === 'dammy' ? 'Busari Ismail' : 'User')}</span>
@@ -330,41 +326,29 @@ const ScrollToTop = () => {
 };
 
 export default function App() {
-  const [user, setUser] = useState<any | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const refreshProfile = async (userId?: string) => {
-    const id = userId || user?.id;
+    const id = userId || user?.uid;
     if (!id) {
       setProfile(null);
       return;
     }
 
-    if (isMockMode) {
-      const profile = mockStorage.getUserById(id);
-      setProfile(profile || null);
-      return;
-    }
-
-    // Check mock storage first even if not in mock mode (for owner bypass)
-    const mockProfile = mockStorage.getUserById(id);
-    if (mockProfile) {
-      setProfile(mockProfile);
-      return;
-    }
-
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', id)
-        .single();
+      const docRef = doc(db, 'users', id);
+      const docSnap = await getDoc(docRef);
       
-      if (error) throw error;
-      setProfile(data as unknown as UserProfile);
+      if (docSnap.exists()) {
+        setProfile(docSnap.data() as UserProfile);
+      } else {
+        console.warn("No profile found for user:", id);
+        setProfile(null);
+      }
     } catch (error) {
       console.error("Error fetching profile:", error);
       setProfile(null);
@@ -372,78 +356,19 @@ export default function App() {
   };
 
   useEffect(() => {
-    const handleAuthChange = (updatedUser: any) => {
-      if (updatedUser && updatedUser.username) {
-        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(updatedUser.id);
-        if (!isUUID) {
-          const fixedUser = { ...updatedUser, id: crypto.randomUUID() };
-          mockStorage.saveUser(fixedUser);
-          mockStorage.setCurrentUser(fixedUser);
-          return;
-        }
-      }
-      setUser(updatedUser ? { id: updatedUser.id, email: updatedUser.email } : null);
-      if (updatedUser) {
-        refreshProfile(updatedUser.id);
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      if (currentUser) {
+        refreshProfile(currentUser.uid);
       } else {
         setProfile(null);
         setSearchQuery('');
         setIsSearchOpen(false);
       }
-    };
-
-    // Handle auth state
-    if (!isMockMode) {
-      // Initial session check
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session?.user) {
-          handleAuthChange(session.user);
-        } else {
-          // Fallback to mock user if no Supabase session (for dev convenience)
-          const mockUser = mockStorage.getCurrentUser();
-          handleAuthChange(mockUser);
-        }
-        setLoading(false);
-      });
-
-      // Listen for changes
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-        if (session?.user) {
-          handleAuthChange(session.user);
-        } else {
-          const mockUser = mockStorage.getCurrentUser();
-          handleAuthChange(mockUser);
-        }
-      });
-
-      // Also listen for mock auth changes
-      const handleMockAuthChange = () => {
-        const mockUser = mockStorage.getCurrentUser();
-        // Only switch to mock if no active Supabase session
-        supabase.auth.getSession().then(({ data: { session } }) => {
-          if (!session?.user) {
-            handleAuthChange(mockUser);
-          }
-        });
-      };
-
-      window.addEventListener('mock-auth-change', handleMockAuthChange);
-      return () => {
-        subscription.unsubscribe();
-        window.removeEventListener('mock-auth-change', handleMockAuthChange);
-      };
-    } else {
-      // Pure mock mode
-      const mockUser = mockStorage.getCurrentUser();
-      handleAuthChange(mockUser);
       setLoading(false);
-      
-      const handleMockAuthChange = () => {
-        handleAuthChange(mockStorage.getCurrentUser());
-      };
-      window.addEventListener('mock-auth-change', handleMockAuthChange);
-      return () => window.removeEventListener('mock-auth-change', handleMockAuthChange);
-    }
+    });
+
+    return () => unsubscribe();
   }, []);
 
   if (loading) {
@@ -462,18 +387,15 @@ export default function App() {
   }
 
   const logout = async () => {
-    // Always clear mock session
-    mockStorage.setCurrentUser(null);
-    
-    // Clear Supabase session if not in mock mode
-    if (!isMockMode) {
-      await supabase.auth.signOut();
+    try {
+      await signOut(auth);
+      setUser(null);
+      setProfile(null);
+      setSearchQuery('');
+      setIsSearchOpen(false);
+    } catch (error) {
+      console.error("Error signing out:", error);
     }
-    
-    setUser(null);
-    setProfile(null);
-    setSearchQuery('');
-    setIsSearchOpen(false);
   };
 
   return (
@@ -538,7 +460,7 @@ export default function App() {
                   <li><Link to="/category/audio" className="hover:text-white transition-colors">Audio</Link></li>
                 </ul>
               </div>
-
+              
               <div>
                 <h4 className="font-bold mb-4 sm:mb-6 uppercase tracking-widest text-[10px] sm:text-xs text-cyan-500">Support</h4>
                 <ul className="space-y-3 sm:space-y-4 text-xs sm:text-sm font-medium text-gray-400">
@@ -560,3 +482,4 @@ export default function App() {
     </AuthContext.Provider>
   );
 }
+

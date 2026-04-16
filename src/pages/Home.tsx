@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
-import { supabase, getFileUrl, isMockMode } from '../lib/supabase';
-import { mockStorage } from '../lib/mockStorage';
-import { Gadget } from '../types';
+import { db, auth, storage, handleFirestoreError, OperationType } from '../lib/firebase';
+import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, where, orderBy, getDoc, serverTimestamp } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { Gadget, UserProfile } from '../types';
 import { useAuth } from '../App';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -24,7 +25,8 @@ import {
   RefreshCcw,
   Search,
   Edit2,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Upload
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
@@ -45,6 +47,8 @@ const AddGadgetModal = ({
     category: 'phones',
     imageUrl: '',
   });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -71,110 +75,53 @@ const AddGadgetModal = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-    if (!formData.imageUrl) return setError('Please provide an image link');
+    if (!formData.imageUrl && !selectedFile) return setError('Please provide an image link or upload a file');
     setError('');
     setLoading(true);
 
     try {
-      if (isMockMode) {
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        const finalImageUrl = formData.imageUrl;
+      let finalImageUrl = formData.imageUrl;
 
-        const updatedGadget: any = {
-          id: gadget?.id || crypto.randomUUID(),
+      // Handle file upload if a file is selected
+      if (selectedFile) {
+        const fileExt = selectedFile.name.split('.').pop();
+        const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
+        const storageRef = ref(storage, `gadgets/${fileName}`);
+        
+        const snapshot = await uploadBytes(storageRef, selectedFile);
+        finalImageUrl = await getDownloadURL(snapshot.ref);
+      }
+
+      const gadgetRef = collection(db, 'gadgets');
+      
+      if (gadget) {
+        const docRef = doc(db, 'gadgets', gadget.id);
+        await updateDoc(docRef, {
           name: formData.name,
           description: formData.description,
           price: parseFloat(formData.price),
           category: formData.category,
           image: finalImageUrl,
-          author: gadget?.author || user.id,
-          created_at: gadget?.created_at || new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          expand: gadget?.expand || {
-            author: {
-              full_name: user.full_name || (user.username?.toLowerCase() === 'dammy' ? 'Busari Ismail' : 'User'),
-              username: user.username || 'user'
-            }
-          }
-        };
-        
-        mockStorage.saveGadget(updatedGadget);
-        window.dispatchEvent(new Event('mock-gadgets-updated'));
-        
-        onClose();
-        return;
-      }
-
-      // Supabase mode
-      // Get the current Supabase user to ensure we have the correct UID for RLS
-      const { data: { user: sbUser }, error: userError } = await supabase.auth.getUser();
-      
-      if (userError || !sbUser) {
-        throw new Error('You must be logged in to your account to list gadgets. Please log out and log back in.');
-      }
-
-      if (gadget) {
-        const response = await fetch(`/api/gadgets/${gadget.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: formData.name,
-            description: formData.description,
-            price: parseFloat(formData.price),
-            category: formData.category,
-            image: formData.imageUrl,
-          }),
+          updated_at: serverTimestamp(),
         });
-        
-        if (!response.ok) {
-          let errorMessage = 'Failed to update gadget';
-          const text = await response.text();
-          try {
-            const errorData = JSON.parse(text);
-            errorMessage = errorData.error || errorMessage;
-          } catch (e) {
-            errorMessage = text || `Server returned ${response.status}`;
-          }
-          throw new Error(errorMessage);
-        }
       } else {
-        const response = await fetch('/api/gadgets', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: formData.name,
-            description: formData.description,
-            price: parseFloat(formData.price),
-            category: formData.category,
-            image: formData.imageUrl,
-            author: sbUser.id
-          }),
+        await addDoc(gadgetRef, {
+          name: formData.name,
+          description: formData.description,
+          price: parseFloat(formData.price),
+          category: formData.category,
+          image: finalImageUrl,
+          author: user.uid,
+          created_at: serverTimestamp(),
+          updated_at: serverTimestamp(),
         });
-        
-        if (!response.ok) {
-          let errorMessage = 'Failed to create gadget';
-          const text = await response.text();
-          try {
-            const errorData = JSON.parse(text);
-            errorMessage = errorData.error || errorMessage;
-          } catch (e) {
-            errorMessage = text || `Server returned ${response.status}`;
-          }
-          throw new Error(errorMessage);
-        }
       }
 
       onClose();
-      // Trigger a refresh of the gadgets list
-      window.dispatchEvent(new Event('gadgets-updated'));
+      setSelectedFile(null);
     } catch (err: any) {
-      let msg = err.message || 'Failed to save gadget';
-      if (msg.includes('row-level security policy')) {
-        msg = 'Permission denied. Please try logging out and logging back in to refresh your session.';
-      }
-      setError(msg);
+      console.error("Error saving gadget:", err);
+      setError(err.message || 'Failed to save gadget');
     } finally {
       setLoading(false);
     }
@@ -255,25 +202,62 @@ const AddGadgetModal = ({
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Gadget Image Link</label>
-              <div className="relative group">
-                <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
-                <input
-                  type="url"
-                  required
-                  className="w-full pl-12 pr-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm"
-                  placeholder="Paste direct image link here (e.g. https://example.com/image.jpg)"
-                  value={formData.imageUrl}
-                  onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                />
+              <label className="text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Gadget Image</label>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* File Upload */}
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setSelectedFile(file);
+                        setFormData({ ...formData, imageUrl: '' }); // Clear URL if file is selected
+                      }
+                    }}
+                    className="hidden"
+                    id="file-upload"
+                  />
+                  <label
+                    htmlFor="file-upload"
+                    className={cn(
+                      "flex flex-col items-center justify-center gap-2 p-4 border-2 border-dashed rounded-2xl cursor-pointer transition-all",
+                      selectedFile 
+                        ? "border-cyan-500 bg-cyan-50 text-cyan-600" 
+                        : "border-gray-200 bg-gray-50 text-gray-400 hover:border-cyan-500 hover:bg-cyan-50/50 hover:text-cyan-500"
+                    )}
+                  >
+                    <Upload className="w-6 h-6" />
+                    <span className="text-[10px] font-black uppercase tracking-widest">
+                      {selectedFile ? selectedFile.name : 'Upload Image'}
+                    </span>
+                  </label>
+                </div>
+
+                {/* URL Input */}
+                <div className="relative group">
+                  <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
+                  <input
+                    type="url"
+                    className="w-full pl-12 pr-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm h-full"
+                    placeholder="Or paste image link"
+                    value={formData.imageUrl}
+                    onChange={(e) => {
+                      setFormData({ ...formData, imageUrl: e.target.value });
+                      setSelectedFile(null); // Clear file if URL is entered
+                    }}
+                  />
+                </div>
               </div>
             </div>
 
             {/* Image Preview */}
-            {(formData.imageUrl || gadget?.image) && (
+            {(formData.imageUrl || selectedFile || gadget?.image) && (
               <div className="relative aspect-video rounded-2xl overflow-hidden bg-gray-100 border border-gray-100">
                 <img 
-                  src={formData.imageUrl || (gadget ? getFileUrl('gadgets', gadget.image) : '')} 
+                  src={selectedFile ? URL.createObjectURL(selectedFile) : (formData.imageUrl || gadget?.image || '')} 
                   alt="Preview" 
                   className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"
@@ -343,10 +327,10 @@ export default function Home({
   const [editingGadget, setEditingGadget] = useState<Gadget | null>(null);
 
   const isAuthorizedSeller = profile?.username?.toLowerCase() === 'dammy' || 
-                            (profile?.email === 'tsmaktech@gmail.com' && 
-                             profile?.username === 'Dammy' && 
-                             profile?.full_name === 'Busari Ismail' &&
-                             profile?.phone_number === '09071498194');
+                             (profile?.email === 'tsmaktech@gmail.com' && 
+                              profile?.username === 'Dammy' && 
+                              profile?.full_name === 'Busari Ismail' &&
+                              profile?.phone_number === '09071498194');
 
   const scrollToCollection = () => {
     const element = document.getElementById('collection');
@@ -389,129 +373,57 @@ export default function Home({
   }, [location.state, location.pathname, navigate]);
 
   useEffect(() => {
-    const fetchGadgets = async () => {
-      setLoading(true);
-      
-      if (isMockMode) {
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 500));
-        const allGadgets = mockStorage.getGadgets();
-        const filtered = category 
-          ? allGadgets.filter(g => g.category === category)
-          : allGadgets;
-        setGadgets(filtered);
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const response = await fetch(`/api/gadgets${category ? `?category=${category}` : ''}`);
-        if (!response.ok) {
-          let msg = 'Failed to fetch gadgets';
-          const text = await response.text();
-          try {
-            const err = JSON.parse(text);
-            msg = err.error || msg;
-          } catch (e) {
-            msg = text || `Server returned ${response.status}`;
-          }
-          throw new Error(msg);
-        }
-        const data = await response.json();
-
-        // Map API data to our Gadget type
-        let mappedData = data.map((item: any) => ({
-          ...item,
-          expand: {
-            author: item.author
-          }
-        }));
-
-        // Client-side filtering if needed (though backend could do it)
-        if (category) {
-          mappedData = mappedData.filter((g: any) => g.category === category);
-        }
-
-        // Limit gadgets for guests
-        if (!user) {
-          mappedData = mappedData.slice(0, 4);
-        }
-
-        setGadgets(mappedData);
-      } catch (error) {
-        console.error('Error fetching gadgets:', error);
-        // Fallback to mock data on error
-        const allGadgets = mockStorage.getGadgets();
-        let filtered = category 
-          ? allGadgets.filter(g => g.category === category)
-          : allGadgets;
-        
-        // Limit gadgets for guests
-        if (!user) {
-          filtered = filtered.slice(0, 4);
-        }
-        
-        setGadgets(filtered);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchGadgets();
+    setLoading(true);
     
-    // Scroll to collection if category is selected
+    let q = query(collection(db, 'gadgets'), orderBy('created_at', 'desc'));
+    
     if (category) {
-      const element = document.getElementById('collection');
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth' });
-      }
-    }
-    
-    const handleUpdate = () => fetchGadgets();
-    window.addEventListener('mock-gadgets-updated', handleUpdate);
-    window.addEventListener('gadgets-updated', handleUpdate);
-    
-    // Real-time subscription
-    let subscription: any;
-    if (!isMockMode) {
-      subscription = supabase
-        .channel('gadgets-changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'gadgets' }, () => {
-          fetchGadgets();
-        })
-        .subscribe();
+      q = query(collection(db, 'gadgets'), where('category', '==', category), orderBy('created_at', 'desc'));
     }
 
-    return () => {
-      window.removeEventListener('mock-gadgets-updated', handleUpdate);
-      window.removeEventListener('gadgets-updated', handleUpdate);
-      if (subscription) {
-        supabase.removeChannel(subscription);
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
+      const gadgetList: any[] = [];
+      
+      for (const docSnap of snapshot.docs) {
+        const gadget = { id: docSnap.id, ...docSnap.data() } as any;
+        
+        // Fetch author profile
+        try {
+          const authorRef = doc(db, 'users', gadget.author);
+          const authorSnap = await getDoc(authorRef);
+          if (authorSnap.exists()) {
+            gadget.expand = { author: authorSnap.data() as UserProfile };
+          }
+        } catch (e) {
+          console.warn("Could not fetch author profile for gadget:", gadget.id);
+        }
+        
+        gadgetList.push(gadget);
       }
-    };
-  }, [category]);
+      
+      // Limit for guests
+      let finalGadgets = gadgetList;
+      if (!user) {
+        finalGadgets = gadgetList.slice(0, 4);
+      }
+      
+      setGadgets(finalGadgets);
+      setLoading(false);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'gadgets');
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [category, user]);
 
   const handleDelete = async (id: string) => {
     if (!window.confirm('Are you sure you want to delete this gadget?')) return;
     try {
-      if (isMockMode) {
-        mockStorage.deleteGadget(id);
-        window.dispatchEvent(new Event('mock-gadgets-updated'));
-        return;
-      }
-      
-      const response = await fetch(`/api/gadgets/${id}`, {
-        method: 'DELETE',
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete gadget');
-      }
-      
-      setGadgets(prev => prev.filter(g => g.id !== id));
+      const docRef = doc(db, 'gadgets', id);
+      await deleteDoc(docRef);
     } catch (error) {
-      console.error('Error deleting gadget:', error);
+      handleFirestoreError(error, OperationType.DELETE, `gadgets/${id}`);
     }
   };
 
@@ -586,9 +498,8 @@ export default function Home({
               {profile?.username === 'Dammy' && (
                 <button 
                   onClick={() => {
-                    if (window.confirm('Are you sure you want to clear all user data and gadgets? Only the owner account will be kept.')) {
-                      mockStorage.resetDatabase();
-                      alert('Database reset successfully. Please refresh the page if changes don\'t appear immediately.');
+                    if (window.confirm('Are you sure you want to clear all user data and gadgets? This action cannot be undone.')) {
+                      alert('Please use the Firebase Console to manage your data.');
                     }
                   }}
                   className="w-full sm:w-auto px-6 py-3.5 sm:px-10 sm:py-5 bg-red-500/10 backdrop-blur-xl border border-red-500/20 text-red-400 rounded-xl sm:rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] sm:text-xs hover:bg-red-500/20 transition-all flex items-center justify-center gap-2 sm:gap-3"
@@ -738,7 +649,7 @@ export default function Home({
                 >
                   <div className="relative aspect-[4/5] rounded-xl sm:rounded-[2rem] overflow-hidden bg-gray-50 mb-3 sm:mb-6">
                     <img
-                      src={getFileUrl('gadgets', gadget.image)}
+                      src={gadget.image}
                       alt={gadget.name}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                       referrerPolicy="no-referrer"
@@ -752,7 +663,7 @@ export default function Home({
                       <button className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-gray-900 hover:bg-cyan-500 hover:text-white transition-all shadow-xl">
                         <ShoppingCart className="w-5 h-5" />
                       </button>
-                      {(user?.id === gadget.author || isAdmin) && (
+                      {(user?.uid === gadget.author || isAdmin) && (
                         <>
                           <button
                             onClick={() => {
@@ -775,7 +686,7 @@ export default function Home({
 
                     {/* Mobile Actions (Always visible or easily accessible) */}
                     <div className="absolute bottom-2 right-2 flex sm:hidden gap-1.5">
-                      {(user?.id === gadget.author || isAdmin) && (
+                      {(user?.uid === gadget.author || isAdmin) && (
                         <button
                           onClick={() => {
                             setEditingGadget(gadget);

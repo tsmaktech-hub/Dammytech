@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { supabase, isMockMode } from '../lib/supabase';
-import { mockStorage } from '../lib/mockStorage';
+import { auth, db, signInWithPopup, googleProvider } from '../lib/firebase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { motion } from 'motion/react';
 import { 
   LogIn, 
@@ -44,72 +45,32 @@ export default function Login() {
     setLoading(true);
 
     try {
-      // If not in mock mode, we MUST log into Supabase to satisfy RLS policies
-      if (!isMockMode) {
-        // Find email if username was entered
-        const users = mockStorage.getUsers();
-        const mockUser = users.find(u => 
-          u.email.toLowerCase() === formData.email.toLowerCase() || 
-          u.username.toLowerCase() === formData.email.toLowerCase()
-        ) as any;
+      let loginEmail = formData.email;
 
-        let loginEmail = formData.email;
-        if (mockUser && mockUser.email) {
-          loginEmail = mockUser.email;
-        }
-
-        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-          email: loginEmail,
-          password: formData.password,
-        });
-
-        if (authError) throw authError;
-
-        if (authData.user) {
-          // Sync mock storage with Supabase user
-          const existingMockUser = mockUser || users.find(u => u.email === authData.user.email);
-          const syncedUser = {
-            ...(existingMockUser || {}),
-            id: authData.user.id,
-            email: authData.user.email,
-            username: existingMockUser?.username || authData.user.user_metadata?.username || authData.user.email?.split('@')[0],
-            fullName: existingMockUser?.fullName || authData.user.user_metadata?.full_name || 'User',
-            password: formData.password,
-          };
-          mockStorage.saveUser(syncedUser);
-          mockStorage.setCurrentUser(syncedUser);
-        }
-
-        navigate('/');
-        return;
-      }
-
-      // Pure mock mode logic
-      const users = mockStorage.getUsers();
-      const mockUser = users.find(u => 
-        u.email.toLowerCase() === formData.email.toLowerCase() || 
-        u.username.toLowerCase() === formData.email.toLowerCase()
-      ) as any;
-
-      if (mockUser) {
-        const isValidPassword = formData.password === 'password' || 
-                               formData.password === mockUser.password ||
-                               (mockUser.username.toLowerCase() === 'dammy' && (formData.password === 'Broismail' || formData.password === 'Bro ismail'));
+      // If it doesn't look like an email, try to find it by username in Firestore
+      if (!formData.email.includes('@')) {
+        const usersRef = collection(db, 'users');
+        const q = query(usersRef, where('username', '==', formData.email.toLowerCase()));
+        const querySnapshot = await getDocs(q);
         
-        if (isValidPassword) {
-          await new Promise(resolve => setTimeout(resolve, 800));
-          mockStorage.setCurrentUser(mockUser);
-          navigate('/');
-          return;
+        if (!querySnapshot.empty) {
+          const userData = querySnapshot.docs[0].data();
+          loginEmail = userData.email;
+        } else {
+          throw new Error('Username not found. Please use your email.');
         }
-        throw new Error('Invalid password');
       }
-      throw new Error('User not found');
+
+      await signInWithEmailAndPassword(auth, loginEmail, formData.password);
+      navigate('/');
     } catch (err: any) {
-      let errorMessage = err.message || 'Invalid email or password';
+      console.error("Login error:", err);
+      let errorMessage = 'Invalid email or password';
       
-      if (errorMessage.toLowerCase().includes('invalid login credentials')) {
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
         errorMessage = 'Invalid email/username or password. Please try again.';
+      } else if (err.message) {
+        errorMessage = err.message;
       }
       
       setError(errorMessage);
