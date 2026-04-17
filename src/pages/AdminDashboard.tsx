@@ -27,18 +27,18 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
+  const [activeTab, setActiveTab] = useState<'pending' | 'delivered'>('pending');
+
   useEffect(() => {
+    // Stop loading if we've checked isAdmin and it's false
     if (!isAdmin) {
-      if (!loading) navigate('/');
+      setLoading(false);
       return;
     }
 
     setLoading(true);
-    const q = query(
-      collection(db, 'orders'), 
-      where('status', '==', 'ordered')
-      // Removed orderBy to avoid requiring a composite index which might be blocking server response on refresh
-    );
+    // Fetch ALL orders so admin can see history and current orders
+    const q = query(collection(db, 'orders'));
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const ordersData = snapshot.docs.map(doc => ({
@@ -57,12 +57,17 @@ export default function AdminDashboard() {
       setLoading(false);
     }, (err) => {
       console.error("Error fetching orders:", err);
-      // Still show the UI but with empty state or error if needed
+      // Ensure we stop loading even on error
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [isAdmin, navigate]); // Removed loading from dependencies to fix infinite loop
+  }, [isAdmin]);
+
+  const filteredOrders = orders.filter(o => {
+    if (activeTab === 'pending') return o.status === 'ordered';
+    return o.status === 'delivered';
+  });
 
   const handleConfirmDelivery = async (orderId: string) => {
     if (!window.confirm('Confirm that this order has been delivered successfully? By clicking "Confirm", the customer will be able to order this item again.')) return;
@@ -95,6 +100,24 @@ export default function AdminDashboard() {
     }
   };
 
+  if (!isAdmin) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center p-8 text-center bg-white">
+        <div className="w-20 h-20 bg-red-50 rounded-3xl flex items-center justify-center mb-6">
+          <AlertCircle className="w-10 h-10 text-red-500" />
+        </div>
+        <h2 className="text-2xl font-black text-gray-900 mb-2">Access Denied</h2>
+        <p className="text-gray-500 mb-8 max-w-sm">This area is reserved for administrators only. Use your admin credentials to proceed.</p>
+        <button 
+          onClick={() => navigate('/')}
+          className="px-8 py-4 bg-gray-900 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-cyan-600 transition-all shadow-xl"
+        >
+          Return Home
+        </button>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
@@ -120,13 +143,13 @@ export default function AdminDashboard() {
             Order <span className="text-cyan-500">Management</span>
           </h1>
           <p className="text-gray-500 font-medium text-lg max-w-xl">
-            Track and process customer orders in real-time. Confirm deliveries to keep the workflow moving.
+            Track and process all user orders in real-time. Manage deliveries and store performance.
           </p>
         </div>
         
         <div className="px-8 py-6 bg-gray-900 rounded-[2.5rem] text-white flex items-center gap-8 shadow-2xl shadow-gray-200">
           <div className="text-center">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-400 mb-1">Total Active</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-400 mb-1">Total Orders</p>
             <p className="text-3xl font-black leading-none">{orders.length}</p>
           </div>
           <div className="w-px h-10 bg-white/10" />
@@ -134,18 +157,40 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {orders.length === 0 ? (
+      {/* Tabs */}
+      <div className="flex p-1 bg-gray-100 rounded-2xl w-fit mb-8">
+        <button
+          onClick={() => setActiveTab('pending')}
+          className={cn(
+            "px-6 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all",
+            activeTab === 'pending' ? "bg-white text-cyan-600 shadow-sm" : "text-gray-500 hover:text-gray-900"
+          )}
+        >
+          Active Orders ({orders.filter(o => o.status === 'ordered').length})
+        </button>
+        <button
+          onClick={() => setActiveTab('delivered')}
+          className={cn(
+            "px-6 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all",
+            activeTab === 'delivered' ? "bg-white text-cyan-600 shadow-sm" : "text-gray-500 hover:text-gray-900"
+          )}
+        >
+          Success Delivery ({orders.filter(o => o.status === 'delivered').length})
+        </button>
+      </div>
+
+      {filteredOrders.length === 0 ? (
         <div className="p-20 bg-gray-50 rounded-[3rem] border-2 border-dashed border-gray-200 text-center">
           <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-8 shadow-xl">
             <Package className="w-10 h-10 text-gray-300" />
           </div>
-          <h3 className="text-2xl font-black text-gray-900 mb-2">No Active Orders</h3>
-          <p className="text-gray-500 font-medium">When customers order gadgets, they will appear here.</p>
+          <h3 className="text-2xl font-black text-gray-900 mb-2">No {activeTab} orders</h3>
+          <p className="text-gray-500 font-medium">Any orders matching this status will appear here.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6">
           <AnimatePresence mode="popLayout">
-            {orders.map((order, i) => (
+            {filteredOrders.map((order, i) => (
               <motion.div
                 key={order.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -169,7 +214,10 @@ export default function AdminDashboard() {
                 <div className="flex-1 space-y-6">
                   <div className="space-y-1">
                     <div className="flex items-center gap-3 mb-2">
-                       <span className="px-4 py-1.5 bg-cyan-50 text-cyan-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-cyan-100">
+                       <span className={cn(
+                         "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border",
+                         order.status === 'delivered' ? "bg-green-50 text-green-600 border-green-100" : "bg-cyan-50 text-cyan-600 border-cyan-100"
+                       )}>
                         {order.status}
                       </span>
                       <span className="text-[10px] font-bold text-gray-400">
@@ -205,28 +253,33 @@ export default function AdminDashboard() {
 
                 {/* Actions */}
                 <div className="flex flex-row lg:flex-col gap-3 w-full lg:w-auto shrink-0 self-stretch justify-center">
-                  <button
-                    onClick={() => handleConfirmDelivery(order.id)}
-                    disabled={!!actionLoading}
-                    className="flex-1 lg:flex-none px-6 py-4 bg-gray-900 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-cyan-600 transition-all shadow-xl shadow-gray-200 flex items-center justify-center gap-3 group/btn whitespace-nowrap"
-                  >
-                    {actionLoading === order.id ? (
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <>
-                        <CheckCircle2 className="w-4 h-4 text-cyan-400 group-hover/btn:scale-125 transition-transform" />
-                        Confirm Delivery
-                      </>
-                    )}
-                  </button>
+                  {order.status === 'ordered' && (
+                    <button
+                      onClick={() => handleConfirmDelivery(order.id)}
+                      disabled={!!actionLoading}
+                      className="flex-1 lg:flex-none px-6 py-4 bg-gray-900 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-cyan-600 transition-all shadow-xl shadow-gray-200 flex items-center justify-center gap-3 group/btn whitespace-nowrap"
+                    >
+                      {actionLoading === order.id ? (
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <>
+                          <CheckCircle2 className="w-4 h-4 text-cyan-400 group-hover/btn:scale-125 transition-transform" />
+                          Confirm Delivery
+                        </>
+                      )}
+                    </button>
+                  )}
                   <button
                     onClick={() => handleDeleteOrder(order.id)}
                     disabled={!!actionLoading}
-                    className="w-14 lg:w-full h-14 lg:h-auto flex items-center justify-center gap-3 px-0 lg:px-6 py-4 bg-red-50 text-red-500 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-red-500 hover:text-white transition-all border border-red-100"
+                    className={cn(
+                      "w-14 lg:w-full h-14 lg:h-auto flex items-center justify-center gap-3 px-0 lg:px-6 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all border",
+                      order.status === 'ordered' ? "bg-red-50 text-red-500 border-red-100 hover:bg-red-500 hover:text-white" : "bg-gray-50 text-gray-400 border-gray-100 hover:bg-gray-100 hover:text-gray-900"
+                    )}
                     title="Delete Record"
                   >
                     <Trash2 className="w-4 h-4 shrink-0" />
-                    <span className="hidden lg:inline">Cancel Order</span>
+                    <span className="hidden lg:inline">{order.status === 'ordered' ? 'Cancel Order' : 'Delete Log'}</span>
                   </button>
                 </div>
               </motion.div>
