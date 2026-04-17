@@ -127,12 +127,18 @@ export default function GadgetDetails() {
     if (!gadget) return;
     
     const fullName = profile?.full_name || profile?.username || "Customer";
-    const message = `Hello! My name is ${fullName}. I am interested in ordering the ${gadget.name}. Can you provide more details about the delivery?`;
+    
+    // Professional and energetic pre-filled message
+    const message = `*DAMMY TECH - DELIVERY INQUIRY* 🚀\n\n` +
+      `*Customer Name:* ${fullName}\n` +
+      `*Interested In:* ${gadget.name}\n\n` +
+      `Hello! I'm really excited about this ${gadget.name} and I'd like to inquire about the delivery process. ` +
+      `Can you please confirm the shipping time to my location? \n\n` +
+      `Ready to join the revolution! ⚡📦`;
+
     const encodedMessage = encodeURIComponent(message);
     
-    // Using the user provided base link and appending text if possible, 
-    // though standard wa.me/number is more reliable for pre-filled text.
-    // We'll use the provided QR link as the base.
+    // Opening via WhatsApp API for better compatibility
     window.open(`https://wa.me/qr/4ZDPYBJ4QGWZM1?text=${encodedMessage}`, '_blank');
   };
 

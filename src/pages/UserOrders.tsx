@@ -27,7 +27,16 @@ export default function UserOrders() {
 
   const handleMessageDelivery = (order: Order) => {
     const fullName = profile?.full_name || profile?.username || "Customer";
-    const message = `Hello! My name is ${fullName}. I am checking on my order for the ${order.gadget_name}. My order status is currently: ${order.status}.`;
+    
+    // Professional and detailed order update message
+    const message = `*DAMMY TECH - ORDER UPDATE* 📋\n\n` +
+      `*Customer Name:* ${fullName}\n` +
+      `*Gadget Ordered:* ${order.gadget_name}\n` +
+      `*Current Status:* ${order.status.toUpperCase()}\n\n` +
+      `Hello! I am checking in on my order for the ${order.gadget_name}. ` +
+      `Could you provide a quick update on the delivery schedule? I am super excited to receive it! 🚀📦\n\n` +
+      `Thank you!`;
+
     const encodedMessage = encodeURIComponent(message);
     window.open(`https://wa.me/qr/4ZDPYBJ4QGWZM1?text=${encodedMessage}`, '_blank');
   };
