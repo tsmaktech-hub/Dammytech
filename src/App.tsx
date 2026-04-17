@@ -17,6 +17,13 @@ import {
   Cpu,
   ShoppingBag,
   ArrowRight,
+  Truck,
+  Phone,
+  Mail,
+  Twitter,
+  Instagram,
+  Facebook,
+  Linkedin,
   Home as HomeIcon,
   UserCircle
 } from 'lucide-react';
@@ -456,10 +463,15 @@ export default function App() {
                   Your ultimate destination for high-end gadgets and futuristic technology. We bring the future to your doorstep.
                 </p>
                 <div className="flex gap-3 sm:gap-4">
-                  {['Twitter', 'Instagram', 'Facebook', 'LinkedIn'].map(social => (
-                    <a key={social} href="#" className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-800 rounded-lg sm:rounded-xl flex items-center justify-center hover:bg-cyan-500 transition-colors">
-                      <span className="sr-only">{social}</span>
-                      <div className="w-3 h-3 sm:w-4 sm:h-4 bg-white/20 rounded-full" />
+                  {[
+                    { name: 'Twitter', icon: Twitter },
+                    { name: 'Instagram', icon: Instagram },
+                    { name: 'Facebook', icon: Facebook },
+                    { name: 'LinkedIn', icon: Linkedin }
+                  ].map(social => (
+                    <a key={social.name} href="#" className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-800 rounded-lg sm:rounded-xl flex items-center justify-center hover:bg-cyan-500 transition-all group">
+                      <span className="sr-only">{social.name}</span>
+                      <social.icon className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-hover:text-white transition-colors" />
                     </a>
                   ))}
                 </div>
@@ -476,18 +488,26 @@ export default function App() {
               </div>
               
               <div>
-                <h4 className="font-bold mb-4 sm:mb-6 uppercase tracking-widest text-[10px] sm:text-xs text-cyan-500">Support</h4>
+                <h4 className="font-bold mb-4 sm:mb-6 uppercase tracking-widest text-[10px] sm:text-xs text-cyan-500">Contact</h4>
                 <ul className="space-y-3 sm:space-y-4 text-xs sm:text-sm font-medium text-gray-400">
-                  <li><a href="#" className="hover:text-white transition-colors">Help Center</a></li>
-                  <li><a href="#" className="hover:text-white transition-colors">Shipping Info</a></li>
-                  <li><a href="#" className="hover:text-white transition-colors">Returns</a></li>
-                  <li><a href="#" className="hover:text-white transition-colors">Contact Us</a></li>
+                  <li className="flex items-center gap-2">
+                    <Phone className="w-3.5 h-3.5 text-cyan-500" />
+                    <a href="tel:08073651596" className="hover:text-white transition-colors">08073651596</a>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Phone className="w-3.5 h-3.5 text-cyan-500" />
+                    <a href="tel:09071498194" className="hover:text-white transition-colors">09071498194</a>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Mail className="w-3.5 h-3.5 text-cyan-500" />
+                    <a href="mailto:Ibusari127@gmail.com" className="hover:text-white transition-colors">Ibusari127@gmail.com</a>
+                  </li>
                 </ul>
               </div>
             </div>
             <div className="px-4 sm:px-8 lg:px-20 pt-10 sm:pt-20 mt-10 sm:mt-20 border-t border-gray-800 text-center">
               <p className="text-gray-500 text-[10px] font-bold tracking-widest uppercase">
-                © {new Date().getFullYear()} Dammytech Gadget Store. Engineered for Excellence.
+                © {new Date().getFullYear()} Dammytech Gadget Store. Engineered for Excellence by Tsmak Tech.
               </p>
             </div>
           </footer>
