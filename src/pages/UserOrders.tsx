@@ -18,12 +18,12 @@ import {
 import { Link } from 'react-router-dom';
 
 export default function UserOrders() {
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (authLoading || !user) return;
+    if (!user) return;
 
     setLoading(true);
     // Fetch all orders for this user
