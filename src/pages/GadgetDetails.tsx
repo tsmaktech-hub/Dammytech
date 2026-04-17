@@ -139,7 +139,7 @@ export default function GadgetDetails() {
     const encodedMessage = encodeURIComponent(message);
     
     // Opening via WhatsApp API for better compatibility
-    window.open(`https://wa.me/qr/4ZDPYBJ4QGWZM1?text=${encodedMessage}`, '_blank');
+    window.open(`https://wa.me/2349071498194?text=${encodedMessage}`, '_blank');
   };
 
   if (loading) {
@@ -311,10 +311,16 @@ export default function GadgetDetails() {
             
             <button
               onClick={handleMessageDelivery}
-              className="flex-1 py-3.5 bg-white text-gray-900 border border-gray-200 rounded-lg font-black uppercase tracking-widest text-[8px] hover:bg-gray-50 transition-all flex items-center justify-center gap-2"
+              disabled={!order}
+              className={cn(
+                "flex-1 py-3.5 border rounded-lg font-black uppercase tracking-widest text-[8px] transition-all flex items-center justify-center gap-2",
+                order 
+                  ? "bg-white text-gray-900 border-gray-200 hover:bg-gray-50" 
+                  : "bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed"
+              )}
             >
-              <MessageSquare className="w-3 h-3" />
-              Message Delivery
+              <MessageSquare className={cn("w-3 h-3", order ? "text-cyan-500" : "text-gray-300")} />
+              {order ? "Message Delivery" : "Order to Message"}
             </button>
           </div>
 

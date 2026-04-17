@@ -38,7 +38,7 @@ export default function UserOrders() {
       `Thank you!`;
 
     const encodedMessage = encodeURIComponent(message);
-    window.open(`https://wa.me/qr/4ZDPYBJ4QGWZM1?text=${encodedMessage}`, '_blank');
+    window.open(`https://wa.me/2349071498194?text=${encodedMessage}`, '_blank');
   };
 
   useEffect(() => {
