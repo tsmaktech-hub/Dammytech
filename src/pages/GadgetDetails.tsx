@@ -159,7 +159,7 @@ export default function GadgetDetails() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto py-4 lg:py-6">
+    <div className="max-w-5xl mx-auto py-4 lg:py-6">
       <button 
         onClick={() => navigate(-1)}
         className="flex items-center gap-2 text-gray-400 hover:text-cyan-600 font-bold uppercase tracking-widest text-[8px] mb-4 group transition-colors px-4"
@@ -168,12 +168,12 @@ export default function GadgetDetails() {
         Back to shop
       </button>
 
-      <div className="grid grid-cols-1 lg:grid-cols-10 gap-8 px-4">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 px-4">
         {/* Image Section */}
         <motion.div 
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="relative group lg:sticky lg:top-32 h-fit lg:col-span-4"
+          className="relative group lg:sticky lg:top-32 h-fit lg:col-span-5"
         >
           <div className="aspect-square rounded-[1.25rem] overflow-hidden bg-gray-50 border border-gray-100 shadow-lg shadow-gray-200/30">
             <img 
@@ -198,7 +198,7 @@ export default function GadgetDetails() {
         <motion.div 
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="space-y-5 lg:col-span-6"
+          className="space-y-5 lg:col-span-7"
         >
           <div className="space-y-1.5">
             <h1 className="text-xl sm:text-3xl font-black tracking-tight text-gray-900 leading-tight">
