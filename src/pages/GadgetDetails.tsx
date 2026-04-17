@@ -175,7 +175,7 @@ export default function GadgetDetails() {
           animate={{ opacity: 1, x: 0 }}
           className="relative group lg:sticky lg:top-32 h-fit lg:col-span-5"
         >
-          <div className="aspect-square rounded-[1.25rem] overflow-hidden bg-gray-50 border border-gray-100 shadow-lg shadow-gray-200/30">
+          <div className="aspect-[4/5] rounded-[1.25rem] overflow-hidden bg-gray-50 border border-gray-100 shadow-lg shadow-gray-200/30">
             <img 
               src={gadget.image} 
               alt={gadget.name}
