@@ -36,8 +36,8 @@ export default function AdminDashboard() {
     setLoading(true);
     const q = query(
       collection(db, 'orders'), 
-      where('status', '==', 'ordered'),
-      orderBy('created_at', 'desc')
+      where('status', '==', 'ordered')
+      // Removed orderBy to avoid requiring a composite index which might be blocking server response on refresh
     );
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -45,15 +45,24 @@ export default function AdminDashboard() {
         id: doc.id,
         ...doc.data()
       })) as Order[];
+      
+      // Sort in memory to avoid index requirements
+      ordersData.sort((a, b) => {
+        const dateA = a.created_at?.toDate()?.getTime() || 0;
+        const dateB = b.created_at?.toDate()?.getTime() || 0;
+        return dateB - dateA;
+      });
+
       setOrders(ordersData);
       setLoading(false);
     }, (err) => {
       console.error("Error fetching orders:", err);
+      // Still show the UI but with empty state or error if needed
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [isAdmin, navigate, loading]);
+  }, [isAdmin, navigate]); // Removed loading from dependencies to fix infinite loop
 
   const handleConfirmDelivery = async (orderId: string) => {
     if (!window.confirm('Confirm that this order has been delivered successfully? By clicking "Confirm", the customer will be able to order this item again.')) return;

@@ -29,8 +29,7 @@ export default function UserOrders() {
     // Fetch all orders for this user
     const q = query(
       collection(db, 'orders'), 
-      where('user_id', '==', user.uid),
-      orderBy('created_at', 'desc')
+      where('user_id', '==', user.uid)
     );
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -38,6 +37,14 @@ export default function UserOrders() {
         id: doc.id,
         ...doc.data()
       })) as Order[];
+
+      // Sort in memory to avoid index requirements
+      ordersData.sort((a, b) => {
+        const dateA = a.created_at?.toDate()?.getTime() || 0;
+        const dateB = b.created_at?.toDate()?.getTime() || 0;
+        return dateB - dateA;
+      });
+
       setOrders(ordersData);
       setLoading(false);
     }, (err) => {
@@ -46,7 +53,7 @@ export default function UserOrders() {
     });
 
     return () => unsubscribe();
-  }, [user]);
+  }, [user]); // Removed loading dependency
 
   if (!user) {
     return (

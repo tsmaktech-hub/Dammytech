@@ -368,13 +368,15 @@ export default function App() {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
-        refreshProfile(currentUser.uid);
+        refreshProfile(currentUser.uid).then(() => {
+          setLoading(false);
+        });
       } else {
         setProfile(null);
         setSearchQuery('');
         setIsSearchOpen(false);
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();

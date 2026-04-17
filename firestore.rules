@@ -119,7 +119,6 @@ service cloud.firestore {
 
     match /orders/{orderId} {
       allow read: if isAuthenticated() && (resource.data.user_id == request.auth.uid || isAdmin());
-      allow list: if isAuthenticated() && isAdmin(); // Only admin can list all orders
       allow create: if isAuthenticated() && isValidOrder(request.resource.data) && request.resource.data.user_id == request.auth.uid && request.resource.data.status == 'ordered';
       allow update: if isAuthenticated() && (isAdmin() || (isOwner(resource.data.user_id) && request.resource.data.status == resource.data.status)) && isValidOrder(request.resource.data);
       allow delete: if isAuthenticated() && (isOwner(resource.data.user_id) || isAdmin());
