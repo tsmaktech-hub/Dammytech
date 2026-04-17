@@ -124,7 +124,16 @@ export default function GadgetDetails() {
   };
 
   const handleMessageDelivery = () => {
-    alert("Messaging delivery personnel feature coming soon!");
+    if (!gadget) return;
+    
+    const fullName = profile?.full_name || profile?.username || "Customer";
+    const message = `Hello! My name is ${fullName}. I am interested in ordering the ${gadget.name}. Can you provide more details about the delivery?`;
+    const encodedMessage = encodeURIComponent(message);
+    
+    // Using the user provided base link and appending text if possible, 
+    // though standard wa.me/number is more reliable for pre-filled text.
+    // We'll use the provided QR link as the base.
+    window.open(`https://wa.me/qr/4ZDPYBJ4QGWZM1?text=${encodedMessage}`, '_blank');
   };
 
   if (loading) {

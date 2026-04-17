@@ -17,12 +17,20 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '../lib/utils';
+import { MessageSquare } from 'lucide-react';
 
 export default function UserOrders() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'pending' | 'delivered'>('pending');
+
+  const handleMessageDelivery = (order: Order) => {
+    const fullName = profile?.full_name || profile?.username || "Customer";
+    const message = `Hello! My name is ${fullName}. I am checking on my order for the ${order.gadget_name}. My order status is currently: ${order.status}.`;
+    const encodedMessage = encodeURIComponent(message);
+    window.open(`https://wa.me/qr/4ZDPYBJ4QGWZM1?text=${encodedMessage}`, '_blank');
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -193,7 +201,15 @@ export default function UserOrders() {
                     </div>
 
                     {/* Status Icon / Action */}
-                    <div className="shrink-0 flex items-center gap-3">
+                    <div className="shrink-0 flex flex-wrap items-center justify-center sm:justify-end gap-3">
+                      <button 
+                        onClick={() => handleMessageDelivery(order)}
+                        className="flex items-center gap-2 px-4 py-2 bg-gray-50 text-gray-900 border border-gray-200 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-cyan-500 hover:text-white hover:border-cyan-500 transition-all shadow-sm group/msg"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5 text-cyan-500 group-hover/msg:text-white transition-colors" />
+                        Message Delivery
+                      </button>
+
                       {order.status === 'delivered' ? (
                         <div className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-xl font-black text-[10px] uppercase tracking-widest">
                           <CheckCircle2 className="w-4 h-4" />
