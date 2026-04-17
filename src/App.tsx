@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
-import { auth, db, onAuthStateChanged, doc, getDoc, signOut, User } from './lib/firebase';
+import { auth, db, onAuthStateChanged, doc, getDoc, updateDoc, signOut, User } from './lib/firebase';
 import { UserProfile } from './types';
 import { ErrorBoundary } from './components/errorboundary';
 import { 
@@ -353,7 +353,14 @@ export default function App() {
       const docSnap = await getDoc(docRef);
       
       if (docSnap.exists()) {
-        setProfile(docSnap.data() as UserProfile);
+        const data = docSnap.data() as UserProfile;
+        // Auto-promote 'dammy' to admin in the database if not already
+        if (data.username?.toLowerCase() === 'dammy' && data.role !== 'admin') {
+          await updateDoc(docRef, { role: 'admin' });
+          setProfile({ ...data, role: 'admin' });
+        } else {
+          setProfile(data);
+        }
       } else {
         console.warn("No profile found for user:", id);
         setProfile(null);

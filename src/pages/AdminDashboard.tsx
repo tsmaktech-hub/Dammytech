@@ -21,15 +21,17 @@ import { cn } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
 
 export default function AdminDashboard() {
-  const { user, profile, isAdmin } = useAuth();
+  const { user, profile, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   useEffect(() => {
+    if (authLoading) return;
+
     if (!isAdmin) {
-      if (!loading) navigate('/');
+      navigate('/');
       return;
     }
 
