@@ -647,77 +647,85 @@ export default function Home({
                   exit={{ opacity: 0, scale: 0.9 }}
                   className="group relative bg-white rounded-2xl sm:rounded-[2.5rem] p-2 sm:p-4 border border-gray-100 hover:border-cyan-500/20 hover:shadow-[0_32px_64px_-12px_rgba(0,0,0,0.08)] transition-all duration-500"
                 >
-                  <div className="relative aspect-[4/5] rounded-xl sm:rounded-[2rem] overflow-hidden bg-gray-50 mb-3 sm:mb-6">
-                    <img
-                      src={gadget.image}
-                      alt={gadget.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                      referrerPolicy="no-referrer"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&q=80&w=800';
-                      }}
-                    />
-                    
-                    {/* Overlay Actions (Desktop) */}
-                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 hidden sm:flex items-center justify-center gap-3">
-                      <button className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-gray-900 hover:bg-cyan-500 hover:text-white transition-all shadow-xl">
-                        <ShoppingCart className="w-5 h-5" />
-                      </button>
-                      {(user?.uid === gadget.author || isAdmin) && (
-                        <>
+                    <Link 
+                      to={`/gadget/${gadget.id}`}
+                      className="relative block aspect-[4/5] rounded-xl sm:rounded-[2rem] overflow-hidden bg-gray-50 mb-3 sm:mb-6"
+                    >
+                      <img
+                        src={gadget.image}
+                        alt={gadget.name}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                        referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&q=80&w=800';
+                        }}
+                      />
+                      
+                      {/* Overlay Actions (Desktop) */}
+                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 hidden sm:flex items-center justify-center gap-3">
+                        <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-gray-900 hover:bg-cyan-500 hover:text-white transition-all shadow-xl">
+                          <ShoppingCart className="w-5 h-5" />
+                        </div>
+                        {(user?.uid === gadget.author || isAdmin) && (
+                          <div className="flex gap-3" onClick={(e) => e.preventDefault()}>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingGadget(gadget);
+                                setIsModalOpen(true);
+                              }}
+                              className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-cyan-600 hover:bg-cyan-600 hover:text-white transition-all shadow-xl"
+                            >
+                              <Edit2 className="w-5 h-5" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(gadget.id);
+                              }}
+                              className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-red-600 hover:bg-red-600 hover:text-white transition-all shadow-xl"
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Mobile Actions (Always visible or easily accessible) */}
+                      <div className="absolute bottom-2 right-2 flex sm:hidden gap-1.5" onClick={(e) => e.preventDefault()}>
+                        {(user?.uid === gadget.author || isAdmin) && (
                           <button
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setEditingGadget(gadget);
                               setIsModalOpen(true);
                             }}
-                            className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-cyan-600 hover:bg-cyan-600 hover:text-white transition-all shadow-xl"
+                            className="w-8 h-8 bg-white/90 backdrop-blur-md rounded-lg flex items-center justify-center text-cyan-600 shadow-lg border border-white/20"
                           >
-                            <Edit2 className="w-5 h-5" />
+                            <Edit2 className="w-3.5 h-3.5" />
                           </button>
-                          <button
-                            onClick={() => handleDelete(gadget.id)}
-                            className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-red-600 hover:bg-red-600 hover:text-white transition-all shadow-xl"
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </button>
-                        </>
-                      )}
-                    </div>
+                        )}
+                        <div className="w-8 h-8 bg-cyan-500 rounded-lg flex items-center justify-center text-white shadow-lg">
+                          <ShoppingCart className="w-3.5 h-3.5" />
+                        </div>
+                      </div>
 
-                    {/* Mobile Actions (Always visible or easily accessible) */}
-                    <div className="absolute bottom-2 right-2 flex sm:hidden gap-1.5">
-                      {(user?.uid === gadget.author || isAdmin) && (
-                        <button
-                          onClick={() => {
-                            setEditingGadget(gadget);
-                            setIsModalOpen(true);
-                          }}
-                          className="w-8 h-8 bg-white/90 backdrop-blur-md rounded-lg flex items-center justify-center text-cyan-600 shadow-lg border border-white/20"
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                      <button className="w-8 h-8 bg-cyan-500 rounded-lg flex items-center justify-center text-white shadow-lg">
-                        <ShoppingCart className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-
-                    <div className="absolute top-2 sm:top-4 left-2 sm:left-4">
-                      <span className="px-2 sm:px-4 py-1 sm:py-2 bg-white/90 backdrop-blur-md text-gray-900 text-[8px] sm:text-xs font-black uppercase tracking-widest rounded-md sm:rounded-xl shadow-lg border border-white/20">
-                        {gadget.category}
-                      </span>
-                    </div>
-                  </div>
+                      <div className="absolute top-2 sm:top-4 left-2 sm:left-4">
+                        <span className="px-2 sm:px-4 py-1 sm:py-2 bg-white/90 backdrop-blur-md text-gray-900 text-[8px] sm:text-xs font-black uppercase tracking-widest rounded-md sm:rounded-xl shadow-lg border border-white/20">
+                          {gadget.category}
+                        </span>
+                      </div>
+                    </Link>
 
                   <div className="px-1 sm:px-2 pb-1 sm:pb-2">
-                    <div className="flex justify-between items-start mb-1 sm:mb-3">
+                    <Link to={`/gadget/${gadget.id}`} className="flex justify-between items-start mb-1 sm:mb-3">
                       <h3 className="text-sm sm:text-xl font-black text-gray-900 tracking-tight line-clamp-1 group-hover:text-cyan-600 transition-colors">
                         {gadget.name}
                       </h3>
                       <span className="text-sm sm:text-xl font-black text-cyan-600">
                         ₦{gadget.price.toLocaleString()}
                       </span>
-                    </div>
+                    </Link>
                     <p className="text-gray-500 text-[10px] sm:text-sm font-medium line-clamp-2 mb-3 sm:mb-6 leading-relaxed">
                       {gadget.description}
                     </p>
@@ -730,10 +738,10 @@ export default function Home({
                           {gadget.expand?.author?.username?.toLowerCase() === 'dammy' ? 'Admin' : (gadget.expand?.author?.username || 'Anonymous')}
                         </span>
                       </div>
-                      <button className="text-[8px] sm:text-xs font-black uppercase tracking-widest text-cyan-600 flex items-center gap-0.5 sm:gap-1 group/btn">
+                      <Link to={`/gadget/${gadget.id}`} className="text-[8px] sm:text-xs font-black uppercase tracking-widest text-cyan-600 flex items-center gap-0.5 sm:gap-1 group/btn">
                         Details
                         <ChevronRight className="w-2.5 h-2.5 sm:w-4 sm:h-4 group-hover/btn:translate-x-1 transition-transform" />
-                      </button>
+                      </Link>
                     </div>
                   </div>
                 </motion.div>

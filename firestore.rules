@@ -87,6 +87,18 @@ service cloud.firestore {
              data.updated_at is timestamp;
     }
 
+    function isValidOrder(data) {
+      return hasRequiredFields(['gadget_id', 'user_id', 'status', 'created_at', 'updated_at', 'user_name', 'gadget_name', 'gadget_image']) &&
+             data.gadget_id is string &&
+             data.user_id is string &&
+             data.status in ['ordered', 'delivered'] &&
+             data.user_name is string &&
+             data.gadget_name is string &&
+             isValidUrl(data.gadget_image) &&
+             data.created_at is timestamp &&
+             data.updated_at is timestamp;
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -103,6 +115,14 @@ service cloud.firestore {
       allow create: if isAuthenticated() && isValidGadget(request.resource.data) && request.resource.data.author == request.auth.uid;
       allow update: if isAuthenticated() && (resource.data.author == request.auth.uid || isAdmin()) && isValidGadget(request.resource.data) && request.resource.data.author == resource.data.author && request.resource.data.created_at == resource.data.created_at;
       allow delete: if isAuthenticated() && (resource.data.author == request.auth.uid || isAdmin());
+    }
+
+    match /orders/{orderId} {
+      allow read: if isAuthenticated() && (resource.data.user_id == request.auth.uid || isAdmin());
+      allow list: if isAuthenticated() && isAdmin(); // Only admin can list all orders
+      allow create: if isAuthenticated() && isValidOrder(request.resource.data) && request.resource.data.user_id == request.auth.uid && request.resource.data.status == 'ordered';
+      allow update: if isAuthenticated() && (isAdmin() || (isOwner(resource.data.user_id) && request.resource.data.status == resource.data.status)) && isValidOrder(request.resource.data);
+      allow delete: if isAuthenticated() && (isOwner(resource.data.user_id) || isAdmin());
     }
 
     match /test/connection {

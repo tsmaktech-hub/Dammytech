@@ -31,6 +31,23 @@
         "updated_at": { "type": "string", "format": "date-time", "description": "Last update timestamp." }
       },
       "required": ["name", "price", "category", "author"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Represents an order made by a user for a gadget.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the order." },
+        "gadget_id": { "type": "string", "description": "ID of the ordered gadget." },
+        "user_id": { "type": "string", "description": "ID of the user who made the order." },
+        "user_name": { "type": "string", "description": "Name of the user who ordered." },
+        "gadget_name": { "type": "string", "description": "Name of the gadget." },
+        "gadget_image": { "type": "string", "description": "Image URL of the gadget." },
+        "status": { "type": "string", "enum": ["ordered", "delivered"], "description": "Status of the order." },
+        "created_at": { "type": "string", "format": "date-time", "description": "Creation timestamp." },
+        "updated_at": { "type": "string", "format": "date-time", "description": "Last update timestamp." }
+      },
+      "required": ["gadget_id", "user_id", "status"]
     }
   },
   "firestore": {
@@ -41,6 +58,10 @@
     "/gadgets/{gadgetId}": {
       "schema": "Gadget",
       "description": "Collection of gadgets available in the store."
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Collection of customer orders."
     }
   }
 }

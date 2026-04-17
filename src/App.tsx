@@ -24,6 +24,8 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import AuthChoice from './pages/AuthChoice';
+import GadgetDetails from './pages/GadgetDetails';
+import AdminDashboard from './pages/AdminDashboard';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
 
@@ -109,7 +111,7 @@ const Navbar = ({
   isSearchOpen: boolean;
   setIsSearchOpen: (o: boolean) => void;
 }) => {
-  const { user, profile, logout } = useAuth();
+  const { user, profile, logout, isAdmin } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const location = useLocation();
@@ -132,6 +134,10 @@ const Navbar = ({
     { name: 'Audios', icon: Headphones, path: '/category/audio' },
     { name: 'Components', icon: Cpu, path: '/category/components' },
   ];
+
+  if (isAdmin) {
+    categories.push({ name: 'Orders', icon: ShoppingBag, path: '/admin/orders' });
+  }
 
   const getInitials = (name?: string, email?: string) => {
     if (profile?.username?.toLowerCase() === 'dammy') return 'BI';
@@ -423,6 +429,8 @@ export default function App() {
                 <Route path="/auth" element={user ? <Navigate to="/" /> : <AuthChoice />} />
                 <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
                 <Route path="/signup" element={user ? <Navigate to="/" /> : <Signup />} />
+                <Route path="/gadget/:id" element={<GadgetDetails />} />
+                <Route path="/admin/orders" element={(profile?.role === 'admin' || profile?.username?.toLowerCase() === 'dammy') ? <AdminDashboard /> : <Navigate to="/" />} />
                 <Route path="/category/:category" element={<Home searchQuery={searchQuery} setSearchQuery={setSearchQuery} />} />
                 <Route path="*" element={<Navigate to="/" />} />
               </Routes>
