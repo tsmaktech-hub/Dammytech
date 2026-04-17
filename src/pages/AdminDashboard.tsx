@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
-import { collection, query, orderBy, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { Order } from '../types';
 import { useAuth } from '../App';
 import { motion, AnimatePresence } from 'motion/react';
@@ -34,7 +34,11 @@ export default function AdminDashboard() {
     }
 
     setLoading(true);
-    const q = query(collection(db, 'orders'), orderBy('created_at', 'desc'));
+    const q = query(
+      collection(db, 'orders'), 
+      where('status', '==', 'ordered'),
+      orderBy('created_at', 'desc')
+    );
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const ordersData = snapshot.docs.map(doc => ({
@@ -52,15 +56,19 @@ export default function AdminDashboard() {
   }, [isAdmin, navigate, loading]);
 
   const handleConfirmDelivery = async (orderId: string) => {
-    if (!window.confirm('Confirm that This order has been delivered and made successfully? By Clicking "Confirm" this order will move to "Delivered" and user can order again.')) return;
+    if (!window.confirm('Confirm that this order has been delivered successfully? By clicking "Confirm", the customer will be able to order this item again.')) return;
     
     setActionLoading(orderId);
     try {
-      // We can either update status or delete. User said "when he confirm that the delivery has been made he can unorder it so on that person page he can order again"
-      // This implies moving out of active orders. I'll delete it to allow re-ordering (since my GadgetDetails looks for active orders).
-      await deleteDoc(doc(db, 'orders', orderId));
+      // Update status to 'delivered'. In GadgetDetails.tsx, we specifically query for where status == 'ordered'.
+      // When the status changes to 'delivered', that listener will return an empty list, 
+      // which sets 'order' to null and changes the button back to "Order Now".
+      await updateDoc(doc(db, 'orders', orderId), {
+        status: 'delivered',
+        updated_at: serverTimestamp(),
+      });
     } catch (err) {
-      handleFirestoreError(err, OperationType.DELETE, `orders/${orderId}`);
+      handleFirestoreError(err, OperationType.UPDATE, `orders/${orderId}`);
     } finally {
       setActionLoading(null);
     }
