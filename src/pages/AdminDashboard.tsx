@@ -40,7 +40,7 @@ export default function AdminDashboard() {
     // Fetch ALL orders so admin can see history and current orders
     const q = query(collection(db, 'orders'));
     
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubscribe = onSnapshot(q, { includeMetadataChanges: true }, (snapshot) => {
       const ordersData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -48,8 +48,11 @@ export default function AdminDashboard() {
       
       // Sort in memory to avoid index requirements
       ordersData.sort((a, b) => {
-        const dateA = a.created_at?.toDate()?.getTime() || 0;
-        const dateB = b.created_at?.toDate()?.getTime() || 0;
+        // Handle potential null/pending timestamps gracefully
+        const dateA = a.created_at?.toDate ? a.created_at.toDate().getTime() : 
+                     (a.created_at ? new Date(a.created_at).getTime() : Date.now());
+        const dateB = b.created_at?.toDate ? b.created_at.toDate().getTime() : 
+                     (b.created_at ? new Date(b.created_at).getTime() : Date.now());
         return dateB - dateA;
       });
 

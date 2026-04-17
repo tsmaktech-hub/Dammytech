@@ -368,7 +368,7 @@ export default function App() {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
-        refreshProfile(currentUser.uid).then(() => {
+        refreshProfile(currentUser.uid).finally(() => {
           setLoading(false);
         });
       } else {
