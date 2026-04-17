@@ -26,6 +26,7 @@ import Signup from './pages/Signup';
 import AuthChoice from './pages/AuthChoice';
 import GadgetDetails from './pages/GadgetDetails';
 import AdminDashboard from './pages/AdminDashboard';
+import UserOrders from './pages/UserOrders';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
 
@@ -137,6 +138,8 @@ const Navbar = ({
 
   if (isAdmin) {
     categories.push({ name: 'Orders', icon: ShoppingBag, path: '/admin/orders' });
+  } else if (user) {
+    categories.push({ name: 'My Orders', icon: ShoppingBag, path: '/my-orders' });
   }
 
   const getInitials = (name?: string, email?: string) => {
@@ -430,6 +433,7 @@ export default function App() {
                 <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
                 <Route path="/signup" element={user ? <Navigate to="/" /> : <Signup />} />
                 <Route path="/gadget/:id" element={<GadgetDetails />} />
+                <Route path="/my-orders" element={user ? <UserOrders /> : <Navigate to="/login" />} />
                 <Route path="/admin/orders" element={(profile?.role === 'admin' || profile?.username?.toLowerCase() === 'dammy') ? <AdminDashboard /> : <Navigate to="/" />} />
                 <Route path="/category/:category" element={<Home searchQuery={searchQuery} setSearchQuery={setSearchQuery} />} />
                 <Route path="*" element={<Navigate to="/" />} />
