@@ -159,23 +159,23 @@ export default function GadgetDetails() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto py-8 lg:py-16">
+    <div className="max-w-6xl mx-auto py-6 lg:py-12">
       <button 
         onClick={() => navigate(-1)}
-        className="flex items-center gap-2 text-gray-500 hover:text-gray-900 font-bold uppercase tracking-widest text-[10px] mb-8 group transition-colors"
+        className="flex items-center gap-2 text-gray-500 hover:text-gray-900 font-bold uppercase tracking-widest text-[10px] mb-6 group transition-colors px-4"
       >
         <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
         Back to listings
       </button>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16 px-4">
         {/* Image Section */}
         <motion.div 
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="relative group lg:sticky lg:top-32 h-fit"
+          className="relative group lg:sticky lg:top-32 h-fit lg:col-span-5"
         >
-          <div className="aspect-[4/5] rounded-[2.5rem] sm:rounded-[4rem] overflow-hidden bg-gray-50 border border-gray-100 shadow-2xl shadow-gray-200">
+          <div className="aspect-square rounded-[2rem] sm:rounded-[3rem] overflow-hidden bg-gray-50 border border-gray-100 shadow-xl shadow-gray-200/50">
             <img 
               src={gadget.image} 
               alt={gadget.name}
@@ -187,8 +187,8 @@ export default function GadgetDetails() {
             />
           </div>
           
-          <div className="absolute top-8 left-8">
-            <span className="px-6 py-3 bg-white/90 backdrop-blur-md rounded-2xl text-cyan-600 text-xs font-black uppercase tracking-widest shadow-xl border border-white/50">
+          <div className="absolute top-6 left-6">
+            <span className="px-5 py-2.5 bg-white/90 backdrop-blur-md rounded-xl text-cyan-600 text-[10px] font-black uppercase tracking-widest shadow-lg border border-white/50">
               {gadget.category}
             </span>
           </div>
@@ -198,84 +198,84 @@ export default function GadgetDetails() {
         <motion.div 
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="space-y-10"
+          className="space-y-8 lg:col-span-7"
         >
-          <div className="space-y-4">
-            <h1 className="text-4xl sm:text-6xl font-black tracking-tighter text-gray-900 leading-tight">
+          <div className="space-y-3">
+            <h1 className="text-3xl sm:text-5xl font-black tracking-tighter text-gray-900 leading-tight">
               {gadget.name}
             </h1>
             <div className="flex items-center gap-4">
-              <div className="px-4 py-2 bg-cyan-50 rounded-xl flex items-center gap-2">
-                <Tag className="w-4 h-4 text-cyan-500" />
-                <span className="text-cyan-700 font-black text-sm uppercase tracking-wider">Certified Luxury</span>
+              <div className="px-3 py-1.5 bg-cyan-50 rounded-lg flex items-center gap-2">
+                <Tag className="w-3.5 h-3.5 text-cyan-500" />
+                <span className="text-cyan-700 font-black text-[10px] uppercase tracking-wider">Certified Luxury</span>
               </div>
-              <div className="flex -space-x-2">
+              <div className="flex -space-x-1.5">
                 {[1, 2, 3].map(i => (
-                  <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-gray-200" />
+                  <div key={i} className="w-6 h-6 rounded-full border-2 border-white bg-gray-200" />
                 ))}
-                <div className="w-8 h-8 rounded-full border-2 border-white bg-cyan-500 flex items-center justify-center text-[10px] text-white font-black">
+                <div className="w-6 h-6 rounded-full border-2 border-white bg-cyan-500 flex items-center justify-center text-[8px] text-white font-black">
                   +12
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="p-8 sm:p-12 bg-gray-50 rounded-[3rem] border border-gray-100 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
-              <Cpu className="w-24 h-24 text-gray-900" />
+          <div className="p-6 sm:p-10 bg-gray-50 rounded-[2.5rem] border border-gray-100 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 transition-transform">
+              <Cpu className="w-20 h-20 text-gray-900" />
             </div>
             
             <div className="relative">
-              <p className="text-xs font-black uppercase tracking-widest text-cyan-600 mb-2">Price Estimate</p>
-              <div className="text-5xl sm:text-6xl font-black text-gray-900 tracking-tighter">
+              <p className="text-[10px] font-black uppercase tracking-widest text-cyan-600 mb-1">Price Estimate</p>
+              <div className="text-4xl sm:text-5xl font-black text-gray-900 tracking-tighter">
                 ₦{gadget.price.toLocaleString()}
               </div>
             </div>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <Package className="w-5 h-5 text-gray-400" />
-              <h3 className="text-sm font-black uppercase tracking-widest text-gray-900">Product Details</h3>
+              <Package className="w-4 h-4 text-gray-400" />
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-900">Product Details</h3>
             </div>
-            <p className="text-gray-600 text-lg leading-relaxed font-medium">
+            <p className="text-gray-600 text-base leading-relaxed font-medium">
               {gadget.description}
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 py-8 border-y border-gray-100">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-cyan-50 rounded-2xl flex items-center justify-center">
-                <ShieldCheck className="w-6 h-6 text-cyan-600" />
+          <div className="grid grid-cols-2 gap-4 py-6 border-y border-gray-100">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-cyan-50 rounded-xl flex items-center justify-center">
+                <ShieldCheck className="w-5 h-5 text-cyan-600" />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 leading-none mb-1">Warranty</p>
-                <p className="text-sm font-bold text-gray-900">12 Months Official</p>
+                <p className="text-[8px] font-black uppercase tracking-widest text-gray-400 leading-none mb-1">Warranty</p>
+                <p className="text-xs font-bold text-gray-900">12 Months Official</p>
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-cyan-50 rounded-2xl flex items-center justify-center">
-                <Truck className="w-6 h-6 text-cyan-600" />
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-cyan-50 rounded-xl flex items-center justify-center">
+                <Truck className="w-5 h-5 text-cyan-600" />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 leading-none mb-1">Shipping</p>
-                <p className="text-sm font-bold text-gray-900">Fast Nationwide</p>
+                <p className="text-[8px] font-black uppercase tracking-widest text-gray-400 leading-none mb-1">Shipping</p>
+                <p className="text-xs font-bold text-gray-900">Fast Nationwide</p>
               </div>
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-4 pt-4">
+          <div className="flex flex-col sm:flex-row gap-3 pt-2">
             {order ? (
               <button
                 onClick={handleUnorder}
                 disabled={actionLoading}
-                className="flex-1 py-6 bg-red-50 text-red-600 rounded-[2rem] font-black uppercase tracking-widest text-xs hover:bg-red-100 transition-all flex items-center justify-center gap-3 border-2 border-red-200"
+                className="flex-1 py-4 bg-red-50 text-red-600 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-red-100 transition-all flex items-center justify-center gap-3 border border-red-200"
               >
                 {actionLoading ? (
-                  <div className="w-5 h-5 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                  <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
                 ) : (
                   <>
-                    <X className="w-5 h-5" />
+                    <X className="w-4 h-4" />
                     Unorder Product
                   </>
                 )}
@@ -284,13 +284,13 @@ export default function GadgetDetails() {
               <button
                 onClick={handleOrder}
                 disabled={actionLoading}
-                className="flex-1 py-6 bg-gray-900 text-white rounded-[2rem] font-black uppercase tracking-widest text-xs hover:bg-cyan-600 transition-all shadow-2xl shadow-gray-200 flex items-center justify-center gap-3 disabled:opacity-50"
+                className="flex-1 py-5 bg-gray-900 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-cyan-600 transition-all shadow-xl shadow-gray-200 flex items-center justify-center gap-3 disabled:opacity-50"
               >
                 {actionLoading ? (
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
                   <>
-                    <ShoppingCart className="w-5 h-5" />
+                    <ShoppingCart className="w-4 h-4" />
                     Order Now
                   </>
                 )}
@@ -299,20 +299,20 @@ export default function GadgetDetails() {
             
             <button
               onClick={handleMessageDelivery}
-              className="flex-1 py-6 bg-white text-gray-900 border-2 border-gray-100 rounded-[2rem] font-black uppercase tracking-widest text-xs hover:bg-gray-50 transition-all flex items-center justify-center gap-3"
+              className="flex-1 py-5 bg-white text-gray-900 border border-gray-200 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-gray-50 transition-all flex items-center justify-center gap-3"
             >
-              <MessageSquare className="w-5 h-5" />
-              Message Delivery Guy
+              <MessageSquare className="w-4 h-4" />
+              Message Delivery
             </button>
           </div>
 
-          <div className="p-6 bg-blue-50/50 rounded-3xl border border-blue-100/50 flex items-center gap-4">
-            <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white shrink-0">
-              <Clock className="w-5 h-5" />
+          <div className="p-5 bg-blue-50/50 rounded-2xl border border-blue-100/50 flex items-center gap-4">
+            <div className="w-9 h-9 bg-blue-500 rounded-full flex items-center justify-center text-white shrink-0">
+              <Clock className="w-4 h-4" />
             </div>
             <div>
-              <p className="text-sm font-bold text-blue-900">Typically delivers in 24-48 hours</p>
-              <p className="text-xs text-blue-700/70 font-medium">Orders placed before 2PM are processed same day.</p>
+              <p className="text-xs font-bold text-blue-900">Delivers in 24-48 hours</p>
+              <p className="text-[10px] text-blue-700/60 font-medium">Orders placed before 2PM processed same day.</p>
             </div>
           </div>
         </motion.div>
