@@ -516,6 +516,8 @@ export default function Home({
             {[
               { label: 'Users', value: '50K+', icon: Star },
               { label: 'Sold', value: '120K+', icon: ShoppingCart },
+              { label: 'Countries', value: '45+', icon: ShieldCheck },
+              { label: 'Delivery', value: '24H', icon: Truck },
             ].map((stat, i) => (
               <motion.div
                 key={stat.label}
@@ -526,8 +528,8 @@ export default function Home({
               >
                 <stat.icon className="w-4 h-4 text-cyan-400" />
                 <div>
-                  <div className="text-sm font-black text-white">{stat.value}</div>
-                  <div className="text-[8px] font-bold text-gray-500 uppercase tracking-widest">{stat.label}</div>
+                  <div className="text-[10px] font-black text-white leading-none mb-0.5">{stat.value}</div>
+                  <div className="text-[7px] font-bold text-gray-500 uppercase tracking-widest leading-none">{stat.label}</div>
                 </div>
               </motion.div>
             ))}
