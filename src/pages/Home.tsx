@@ -453,7 +453,24 @@ export default function Home({
       // Limit for guests
       let finalGadgets = gadgetList;
       if (!user) {
-        finalGadgets = gadgetList.slice(0, 4);
+        if (category) {
+          finalGadgets = gadgetList.slice(0, 3);
+        } else {
+          // 3 for EACH category when viewing "All"
+          const cats = ['phones', 'laptops', 'watches', 'audio', 'components'];
+          const grouped: any[] = [];
+          cats.forEach(c => {
+            const items = gadgetList.filter(g => g.category === c).slice(0, 3);
+            grouped.push(...items);
+          });
+          // Sort back by date
+          finalGadgets = grouped.sort((a, b) => b.created_at?.toMillis?.() - a.created_at?.toMillis?.());
+          
+          // If no categories matched or it was empty, just take first 10 as fallback if they exist
+          if (finalGadgets.length === 0 && gadgetList.length > 0) {
+            finalGadgets = gadgetList.slice(0, 5);
+          }
+        }
       }
       
       setGadgets(finalGadgets);
@@ -804,6 +821,37 @@ export default function Home({
             </AnimatePresence>
           </div>
         )}
+
+        {/* View More for Guests */}
+        {!user && gadgets.length > 0 && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mt-12 sm:mt-20 p-8 sm:p-16 rounded-[2rem] sm:rounded-[3rem] bg-gradient-to-br from-gray-900 to-gray-800 text-center relative overflow-hidden group"
+          >
+            <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_120%,rgba(6,182,212,0.15),transparent)] pointer-events-none" />
+            <div className="relative z-10">
+              <div className="inline-flex items-center gap-2 mb-6 px-4 py-2 bg-white/5 border border-white/10 rounded-full text-cyan-400 text-[8px] sm:text-xs font-black uppercase tracking-widest">
+                <Star className="w-3 h-3 sm:w-4 sm:h-4 fill-cyan-400" />
+                Exclusive Collection Locked
+              </div>
+              <h3 className="text-2xl sm:text-4xl font-black text-white mb-4 sm:mb-6 tracking-tight">
+                Want to see all {category ? category : 'our'} gadgets?
+              </h3>
+              <p className="text-gray-400 font-medium text-sm sm:text-lg mb-8 sm:mb-12 max-w-xl mx-auto leading-relaxed">
+                We're hiding our full inventory from guests. Sign in to your account to unlock all premium gadgets and start ordering.
+              </p>
+              <Link 
+                to="/auth" 
+                className="inline-flex items-center gap-3 px-8 py-4 sm:px-12 sm:py-6 bg-cyan-500 text-white rounded-2xl font-black uppercase tracking-widest text-xs sm:text-sm hover:bg-cyan-400 transition-all shadow-xl shadow-cyan-500/20 group"
+              >
+                Sign In to Unlock Everything
+                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-2 transition-transform" />
+              </Link>
+            </div>
+          </motion.div>
+        )}
       </section>
 
       <AddGadgetModal 
@@ -942,22 +990,40 @@ export default function Home({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-10">
           {[
             {
-              name: "Alex Rivera",
+              name: "Chidi Okafor",
               role: "Tech Reviewer",
-              text: "The neural-link headset I bought here changed my workflow forever. Dammytech is literally living in 2030.",
-              avatar: "AR"
+              text: "The neural-link headset I bought from Dammytech changed my workflow forever. This store is literally the future of tech in Nigeria.",
+              avatar: "CO"
             },
             {
-              name: "Sarah Chen",
+              name: "Oluwaseun Ajayi",
               role: "Software Architect",
-              text: "Fastest shipping I've ever experienced. The quantum laptop arrived in perfect condition and performs like a beast.",
-              avatar: "SC"
+              text: "Fastest shipping I've ever experienced in Lagos. The quantum laptop arrived in perfect condition and performs like a beast.",
+              avatar: "OA"
             },
             {
-              name: "Marcus Thorne",
+              name: "Amaka Nwachukwu",
               role: "Digital Artist",
-              text: "Customer support is top-tier. They helped me calibrate my holographic display at 3 AM. Unbeatable service.",
-              avatar: "MT"
+              text: "Customer support is top-tier. They helped me calibrate my holographic display at 3 AM. Unbeatable service and very reliable.",
+              avatar: "AN"
+            },
+            {
+              name: "Babatunde Lawal",
+              role: "Business Owner",
+              text: "I was skeptical at first, but Dammytech delivered exactly what I ordered. Their gadgets are authentic and the delivery is super fast.",
+              avatar: "BL"
+            },
+            {
+              name: "Zainab Ibrahim",
+              role: "Computer Engineer",
+              text: "Finding high-quality components in Nigeria used to be hard until I found this store. Their customer service is exceptional!",
+              avatar: "ZI"
+            },
+            {
+              name: "Emeka Nwosu",
+              role: "Mobile Developer",
+              text: "Bought my latest smartphone here and the experience was seamless. Legit gadgets and very professional handling. Highly recommended!",
+              avatar: "EN"
             }
           ].map((review, i) => (
             <motion.div
