@@ -133,15 +133,19 @@ const Navbar = ({
   const handleCategoryClick = (path: string) => {
     setIsMenuOpen(false);
     if (location.pathname + location.hash === path) {
-      const id = path.split('#')[1];
-      if (id) {
-        document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+      if (path === '/') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        const id = path.split('#')[1];
+        if (id) {
+          document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+        }
       }
     }
   };
 
   const categories = [
-    { name: 'Home', icon: HomeIcon, path: '/#collection' },
+    { name: 'Home', icon: HomeIcon, path: '/' },
     { name: 'Phones', icon: Smartphone, path: '/category/phones#collection' },
     { name: 'Laptops', icon: Laptop, path: '/category/laptops#collection' },
     { name: 'Watches', icon: Watch, path: '/category/watches#collection' },
