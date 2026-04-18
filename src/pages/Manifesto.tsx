@@ -39,7 +39,7 @@ const Manifesto = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="text-gray-400 text-lg sm:text-xl max-w-2xl mx-auto font-medium"
+            className="text-gray-200 text-lg sm:text-xl max-w-2xl mx-auto font-medium"
           >
             A roadmap to the digital frontier. Our commitment to innovation, excellence, and the evolution of technology in Nigeria.
           </motion.p>

@@ -26,7 +26,8 @@ import {
   Search,
   Edit2,
   Link as LinkIcon,
-  Upload
+  Upload,
+  LogIn
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
@@ -374,6 +375,9 @@ export default function Home({
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingGadget, setEditingGadget] = useState<Gadget | null>(null);
+  const [userTestimonials, setUserTestimonials] = useState<any[]>([]);
+  const [isTestimonialSubmitting, setIsTestimonialSubmitting] = useState(false);
+  const [newTestimonial, setNewTestimonial] = useState({ text: '', rating: 5 });
 
   const isAuthorizedSeller = profile?.username?.toLowerCase() === 'dammy' || 
                              (profile?.email === 'tsmaktech@gmail.com' && 
@@ -482,6 +486,43 @@ export default function Home({
 
     return () => unsubscribe();
   }, [category, user]);
+
+  useEffect(() => {
+    const tQuery = query(collection(db, 'testimonials'), orderBy('created_at', 'desc'));
+    const unsubscribeT = onSnapshot(tQuery, (snapshot) => {
+      const tList = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+      setUserTestimonials(tList);
+    });
+    return () => unsubscribeT();
+  }, []);
+
+  const handleTestimonialSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    if (!newTestimonial.text.trim()) return;
+
+    setIsTestimonialSubmitting(true);
+    try {
+      await addDoc(collection(db, 'testimonials'), {
+        user_id: user.uid,
+        name: profile?.full_name || profile?.username || 'Valued Customer',
+        text: newTestimonial.text,
+        rating: newTestimonial.rating,
+        avatar: (profile?.full_name?.charAt(0) || profile?.username?.charAt(0) || 'U').toUpperCase(),
+        role: profile?.role === 'admin' ? 'Premium Member' : 'Tech Enthusiast',
+        created_at: serverTimestamp(),
+      });
+      setNewTestimonial({ text: '', rating: 5 });
+      alert("Thank you for your feedback! Your voice has been added to the future.");
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, 'testimonials');
+    } finally {
+      setIsTestimonialSubmitting(false);
+    }
+  };
 
   const handleDelete = async (id: string) => {
     if (!window.confirm('Are you sure you want to delete this gadget?')) return;
@@ -991,45 +1032,54 @@ export default function Home({
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-10">
           {[
-            {
-              name: "Chidi Okafor",
-              role: "Tech Reviewer",
-              text: "The neural-link headset I bought from Dammytech changed my workflow forever. This store is literally the future of tech in Nigeria.",
-              avatar: "CO"
-            },
-            {
-              name: "Oluwaseun Ajayi",
-              role: "Software Architect",
-              text: "Fastest shipping I've ever experienced in Lagos. The quantum laptop arrived in perfect condition and performs like a beast.",
-              avatar: "OA"
-            },
-            {
-              name: "Amaka Nwachukwu",
-              role: "Digital Artist",
-              text: "Customer support is top-tier. They helped me calibrate my holographic display at 3 AM. Unbeatable service and very reliable.",
-              avatar: "AN"
-            },
-            {
-              name: "Babatunde Lawal",
-              role: "Business Owner",
-              text: "I was skeptical at first, but Dammytech delivered exactly what I ordered. Their gadgets are authentic and the delivery is super fast.",
-              avatar: "BL"
-            },
-            {
-              name: "Zainab Ibrahim",
-              role: "Computer Engineer",
-              text: "Finding high-quality components in Nigeria used to be hard until I found this store. Their customer service is exceptional!",
-              avatar: "ZI"
-            },
-            {
-              name: "Emeka Nwosu",
-              role: "Mobile Developer",
-              text: "Bought my latest smartphone here and the experience was seamless. Legit gadgets and very professional handling. Highly recommended!",
-              avatar: "EN"
-            }
+            ...[
+              {
+                name: "Chidi Okafor",
+                role: "Tech Reviewer",
+                text: "The neural-link headset I bought from Dammytech changed my workflow forever. This store is literally the future of tech in Nigeria.",
+                avatar: "CO",
+                rating: 5
+              },
+              {
+                name: "Oluwaseun Ajayi",
+                role: "Software Architect",
+                text: "Fastest shipping I've ever experienced in Lagos. The quantum laptop arrived in perfect condition and performs like a beast.",
+                avatar: "OA",
+                rating: 5
+              },
+              {
+                name: "Amaka Nwachukwu",
+                role: "Digital Artist",
+                text: "Customer support is top-tier. They helped me calibrate my holographic display at 3 AM. Unbeatable service and very reliable.",
+                avatar: "AN",
+                rating: 5
+              },
+              {
+                name: "Babatunde Lawal",
+                role: "Business Owner",
+                text: "I was skeptical at first, but Dammytech delivered exactly what I ordered. Their gadgets are authentic and the delivery is super fast.",
+                avatar: "BL",
+                rating: 5
+              },
+              {
+                name: "Zainab Ibrahim",
+                role: "Computer Engineer",
+                text: "Finding high-quality components in Nigeria used to be hard until I found this store. Their customer service is exceptional!",
+                avatar: "ZI",
+                rating: 5
+              },
+              {
+                name: "Emeka Nwosu",
+                role: "Mobile Developer",
+                text: "Bought my latest smartphone here and the experience was seamless. Legit gadgets and very professional handling. Highly recommended!",
+                avatar: "EN",
+                rating: 5
+              }
+            ],
+            ...userTestimonials
           ].map((review, i) => (
             <motion.div
-              key={review.name}
+              key={review.id || review.name + i}
               initial={{ opacity: 0, scale: 0.9 }}
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
@@ -1044,6 +1094,11 @@ export default function Home({
                   <div className="font-black text-gray-900">{review.name}</div>
                   <div className="text-[10px] font-bold text-cyan-600 uppercase tracking-widest">{review.role}</div>
                 </div>
+                <div className="ml-auto flex gap-0.5">
+                  {[...Array(review.rating || 5)].map((_, i) => (
+                    <Star key={i} className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                  ))}
+                </div>
               </div>
               <p className="text-gray-500 font-medium leading-relaxed italic">"{review.text}"</p>
               <div className="absolute top-8 right-10 opacity-10">
@@ -1051,6 +1106,80 @@ export default function Home({
               </div>
             </motion.div>
           ))}
+        </div>
+
+        {/* Comment Form */}
+        <div className="mt-16 sm:mt-24 max-w-2xl mx-auto">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="p-8 sm:p-12 bg-gray-900 border border-white/10 rounded-[2.5rem] shadow-2xl relative overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 blur-[100px] pointer-events-none" />
+            
+            <div className="relative z-10 text-center mb-10">
+              <h3 className="text-2xl sm:text-3xl font-black text-white mb-2">Share Your Voice</h3>
+              <p className="text-gray-400 font-medium text-sm">Tell the community about your experience with Dammytech.</p>
+            </div>
+
+            <form onSubmit={handleTestimonialSubmit} className="space-y-6 relative z-10">
+              <div className="space-y-4">
+                <div className="flex justify-center gap-2 mb-4">
+                  {[1, 2, 3, 4, 5].map(star => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setNewTestimonial({ ...newTestimonial, rating: star })}
+                      className="transition-transform active:scale-90"
+                    >
+                      <Star 
+                        className={cn(
+                          "w-8 h-8",
+                          star <= newTestimonial.rating ? "text-yellow-400 fill-yellow-400" : "text-gray-600"
+                        )} 
+                      />
+                    </button>
+                  ))}
+                </div>
+                
+                <textarea
+                  required
+                  rows={3}
+                  value={newTestimonial.text}
+                  onChange={(e) => setNewTestimonial({ ...newTestimonial, text: e.target.value })}
+                  placeholder={user ? "Write your testimonial here..." : "Please sign in to leave a testimonial"}
+                  disabled={!user || isTestimonialSubmitting}
+                  className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder:text-gray-600 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10 outline-none transition-all resize-none font-medium text-sm sm:text-base"
+                />
+              </div>
+
+              {!user ? (
+                <Link 
+                  to="/auth"
+                  className="w-full py-4 sm:py-5 bg-white text-gray-900 rounded-2xl font-black uppercase tracking-widest text-xs sm:text-sm flex items-center justify-center gap-3 hover:bg-cyan-500 hover:text-white transition-all group"
+                >
+                  <LogIn className="w-5 h-5 text-gray-900 group-hover:text-white" />
+                  Sign In to Comment
+                </Link>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={isTestimonialSubmitting || !newTestimonial.text.trim()}
+                  className="w-full py-4 sm:py-5 bg-cyan-500 text-white rounded-2xl font-black uppercase tracking-widest text-xs sm:text-sm flex items-center justify-center gap-3 hover:bg-cyan-400 transition-all shadow-xl shadow-cyan-500/20 disabled:opacity-50 group"
+                >
+                  {isTestimonialSubmitting ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      Post My Voice
+                      <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
+                    </>
+                  )}
+                </button>
+              )}
+            </form>
+          </motion.div>
         </div>
       </section>
 

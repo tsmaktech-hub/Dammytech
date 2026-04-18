@@ -100,6 +100,15 @@ service cloud.firestore {
              data.updated_at is timestamp;
     }
 
+    function isValidTestimonial(data) {
+      return hasRequiredFields(['user_id', 'name', 'text', 'rating', 'created_at']) &&
+             data.user_id == request.auth.uid &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.text is string && data.text.size() > 0 && data.text.size() <= 500 &&
+             data.rating is number && data.rating >= 1 && data.rating <= 5 &&
+             data.created_at is timestamp;
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -122,6 +131,13 @@ service cloud.firestore {
       allow read: if isAuthenticated() && (resource.data.user_id == request.auth.uid || isAdmin());
       allow create: if isAuthenticated() && isValidOrder(request.resource.data) && request.resource.data.user_id == request.auth.uid && request.resource.data.status == 'ordered';
       allow update: if isAuthenticated() && (isAdmin() || (isOwner(resource.data.user_id) && request.resource.data.status == resource.data.status)) && isValidOrder(request.resource.data);
+      allow delete: if isAuthenticated() && (isOwner(resource.data.user_id) || isAdmin());
+    }
+
+    match /testimonials/{testimonialId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && isValidTestimonial(request.resource.data);
+      allow update: if isAuthenticated() && isOwner(resource.data.user_id) && isValidTestimonial(request.resource.data) && request.resource.data.user_id == resource.data.user_id;
       allow delete: if isAuthenticated() && (isOwner(resource.data.user_id) || isAdmin());
     }
 
