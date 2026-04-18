@@ -34,6 +34,7 @@ import GadgetDetails from './pages/GadgetDetails';
 import AdminDashboard from './pages/AdminDashboard';
 import UserOrders from './pages/UserOrders';
 import Manifesto from './pages/Manifesto';
+import ForgotPassword from './pages/ForgotPassword';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
 
@@ -476,6 +477,7 @@ export default function App() {
                 <Route path="/auth" element={user ? <Navigate to="/" /> : <AuthChoice />} />
                 <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
                 <Route path="/signup" element={user ? <Navigate to="/" /> : <Signup />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/gadget/:id" element={<GadgetDetails />} />
                 <Route path="/manifesto" element={<Manifesto />} />
                 <Route path="/my-orders" element={user ? <UserOrders /> : <Navigate to="/login" />} />
