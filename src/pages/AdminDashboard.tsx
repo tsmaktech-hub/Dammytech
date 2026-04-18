@@ -15,19 +15,25 @@ import {
   Package,
   ArrowRight,
   ExternalLink,
-  Trash2
+  Trash2,
+  Edit2,
+  Plus,
+  Tag,
+  ShieldCheck
 } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { Gadget } from '../types';
 
 export default function AdminDashboard() {
   const { user, profile, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
+  const [gadgets, setGadgets] = useState<Gadget[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  const [activeTab, setActiveTab] = useState<'pending' | 'delivered'>('pending');
+  const [activeTab, setActiveTab] = useState<'pending' | 'delivered' | 'inventory'>('pending');
 
   useEffect(() => {
     // Stop loading if we've checked isAdmin and it's false
@@ -67,6 +73,27 @@ export default function AdminDashboard() {
     return () => unsubscribe();
   }, [isAdmin]);
 
+  useEffect(() => {
+    if (!isAdmin || activeTab !== 'inventory') return;
+
+    setLoading(true);
+    const q = query(collection(db, 'gadgets'), orderBy('created_at', 'desc'));
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const gadgetsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Gadget[];
+      setGadgets(gadgetsData);
+      setLoading(false);
+    }, (err) => {
+      console.error("Error fetching gadgets:", err);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [isAdmin, activeTab]);
+
   const filteredOrders = orders.filter(o => {
     if (activeTab === 'pending') return o.status === 'ordered';
     return o.status === 'delivered';
@@ -101,6 +128,22 @@ export default function AdminDashboard() {
     } finally {
       setActionLoading(null);
     }
+  };
+
+  const handleDeleteGadget = async (gadgetId: string) => {
+    if (!window.confirm('Are you sure you want to delete this gadget matching? This cannot be undone.')) return;
+    setActionLoading(gadgetId);
+    try {
+      await deleteDoc(doc(db, 'gadgets', gadgetId));
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, `gadgets/${gadgetId}`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleEditGadget = (gadget: Gadget) => {
+    navigate('/', { state: { editingGadget: gadget, openAddModal: true } });
   };
 
   if (!isAdmin) {
@@ -180,9 +223,108 @@ export default function AdminDashboard() {
         >
           Success Delivery ({orders.filter(o => o.status === 'delivered').length})
         </button>
+        <button
+          onClick={() => setActiveTab('inventory')}
+          className={cn(
+            "px-6 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all",
+            activeTab === 'inventory' ? "bg-white text-cyan-600 shadow-sm" : "text-gray-500 hover:text-gray-900"
+          )}
+        >
+          Inventory ({gadgets.length})
+        </button>
       </div>
 
-      {filteredOrders.length === 0 ? (
+      {activeTab === 'inventory' && (
+        <div className="mb-8">
+           <button 
+             onClick={() => navigate('/', { state: { openAddModal: true } })}
+             className="flex items-center gap-2 px-6 py-3 bg-gray-900 text-white rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-cyan-600 transition-all shadow-lg"
+           >
+             <Plus className="w-4 h-4" />
+             List New Gadget
+           </button>
+        </div>
+      )}
+
+      {activeTab === 'inventory' ? (
+        gadgets.length === 0 ? (
+          <div className="p-20 bg-gray-50 rounded-[3rem] border-2 border-dashed border-gray-200 text-center">
+            <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-8 shadow-xl text-gray-300">
+              <Cpu className="w-10 h-10" />
+            </div>
+            <h3 className="text-2xl font-black text-gray-900 mb-2">Inventory is empty</h3>
+            <p className="text-gray-500 font-medium tracking-tight">You haven't listed any gadgets yet.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {gadgets.map((gadget, i) => (
+              <motion.div
+                key={gadget.id}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: i * 0.05 }}
+                className="group bg-white rounded-[2rem] border border-gray-100 overflow-hidden hover:shadow-2xl hover:shadow-gray-200/50 transition-all duration-500"
+              >
+                <div className="relative aspect-[4/3] overflow-hidden bg-gray-50">
+                  <img 
+                    src={gadget.image} 
+                    alt={gadget.name}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                    referrerPolicy="no-referrer"
+                  />
+                  <div className="absolute top-4 left-4">
+                    <span className="px-3 py-1 bg-white/90 backdrop-blur-md rounded-lg text-cyan-600 text-[8px] font-black uppercase tracking-widest shadow-sm">
+                      {gadget.category}
+                    </span>
+                  </div>
+                  
+                  {/* ADMIN ACTIONS - VISIBLE ON MOBILE */}
+                  <div className="absolute top-4 right-4 flex gap-2">
+                    <button
+                      onClick={() => handleEditGadget(gadget)}
+                      className="w-10 h-10 bg-white/90 backdrop-blur-md rounded-xl flex items-center justify-center text-cyan-600 hover:bg-cyan-600 hover:text-white transition-all shadow-lg border border-white/20"
+                      title="Edit Gadget"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteGadget(gadget.id)}
+                      disabled={actionLoading === gadget.id}
+                      className="w-10 h-10 bg-white/90 backdrop-blur-md rounded-xl flex items-center justify-center text-red-600 hover:bg-red-600 hover:text-white transition-all shadow-lg border border-white/20"
+                      title="Delete Gadget"
+                    >
+                      {actionLoading === gadget.id ? (
+                        <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="p-6 space-y-4">
+                  <div className="space-y-1">
+                    <h3 className="text-xl font-black text-gray-900 tracking-tight leading-none line-clamp-1">{gadget.name}</h3>
+                    <p className="text-lg font-black text-cyan-600">₦{gadget.price.toLocaleString()}</p>
+                  </div>
+                  <p className="text-xs text-gray-500 font-medium line-clamp-2 leading-relaxed">
+                    {gadget.description}
+                  </p>
+                  <div className="flex items-center justify-between pt-4 border-t border-gray-50">
+                    <span className="text-[8px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                      <Clock className="w-3 h-3" />
+                      {new Date(gadget.created_at?.toDate()).toLocaleDateString()}
+                    </span>
+                    <Link to={`/gadget/${gadget.id}`} className="p-2 bg-gray-50 rounded-lg text-gray-400 hover:text-cyan-600 transition-colors">
+                      <ExternalLink className="w-4 h-4" />
+                    </Link>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )
+      ) : filteredOrders.length === 0 ? (
         <div className="p-20 bg-gray-50 rounded-[3rem] border-2 border-dashed border-gray-200 text-center">
           <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-8 shadow-xl">
             <Package className="w-10 h-10 text-gray-300" />
@@ -294,18 +436,3 @@ export default function AdminDashboard() {
   );
 }
 
-const ShieldCheck = ({ className }: { className?: string }) => (
-  <svg 
-    xmlns="http://www.w3.org/2000/svg" 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round" 
-    className={className}
-  >
-    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-    <path d="m9 12 2 2 4-4" />
-  </svg>
-);

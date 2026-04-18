@@ -807,16 +807,27 @@ export default function Home({
                       {/* Mobile Actions (Always visible or easily accessible) */}
                       <div className="absolute bottom-2 right-2 flex sm:hidden gap-1.5" onClick={(e) => e.preventDefault()}>
                         {(user?.uid === gadget.author || isAdmin) && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditingGadget(gadget);
-                              setIsModalOpen(true);
-                            }}
-                            className="w-8 h-8 bg-white/90 backdrop-blur-md rounded-lg flex items-center justify-center text-cyan-600 shadow-lg border border-white/20"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
+                          <>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingGadget(gadget);
+                                setIsModalOpen(true);
+                              }}
+                              className="w-8 h-8 bg-white/90 backdrop-blur-md rounded-lg flex items-center justify-center text-cyan-600 shadow-lg border border-white/20"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(gadget.id);
+                              }}
+                              className="w-8 h-8 bg-white/90 backdrop-blur-md rounded-lg flex items-center justify-center text-red-500 shadow-lg border border-white/20"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </>
                         )}
                         <div className="w-8 h-8 bg-cyan-500 rounded-lg flex items-center justify-center text-white shadow-lg">
                           <ShoppingCart className="w-3.5 h-3.5" />
