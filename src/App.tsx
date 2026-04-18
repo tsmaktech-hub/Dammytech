@@ -20,7 +20,6 @@ import {
   Truck,
   Phone,
   Mail,
-  Twitter,
   Instagram,
   Facebook,
   Linkedin,
@@ -34,6 +33,7 @@ import AuthChoice from './pages/AuthChoice';
 import GadgetDetails from './pages/GadgetDetails';
 import AdminDashboard from './pages/AdminDashboard';
 import UserOrders from './pages/UserOrders';
+import Manifesto from './pages/Manifesto';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
 
@@ -464,6 +464,7 @@ export default function App() {
                 <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
                 <Route path="/signup" element={user ? <Navigate to="/" /> : <Signup />} />
                 <Route path="/gadget/:id" element={<GadgetDetails />} />
+                <Route path="/manifesto" element={<Manifesto />} />
                 <Route path="/my-orders" element={user ? <UserOrders /> : <Navigate to="/login" />} />
                 <Route path="/admin/orders" element={(profile?.role === 'admin' || profile?.username?.toLowerCase() === 'dammy') ? <AdminDashboard /> : <Navigate to="/" />} />
                 <Route path="/category/:category" element={<Home searchQuery={searchQuery} setSearchQuery={setSearchQuery} />} />
@@ -486,7 +487,7 @@ export default function App() {
                 </p>
                 <div className="flex gap-3 sm:gap-4">
                   {[
-                    { name: 'Twitter', icon: Twitter },
+                    { name: 'X', icon: X },
                     { name: 'Instagram', icon: Instagram },
                     { name: 'Facebook', icon: Facebook },
                     { name: 'LinkedIn', icon: Linkedin }

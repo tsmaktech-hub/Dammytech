@@ -963,10 +963,10 @@ export default function Home({
             </div>
           </div>
 
-          <button className="inline-flex items-center gap-3 text-sm font-black uppercase tracking-widest text-cyan-600 group">
+          <Link to="/manifesto" className="inline-flex items-center gap-3 text-sm font-black uppercase tracking-widest text-cyan-600 group">
             Read Full Manifesto
             <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
-          </button>
+          </Link>
         </div>
       </section>
 
