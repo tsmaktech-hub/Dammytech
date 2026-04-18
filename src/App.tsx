@@ -130,17 +130,23 @@ const Navbar = ({
     navigate('/login');
   };
 
-  const handleCategoryClick = () => {
+  const handleCategoryClick = (path: string) => {
     setIsMenuOpen(false);
+    if (location.pathname + location.hash === path) {
+      const id = path.split('#')[1];
+      if (id) {
+        document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
   };
 
   const categories = [
-    { name: 'Home', icon: HomeIcon, path: '/' },
-    { name: 'Phones', icon: Smartphone, path: '/category/phones' },
-    { name: 'Laptops', icon: Laptop, path: '/category/laptops' },
-    { name: 'Watches', icon: Watch, path: '/category/watches' },
-    { name: 'Audios', icon: Headphones, path: '/category/audio' },
-    { name: 'Components', icon: Cpu, path: '/category/components' },
+    { name: 'Home', icon: HomeIcon, path: '/#collection' },
+    { name: 'Phones', icon: Smartphone, path: '/category/phones#collection' },
+    { name: 'Laptops', icon: Laptop, path: '/category/laptops#collection' },
+    { name: 'Watches', icon: Watch, path: '/category/watches#collection' },
+    { name: 'Audios', icon: Headphones, path: '/category/audio#collection' },
+    { name: 'Components', icon: Cpu, path: '/category/components#collection' },
   ];
 
   if (isAdmin) {
@@ -185,10 +191,10 @@ const Navbar = ({
               <Link
                 key={cat.name}
                 to={cat.path}
-                onClick={handleCategoryClick}
+                onClick={() => handleCategoryClick(cat.path)}
                 className={cn(
                   "flex items-center gap-2 text-sm font-semibold transition-colors",
-                  location.pathname === cat.path ? "text-cyan-600" : "text-gray-500 hover:text-gray-900"
+                  location.pathname === cat.path.split('#')[0] ? "text-cyan-600" : "text-gray-500 hover:text-gray-900"
                 )}
               >
                 <cat.icon className="w-4 h-4" />
@@ -267,10 +273,10 @@ const Navbar = ({
                     >
                       <Link
                         to={cat.path}
-                        onClick={handleCategoryClick}
+                        onClick={() => handleCategoryClick(cat.path)}
                         className={cn(
                           "flex items-center justify-between p-3 rounded-xl text-sm font-bold transition-all group",
-                          location.pathname === cat.path 
+                          location.pathname === cat.path.split('#')[0]
                             ? "bg-cyan-500 text-white" 
                             : "bg-gray-50 text-gray-700 hover:bg-cyan-50 hover:text-cyan-600"
                         )}
@@ -278,7 +284,7 @@ const Navbar = ({
                         <div className="flex items-center gap-3">
                           <div className={cn(
                             "w-8 h-8 rounded-lg flex items-center justify-center shadow-sm transition-colors",
-                            location.pathname === cat.path ? "bg-cyan-400" : "bg-white group-hover:bg-cyan-100"
+                            location.pathname === cat.path.split('#')[0] ? "bg-cyan-400" : "bg-white group-hover:bg-cyan-100"
                           )}>
                             <cat.icon className="w-4 h-4" />
                           </div>
@@ -286,7 +292,7 @@ const Navbar = ({
                         </div>
                         <ArrowRight className={cn(
                           "w-3.5 h-3.5 transition-all -translate-x-2 group-hover:translate-x-0",
-                          location.pathname === cat.path ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                          location.pathname === cat.path.split('#')[0] ? "opacity-100" : "opacity-0 group-hover:opacity-100"
                         )} />
                       </Link>
                     </motion.div>
@@ -334,10 +340,22 @@ const Navbar = ({
 };
 
 const ScrollToTop = () => {
-  const { pathname } = useLocation();
+  const { pathname, hash } = useLocation();
+  
   useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [pathname]);
+    if (hash) {
+      const id = hash.replace('#', '');
+      setTimeout(() => {
+        const element = document.getElementById(id);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    } else {
+      window.scrollTo(0, 0);
+    }
+  }, [pathname, hash]);
+  
   return null;
 };
 
@@ -480,10 +498,11 @@ export default function App() {
               <div>
                 <h4 className="font-bold mb-4 sm:mb-6 uppercase tracking-widest text-[10px] sm:text-xs text-cyan-500">Shop</h4>
                 <ul className="space-y-3 sm:space-y-4 text-xs sm:text-sm font-medium text-gray-400">
-                  <li><Link to="/category/phones" className="hover:text-white transition-colors">Phones</Link></li>
-                  <li><Link to="/category/laptops" className="hover:text-white transition-colors">Laptops</Link></li>
-                  <li><Link to="/category/watches" className="hover:text-white transition-colors">Watches</Link></li>
-                  <li><Link to="/category/audio" className="hover:text-white transition-colors">Audio</Link></li>
+                  <li><Link to="/category/phones#collection" className="hover:text-white transition-colors">Phones</Link></li>
+                  <li><Link to="/category/laptops#collection" className="hover:text-white transition-colors">Laptops</Link></li>
+                  <li><Link to="/category/watches#collection" className="hover:text-white transition-colors">Watches</Link></li>
+                  <li><Link to="/category/audio#collection" className="hover:text-white transition-colors">Audio</Link></li>
+                  <li><Link to="/category/components#collection" className="hover:text-white transition-colors">Components</Link></li>
                 </ul>
               </div>
               
