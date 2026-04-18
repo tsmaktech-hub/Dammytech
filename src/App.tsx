@@ -84,43 +84,43 @@ const LogoutModal = ({ isOpen, onClose, onConfirm }: { isOpen: boolean; onClose:
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm"
+            className="fixed inset-0 bg-gray-950/40 backdrop-blur-md"
           />
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="relative w-full max-w-sm bg-white rounded-[2rem] shadow-2xl overflow-hidden border border-gray-100 p-8"
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            className="relative w-full max-w-sm bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.2)] overflow-hidden border border-gray-100 p-8 sm:p-10"
           >
             <div className="flex flex-col items-center text-center">
-              <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mb-6">
-                <LogOut className="w-8 h-8 text-red-500" />
+              <div className="w-20 h-20 bg-red-50 rounded-3xl flex items-center justify-center mb-8">
+                <LogOut className="w-10 h-10 text-red-500" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Confirm Log Out</h3>
-              <p className="text-gray-500 text-sm mb-8 leading-relaxed">
-                Are you sure you want to log out of your account? You'll need to sign in again to access your dashboard.
+              <h3 className="text-2xl font-black text-gray-900 mb-3 tracking-tight">Leaving Already?</h3>
+              <p className="text-gray-500 text-sm font-medium mb-10 leading-relaxed">
+                Are you sure you want to log out? We'll miss you! You'll need to sign back in to access your orders and dashboard.
               </p>
-              <div className="grid grid-cols-2 gap-3 w-full">
+              <div className="grid grid-cols-2 gap-4 w-full">
                 <button
                   onClick={onClose}
-                  className="py-3 px-4 bg-gray-50 text-gray-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-gray-100 transition-all"
+                  className="py-4 bg-gray-50 text-gray-600 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-gray-100 transition-all border border-gray-100"
                 >
-                  Cancel
+                  Stay Here
                 </button>
                 <button
                   onClick={() => {
                     onConfirm();
                     onClose();
                   }}
-                  className="py-3 px-4 bg-red-500 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-red-600 transition-all shadow-lg shadow-red-200"
+                  className="py-4 bg-red-500 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-red-600 transition-all shadow-lg shadow-red-200"
                 >
-                  Log Out
+                  Sign Out
                 </button>
               </div>
             </div>
@@ -135,16 +135,19 @@ const Navbar = ({
   searchQuery, 
   setSearchQuery, 
   isSearchOpen, 
-  setIsSearchOpen 
+  setIsSearchOpen,
+  isLogoutModalOpen,
+  setIsLogoutModalOpen
 }: { 
   searchQuery: string; 
   setSearchQuery: (q: string) => void;
   isSearchOpen: boolean;
   setIsSearchOpen: (o: boolean) => void;
+  isLogoutModalOpen: boolean;
+  setIsLogoutModalOpen: (o: boolean) => void;
 }) => {
   const { user, profile, logout, isAdmin } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -346,12 +349,6 @@ const Navbar = ({
           </motion.div>
         )}
       </AnimatePresence>
-
-      <LogoutModal 
-        isOpen={isLogoutModalOpen} 
-        onClose={() => setIsLogoutModalOpen(false)} 
-        onConfirm={handleLogout} 
-      />
     </nav>
   );
 };
@@ -382,6 +379,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   const refreshProfile = async (userId?: string) => {
     const id = userId || user?.uid;
@@ -468,6 +466,8 @@ export default function App() {
             setSearchQuery={setSearchQuery}
             isSearchOpen={isSearchOpen}
             setIsSearchOpen={setIsSearchOpen}
+            isLogoutModalOpen={isLogoutModalOpen}
+            setIsLogoutModalOpen={setIsLogoutModalOpen}
           />
           <main className="px-4 sm:px-8 lg:px-20 py-6 sm:py-12">
             <ErrorBoundary>
@@ -547,6 +547,11 @@ export default function App() {
           </footer>
         </div>
       </Router>
+      <LogoutModal 
+        isOpen={isLogoutModalOpen} 
+        onClose={() => setIsLogoutModalOpen(false)} 
+        onConfirm={logout} 
+      />
     </AuthContext.Provider>
   );
 }

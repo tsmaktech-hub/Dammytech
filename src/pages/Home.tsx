@@ -778,9 +778,12 @@ export default function Home({
                     
                     {/* Overlay Actions (Desktop) - Outside Link */}
                     <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/img:opacity-100 transition-opacity duration-300 hidden sm:flex items-center justify-center gap-3 pointer-events-none">
-                      <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-gray-900 hover:bg-cyan-500 hover:text-white transition-all shadow-xl pointer-events-auto cursor-pointer">
+                      <Link 
+                        to={`/gadget/${gadget.id}`}
+                        className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-gray-900 hover:bg-cyan-500 hover:text-white transition-all shadow-xl pointer-events-auto cursor-pointer"
+                      >
                         <ShoppingCart className="w-5 h-5" />
-                      </div>
+                      </Link>
                       {(user?.uid === gadget.author || isAdmin) && (
                         <div className="flex gap-3 pointer-events-auto">
                           <button
@@ -835,9 +838,12 @@ export default function Home({
                           </button>
                         </>
                       )}
-                      <div className="w-8 h-8 bg-cyan-500 rounded-lg flex items-center justify-center text-white shadow-lg cursor-pointer">
+                      <Link 
+                        to={`/gadget/${gadget.id}`}
+                        className="w-8 h-8 bg-cyan-500 rounded-lg flex items-center justify-center text-white shadow-lg cursor-pointer"
+                      >
                         <ShoppingCart className="w-3.5 h-3.5" />
-                      </div>
+                      </Link>
                     </div>
 
                     <div className="absolute top-2 sm:top-4 left-2 sm:left-4 pointer-events-none">
