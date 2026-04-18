@@ -30,6 +30,55 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
+const AnimatedCounter = ({ 
+  value, 
+  suffix = '', 
+  duration = 2,
+  incrementPerSecond = 0
+}: { 
+  value: number; 
+  suffix?: string; 
+  duration?: number;
+  incrementPerSecond?: number;
+}) => {
+  const [displayValue, setDisplayValue] = useState(0);
+
+  useEffect(() => {
+    let start = 0;
+    const end = value;
+    if (start === end) return;
+
+    let totalMiliseconds = duration * 1000;
+    let incrementTime = (totalMiliseconds / end) > 10 ? (totalMiliseconds / end) : 10;
+    
+    let timer = setInterval(() => {
+      start += Math.ceil(end / (totalMiliseconds / incrementTime));
+      if (start >= end) {
+        setDisplayValue(end);
+        clearInterval(timer);
+        
+        // Start slow incrementing if requested
+        if (incrementPerSecond > 0) {
+          const slowTimer = setInterval(() => {
+            setDisplayValue(prev => prev + 1);
+          }, 1000 / incrementPerSecond);
+          return () => clearInterval(slowTimer);
+        }
+      } else {
+        setDisplayValue(start);
+      }
+    }, incrementTime);
+
+    return () => clearInterval(timer);
+  }, [value, duration, incrementPerSecond]);
+
+  return (
+    <span>
+      {displayValue.toLocaleString()}{suffix}
+    </span>
+  );
+};
+
 const AddGadgetModal = ({ 
   isOpen, 
   onClose, 
@@ -514,10 +563,10 @@ export default function Home({
           {/* Mobile Stats */}
           <div className="grid grid-cols-2 gap-2 mt-8 sm:hidden">
             {[
-              { label: 'Users', value: '50K+', icon: Star },
-              { label: 'Sold', value: '120K+', icon: ShoppingCart },
-              { label: 'Countries', value: '45+', icon: ShieldCheck },
-              { label: 'Delivery', value: '24H', icon: Truck },
+              { label: 'Users', val: 2123, suffix: '+', icon: Star, inc: 0.05 },
+              { label: 'Sold', val: 6345, suffix: '+', icon: ShoppingCart, inc: 0.1 },
+              { label: 'Countries', val: 12, suffix: '+', icon: ShieldCheck, inc: 0 },
+              { label: 'Delivery', val: 24, suffix: 'H', icon: Truck, inc: 0 },
             ].map((stat, i) => (
               <motion.div
                 key={stat.label}
@@ -528,7 +577,9 @@ export default function Home({
               >
                 <stat.icon className="w-4 h-4 text-cyan-400" />
                 <div>
-                  <div className="text-[10px] font-black text-white leading-none mb-0.5">{stat.value}</div>
+                  <div className="text-[10px] font-black text-white leading-none mb-0.5">
+                    <AnimatedCounter value={stat.val} suffix={stat.suffix} incrementPerSecond={stat.inc} />
+                  </div>
                   <div className="text-[7px] font-bold text-gray-500 uppercase tracking-widest leading-none">{stat.label}</div>
                 </div>
               </motion.div>
@@ -539,10 +590,10 @@ export default function Home({
         {/* Floating Stats Desktop */}
         <div className="absolute right-20 bottom-20 hidden xl:grid grid-cols-2 gap-6">
           {[
-            { label: 'Active Users', value: '50K+', icon: Star },
-            { label: 'Gadgets Sold', value: '120K+', icon: ShoppingCart },
-            { label: 'Countries', value: '45+', icon: ShieldCheck },
-            { label: 'Fast Delivery', value: '24H', icon: Truck },
+            { label: 'Active Users', val: 2123, suffix: '+', icon: Star, inc: 0.05 },
+            { label: 'Gadgets Sold', val: 6345, suffix: '+', icon: ShoppingCart, inc: 0.1 },
+            { label: 'Countries', val: 12, suffix: '+', icon: ShieldCheck, inc: 0 },
+            { label: 'Fast Delivery', val: 24, suffix: 'H', icon: Truck, inc: 0 },
           ].map((stat, i) => (
             <motion.div
               key={stat.label}
@@ -552,7 +603,9 @@ export default function Home({
               className="p-6 bg-white/5 backdrop-blur-2xl border border-white/10 rounded-[2rem] min-w-[180px]"
             >
               <stat.icon className="w-6 h-6 text-cyan-400 mb-4" />
-              <div className="text-2xl font-black text-white mb-1">{stat.value}</div>
+              <div className="text-2xl font-black text-white mb-1">
+                <AnimatedCounter value={stat.val} suffix={stat.suffix} incrementPerSecond={stat.inc} />
+              </div>
               <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{stat.label}</div>
             </motion.div>
           ))}
