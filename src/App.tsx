@@ -55,6 +55,29 @@ const AuthContext = createContext<AuthContextType>({
   logout: async () => {},
 });
 
+const Logo = ({ className = "", iconClassName = "" }) => (
+  <div className={cn("flex items-center gap-2 sm:gap-3 group shrink-0", className)}>
+    <div className="relative">
+      <div className="absolute inset-0 bg-cyan-500 blur-lg opacity-20 group-hover:opacity-40 transition-opacity" />
+      <div className="relative w-9 h-9 sm:w-12 sm:h-12 bg-gradient-to-br from-gray-950 to-gray-800 rounded-xl sm:rounded-2xl flex items-center justify-center border border-white/5 shadow-2xl group-hover:rotate-12 transition-all duration-500">
+        <Cpu className={cn("w-5 h-5 sm:w-6 sm:h-6 text-cyan-400 group-hover:text-white transition-colors duration-300", iconClassName)} />
+        <div className="absolute top-1 right-1 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-cyan-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(6,182,212,0.8)]" />
+      </div>
+    </div>
+    <div className="flex flex-col">
+      <div className="flex items-center gap-1">
+        <span className="text-base sm:text-xl font-black tracking-tighter text-current leading-none">
+          DAMMYTECH
+        </span>
+        <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 bg-cyan-500 rounded-full self-end mb-0.5" />
+      </div>
+      <span className="text-[7px] sm:text-[9px] font-black tracking-[0.4em] text-cyan-500 uppercase opacity-90">
+        Premium Gadgets
+      </span>
+    </div>
+  </div>
+);
+
 export const useAuth = () => useContext(AuthContext);
 
 const LogoutModal = ({ isOpen, onClose, onConfirm }: { isOpen: boolean; onClose: () => void; onConfirm: () => void }) => {
@@ -171,22 +194,12 @@ const Navbar = ({
   };
 
   return (
-    <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100">
+    <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100 text-gray-900">
       <div className="px-4 sm:px-8 lg:px-20">
         <div className="flex justify-between h-14 sm:h-20 items-center">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 sm:gap-3 group shrink-0">
-            <div className="w-9 h-9 sm:w-12 sm:h-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg shadow-cyan-200 group-hover:rotate-6 transition-all duration-300">
-              <Cpu className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-base sm:text-xl font-black tracking-tighter text-gray-900 leading-none">
-                DAMMYTECH
-              </span>
-              <span className="text-[8px] sm:text-[10px] font-bold tracking-[0.2em] text-cyan-600 uppercase">
-                Gadget Store
-              </span>
-            </div>
+          <Link to="/">
+            <Logo />
           </Link>
 
           {/* Desktop Nav */}
@@ -476,11 +489,8 @@ export default function App() {
           <footer className="bg-gray-900 text-white py-10 sm:py-20 mt-10 sm:mt-20">
             <div className="px-4 sm:px-8 lg:px-20 grid grid-cols-1 md:grid-cols-4 gap-8 sm:gap-12">
               <div className="col-span-1 md:col-span-2">
-                <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-cyan-500 rounded-lg sm:rounded-xl flex items-center justify-center">
-                    <Cpu className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                  </div>
-                  <span className="text-lg sm:text-xl font-black tracking-tighter">DAMMYTECH GADGET STORE</span>
+                <div className="mb-6 sm:mb-8">
+                  <Logo />
                 </div>
                 <p className="text-gray-400 text-sm max-w-sm mb-6 sm:mb-8 leading-relaxed">
                   Your ultimate destination for high-end gadgets and futuristic technology. We bring the future to your doorstep.
