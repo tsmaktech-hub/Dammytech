@@ -952,7 +952,9 @@ export default function Home({
 
           <div className="grid grid-cols-2 gap-8">
             <div>
-              <div className="text-2xl font-black text-gray-900 mb-1">500K+</div>
+              <div className="text-2xl font-black text-gray-900 mb-1">
+                <AnimatedCounter value={6345} suffix="+" incrementPerSecond={0.1} />
+              </div>
               <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Gadgets Delivered</div>
             </div>
             <div>
