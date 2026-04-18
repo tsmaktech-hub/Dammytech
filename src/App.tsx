@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
 import { auth, db, onAuthStateChanged, doc, getDoc, signOut, User } from './lib/firebase';
 import { UserProfile } from './types';
@@ -82,10 +83,10 @@ const Logo = ({ className = "", iconClassName = "" }) => (
 export const useAuth = () => useContext(AuthContext);
 
 const LogoutModal = ({ isOpen, onClose, onConfirm }: { isOpen: boolean; onClose: () => void; onConfirm: () => void }) => {
-  return (
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 overflow-hidden">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -97,7 +98,7 @@ const LogoutModal = ({ isOpen, onClose, onConfirm }: { isOpen: boolean; onClose:
             initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
-            className="relative w-full max-w-sm bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.2)] overflow-hidden border border-gray-100 p-8 sm:p-10"
+            className="relative w-full max-w-sm bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.2)] overflow-hidden border border-gray-100 p-8 sm:p-10 z-[10000]"
           >
             <div className="flex flex-col items-center text-center">
               <div className="w-20 h-20 bg-red-50 rounded-3xl flex items-center justify-center mb-8">
@@ -128,7 +129,8 @@ const LogoutModal = ({ isOpen, onClose, onConfirm }: { isOpen: boolean; onClose:
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 };
 
@@ -136,19 +138,16 @@ const Navbar = ({
   searchQuery, 
   setSearchQuery, 
   isSearchOpen, 
-  setIsSearchOpen,
-  isLogoutModalOpen,
-  setIsLogoutModalOpen
+  setIsSearchOpen
 }: { 
   searchQuery: string; 
   setSearchQuery: (q: string) => void;
   isSearchOpen: boolean;
   setIsSearchOpen: (o: boolean) => void;
-  isLogoutModalOpen: boolean;
-  setIsLogoutModalOpen: (o: boolean) => void;
 }) => {
   const { user, profile, logout, isAdmin } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -350,6 +349,12 @@ const Navbar = ({
           </motion.div>
         )}
       </AnimatePresence>
+
+      <LogoutModal 
+        isOpen={isLogoutModalOpen} 
+        onClose={() => setIsLogoutModalOpen(false)} 
+        onConfirm={handleLogout} 
+      />
     </nav>
   );
 };
@@ -380,7 +385,6 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   const refreshProfile = async (userId?: string) => {
     const id = userId || user?.uid;
@@ -467,8 +471,6 @@ export default function App() {
             setSearchQuery={setSearchQuery}
             isSearchOpen={isSearchOpen}
             setIsSearchOpen={setIsSearchOpen}
-            isLogoutModalOpen={isLogoutModalOpen}
-            setIsLogoutModalOpen={setIsLogoutModalOpen}
           />
           <main className="px-4 sm:px-8 lg:px-20 py-6 sm:py-12">
             <ErrorBoundary>
@@ -549,11 +551,6 @@ export default function App() {
           </footer>
         </div>
       </Router>
-      <LogoutModal 
-        isOpen={isLogoutModalOpen} 
-        onClose={() => setIsLogoutModalOpen(false)} 
-        onConfirm={logout} 
-      />
     </AuthContext.Provider>
   );
 }
