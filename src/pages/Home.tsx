@@ -760,86 +760,92 @@ export default function Home({
                   exit={{ opacity: 0, scale: 0.9 }}
                   className="group relative bg-white rounded-2xl sm:rounded-[2.5rem] p-2 sm:p-4 border border-gray-100 hover:border-cyan-500/20 hover:shadow-[0_32px_64px_-12px_rgba(0,0,0,0.08)] transition-all duration-500"
                 >
+                  <div className="relative aspect-[4/5] rounded-xl sm:rounded-[2rem] overflow-hidden bg-gray-50 mb-3 sm:mb-6 group/img">
                     <Link 
                       to={`/gadget/${gadget.id}`}
-                      className="relative block aspect-[4/5] rounded-xl sm:rounded-[2rem] overflow-hidden bg-gray-50 mb-3 sm:mb-6"
+                      className="block w-full h-full"
                     >
                       <img
                         src={gadget.image}
                         alt={gadget.name}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                        className="w-full h-full object-cover group-hover/img:scale-110 transition-transform duration-700"
                         referrerPolicy="no-referrer"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&q=80&w=800';
                         }}
                       />
-                      
-                      {/* Overlay Actions (Desktop) */}
-                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 hidden sm:flex items-center justify-center gap-3">
-                        <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-gray-900 hover:bg-cyan-500 hover:text-white transition-all shadow-xl">
-                          <ShoppingCart className="w-5 h-5" />
-                        </div>
-                        {(user?.uid === gadget.author || isAdmin) && (
-                          <div className="flex gap-3" onClick={(e) => e.preventDefault()}>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setEditingGadget(gadget);
-                                setIsModalOpen(true);
-                              }}
-                              className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-cyan-600 hover:bg-cyan-600 hover:text-white transition-all shadow-xl"
-                            >
-                              <Edit2 className="w-5 h-5" />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDelete(gadget.id);
-                              }}
-                              className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-red-600 hover:bg-red-600 hover:text-white transition-all shadow-xl"
-                            >
-                              <Trash2 className="w-5 h-5" />
-                            </button>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Mobile Actions (Always visible or easily accessible) */}
-                      <div className="absolute bottom-2 right-2 flex sm:hidden gap-1.5" onClick={(e) => e.preventDefault()}>
-                        {(user?.uid === gadget.author || isAdmin) && (
-                          <>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setEditingGadget(gadget);
-                                setIsModalOpen(true);
-                              }}
-                              className="w-8 h-8 bg-white/90 backdrop-blur-md rounded-lg flex items-center justify-center text-cyan-600 shadow-lg border border-white/20"
-                            >
-                              <Edit2 className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDelete(gadget.id);
-                              }}
-                              className="w-8 h-8 bg-white/90 backdrop-blur-md rounded-lg flex items-center justify-center text-red-500 shadow-lg border border-white/20"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </>
-                        )}
-                        <div className="w-8 h-8 bg-cyan-500 rounded-lg flex items-center justify-center text-white shadow-lg">
-                          <ShoppingCart className="w-3.5 h-3.5" />
-                        </div>
-                      </div>
-
-                      <div className="absolute top-2 sm:top-4 left-2 sm:left-4">
-                        <span className="px-2 sm:px-4 py-1 sm:py-2 bg-white/90 backdrop-blur-md text-gray-900 text-[8px] sm:text-xs font-black uppercase tracking-widest rounded-md sm:rounded-xl shadow-lg border border-white/20">
-                          {gadget.category}
-                        </span>
-                      </div>
                     </Link>
+                    
+                    {/* Overlay Actions (Desktop) - Outside Link */}
+                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/img:opacity-100 transition-opacity duration-300 hidden sm:flex items-center justify-center gap-3 pointer-events-none">
+                      <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-gray-900 hover:bg-cyan-500 hover:text-white transition-all shadow-xl pointer-events-auto cursor-pointer">
+                        <ShoppingCart className="w-5 h-5" />
+                      </div>
+                      {(user?.uid === gadget.author || isAdmin) && (
+                        <div className="flex gap-3 pointer-events-auto">
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setEditingGadget(gadget);
+                              setIsModalOpen(true);
+                            }}
+                            className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-cyan-600 hover:bg-cyan-600 hover:text-white transition-all shadow-xl"
+                          >
+                            <Edit2 className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleDelete(gadget.id);
+                            }}
+                            className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-red-600 hover:bg-red-600 hover:text-white transition-all shadow-xl"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Mobile Actions (Always visible or easily accessible) - Outside Link */}
+                    <div className="absolute bottom-2 right-2 flex sm:hidden gap-1.5 z-10">
+                      {(user?.uid === gadget.author || isAdmin) && (
+                        <>
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setEditingGadget(gadget);
+                              setIsModalOpen(true);
+                            }}
+                            className="w-8 h-8 bg-white/90 backdrop-blur-md rounded-lg flex items-center justify-center text-cyan-600 shadow-lg border border-white/20"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleDelete(gadget.id);
+                            }}
+                            className="w-8 h-8 bg-white/90 backdrop-blur-md rounded-lg flex items-center justify-center text-red-500 shadow-lg border border-white/20"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </>
+                      )}
+                      <div className="w-8 h-8 bg-cyan-500 rounded-lg flex items-center justify-center text-white shadow-lg cursor-pointer">
+                        <ShoppingCart className="w-3.5 h-3.5" />
+                      </div>
+                    </div>
+
+                    <div className="absolute top-2 sm:top-4 left-2 sm:left-4 pointer-events-none">
+                      <span className="px-2 sm:px-4 py-1 sm:py-2 bg-white/90 backdrop-blur-md text-gray-900 text-[8px] sm:text-xs font-black uppercase tracking-widest rounded-md sm:rounded-xl shadow-lg border border-white/20">
+                        {gadget.category}
+                      </span>
+                    </div>
+                  </div>
 
                   <div className="px-1 sm:px-2 pb-1 sm:pb-2">
                     <Link to={`/gadget/${gadget.id}`} className="flex justify-between items-start mb-1 sm:mb-3">
