@@ -1,14 +1,12 @@
-import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
-import { auth, db, onAuthStateChanged, doc, getDoc, signOut, User, updateDoc, deleteDoc } from './lib/firebase';
-import { sendPasswordResetEmail, deleteUser } from 'firebase/auth';
+import { auth, db, doc, getDoc, signOut, User } from './lib/firebase';
 import { UserProfile } from './types';
 import { ErrorBoundary } from './components/errorboundary';
+import { AuthProvider, useAuth } from './lib/AuthContext';
 import { 
   LogOut, 
-  LogIn, 
-  UserPlus, 
   Search, 
   Menu, 
   X, 
@@ -19,7 +17,6 @@ import {
   Cpu,
   ShoppingBag,
   ArrowRight,
-  Truck,
   Phone,
   Mail,
   Instagram,
@@ -27,13 +24,6 @@ import {
   Linkedin,
   Home as HomeIcon,
   UserCircle,
-  Settings,
-  Edit2,
-  Trash2,
-  ShieldCheck,
-  AlertCircle,
-  CheckCircle,
-  User as UserIcon
 } from 'lucide-react';
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -48,24 +38,6 @@ import Profile from './pages/Profile';
 import VerifyLink from './pages/VerifyLink';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
-
-interface AuthContextType {
-  user: User | null;
-  profile: UserProfile | null;
-  loading: boolean;
-  isAdmin: boolean;
-  refreshProfile: (userId?: string) => Promise<void>;
-  logout: () => Promise<void>;
-}
-
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  profile: null,
-  loading: true,
-  isAdmin: false,
-  refreshProfile: async () => {},
-  logout: async () => {},
-});
 
 const Logo = ({ className = "", iconClassName = "" }) => (
   <div className={cn("flex items-center gap-2 sm:gap-3 group shrink-0", className)}>
@@ -89,8 +61,6 @@ const Logo = ({ className = "", iconClassName = "" }) => (
     </div>
   </div>
 );
-
-export const useAuth = () => useContext(AuthContext);
 
 const LogoutModal = ({ isOpen, onClose, onConfirm }: { isOpen: boolean; onClose: () => void; onConfirm: () => void }) => {
   return createPortal(
@@ -155,7 +125,7 @@ const Navbar = ({
   isSearchOpen: boolean;
   setIsSearchOpen: (o: boolean) => void;
 }) => {
-  const { user, profile, logout, isAdmin, refreshProfile } = useAuth();
+  const { user, profile, logout, isAdmin } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const location = useLocation();
@@ -201,10 +171,8 @@ const Navbar = ({
     if (targetName && targetName.trim()) {
       const parts = targetName.trim().split(/\s+/);
       if (parts.length >= 2) {
-        // First letter of first name + first letter of last name
         return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
       }
-      // If only one name, take the first two letters
       return targetName.trim().slice(0, 2).toUpperCase();
     }
     if (email) return email.slice(0, 2).toUpperCase();
@@ -215,12 +183,10 @@ const Navbar = ({
     <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100 text-gray-900">
       <div className="px-4 sm:px-8 lg:px-20">
         <div className="flex justify-between h-14 sm:h-20 items-center">
-          {/* Logo */}
           <Link to="/">
             <Logo />
           </Link>
 
-          {/* Desktop Nav */}
           <div className="hidden xl:flex items-center gap-6 mr-8">
             {categories.map((cat) => (
               <Link
@@ -238,7 +204,6 @@ const Navbar = ({
             ))}
           </div>
 
-          {/* User Actions */}
           <div className="flex items-center gap-3">
             {user && (
               <Link 
@@ -258,7 +223,6 @@ const Navbar = ({
               </Link>
             )}
 
-            {/* Desktop Explore/Logout (Right Side) */}
             <div className="hidden xl:flex items-center gap-4">
               {!user ? (
                 <Link
@@ -280,7 +244,6 @@ const Navbar = ({
               )}
             </div>
             
-            {/* Mobile Menu Toggle */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="xl:hidden p-3 text-gray-500 hover:bg-gray-50 rounded-2xl transition-all"
@@ -291,7 +254,6 @@ const Navbar = ({
         </div>
       </div>
 
-      {/* Mobile Menu Dropdown */}
       <AnimatePresence>
         {isMenuOpen && (
           <motion.div
@@ -337,7 +299,6 @@ const Navbar = ({
                     </motion.div>
                   ))}
 
-                  {/* Explore/Logout in Mobile Menu */}
                   <motion.div
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
@@ -398,53 +359,9 @@ const ScrollToTop = () => {
   return null;
 };
 
-export default function App() {
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+const AppRoutes = () => {
+  const { user, profile, loading } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-
-  const refreshProfile = async (userId?: string) => {
-    const id = userId || user?.uid;
-    if (!id) {
-      setProfile(null);
-      return;
-    }
-
-    try {
-      const docRef = doc(db, 'users', id);
-      const docSnap = await getDoc(docRef);
-      
-      if (docSnap.exists()) {
-        setProfile(docSnap.data() as UserProfile);
-      } else {
-        console.warn("No profile found for user:", id);
-        setProfile(null);
-      }
-    } catch (error) {
-      console.error("Error fetching profile:", error);
-      setProfile(null);
-    }
-  };
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      if (currentUser) {
-        refreshProfile(currentUser.uid).finally(() => {
-          setLoading(false);
-        });
-      } else {
-        setProfile(null);
-        setSearchQuery('');
-        setIsSearchOpen(false);
-        setLoading(false);
-      }
-    });
-
-    return () => unsubscribe();
-  }, []);
 
   if (loading) {
     return (
@@ -461,118 +378,105 @@ export default function App() {
     );
   }
 
-  const logout = async () => {
-    try {
-      await signOut(auth);
-      setUser(null);
-      setProfile(null);
-      setSearchQuery('');
-      setIsSearchOpen(false);
-    } catch (error) {
-      console.error("Error signing out:", error);
-    }
-  };
-
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      profile, 
-      loading, 
-      isAdmin: profile?.role === 'admin' || profile?.username?.toLowerCase() === 'dammy', 
-      refreshProfile,
-      logout
-    }}>
-      <Router>
-        <ScrollToTop />
-        <div className="min-h-screen bg-white font-sans selection:bg-cyan-100 selection:text-cyan-900">
-          <Navbar 
-            searchQuery={searchQuery} 
-            setSearchQuery={setSearchQuery}
-            isSearchOpen={isSearchOpen}
-            setIsSearchOpen={setIsSearchOpen}
-          />
-          <main className="px-4 sm:px-8 lg:px-20 py-6 sm:py-12">
-            <ErrorBoundary>
-              <Routes>
-                <Route path="/" element={<Home searchQuery={searchQuery} setSearchQuery={setSearchQuery} />} />
-                <Route path="/auth" element={user ? <Navigate to="/" /> : <AuthChoice />} />
-                <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
-                <Route path="/signup" element={user ? <Navigate to="/" /> : <Signup />} />
-                <Route path="/verify-link" element={<VerifyLink />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/gadget/:id" element={<GadgetDetails />} />
-                <Route path="/manifesto" element={<Manifesto />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/my-orders" element={user ? <UserOrders /> : <Navigate to="/login" />} />
-                <Route path="/admin/orders" element={(profile?.role === 'admin' || profile?.username?.toLowerCase() === 'dammy') ? <AdminDashboard /> : <Navigate to="/" />} />
-                <Route path="/category/:category" element={<Home searchQuery={searchQuery} setSearchQuery={setSearchQuery} />} />
-                <Route path="*" element={<Navigate to="/" />} />
-              </Routes>
-            </ErrorBoundary>
-          </main>
+    <div className="min-h-screen bg-white font-sans selection:bg-cyan-100 selection:text-cyan-900">
+      <Navbar 
+        searchQuery={searchQuery} 
+        setSearchQuery={setSearchQuery}
+        isSearchOpen={false}
+        setIsSearchOpen={() => {}}
+      />
+      <main className="px-4 sm:px-8 lg:px-20 py-6 sm:py-12">
+        <ErrorBoundary>
+          <Routes>
+            <Route path="/" element={<Home searchQuery={searchQuery} setSearchQuery={setSearchQuery} />} />
+            <Route path="/auth" element={user ? <Navigate to="/" /> : <AuthChoice />} />
+            <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
+            <Route path="/signup" element={user ? <Navigate to="/" /> : <Signup />} />
+            <Route path="/verify-link" element={<VerifyLink />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/gadget/:id" element={<GadgetDetails />} />
+            <Route path="/manifesto" element={<Manifesto />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/my-orders" element={user ? <UserOrders /> : <Navigate to="/login" />} />
+            <Route path="/admin/orders" element={(profile?.role === 'admin' || profile?.username?.toLowerCase() === 'dammy') ? <AdminDashboard /> : <Navigate to="/" />} />
+            <Route path="/category/:category" element={<Home searchQuery={searchQuery} setSearchQuery={setSearchQuery} />} />
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+        </ErrorBoundary>
+      </main>
+      
+      <footer className="bg-gray-900 text-white py-10 sm:py-20 mt-10 sm:mt-20">
+        <div className="px-4 sm:px-8 lg:px-20 grid grid-cols-1 md:grid-cols-4 gap-8 sm:gap-12">
+          <div className="col-span-1 md:col-span-2">
+            <div className="mb-6 sm:mb-8">
+              <Logo />
+            </div>
+            <p className="text-gray-400 text-sm max-w-sm mb-6 sm:mb-8 leading-relaxed">
+              Your ultimate destination for high-end gadgets and futuristic technology. We bring the future to your doorstep.
+            </p>
+            <div className="flex gap-3 sm:gap-4">
+              {[
+                { name: 'X', icon: X },
+                { name: 'Instagram', icon: Instagram },
+                { name: 'Facebook', icon: Facebook },
+                { name: 'LinkedIn', icon: Linkedin }
+              ].map(social => (
+                <a key={social.name} href="#" className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-800 rounded-lg sm:rounded-xl flex items-center justify-center hover:bg-cyan-500 transition-all group">
+                  <span className="sr-only">{social.name}</span>
+                  <social.icon className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-hover:text-white transition-colors" />
+                </a>
+              ))}
+            </div>
+          </div>
           
-          <footer className="bg-gray-900 text-white py-10 sm:py-20 mt-10 sm:mt-20">
-            <div className="px-4 sm:px-8 lg:px-20 grid grid-cols-1 md:grid-cols-4 gap-8 sm:gap-12">
-              <div className="col-span-1 md:col-span-2">
-                <div className="mb-6 sm:mb-8">
-                  <Logo />
-                </div>
-                <p className="text-gray-400 text-sm max-w-sm mb-6 sm:mb-8 leading-relaxed">
-                  Your ultimate destination for high-end gadgets and futuristic technology. We bring the future to your doorstep.
-                </p>
-                <div className="flex gap-3 sm:gap-4">
-                  {[
-                    { name: 'X', icon: X },
-                    { name: 'Instagram', icon: Instagram },
-                    { name: 'Facebook', icon: Facebook },
-                    { name: 'LinkedIn', icon: Linkedin }
-                  ].map(social => (
-                    <a key={social.name} href="#" className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-800 rounded-lg sm:rounded-xl flex items-center justify-center hover:bg-cyan-500 transition-all group">
-                      <span className="sr-only">{social.name}</span>
-                      <social.icon className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-hover:text-white transition-colors" />
-                    </a>
-                  ))}
-                </div>
-              </div>
-              
-              <div>
-                <h4 className="font-bold mb-4 sm:mb-6 uppercase tracking-widest text-[10px] sm:text-xs text-cyan-500">Shop</h4>
-                <ul className="space-y-3 sm:space-y-4 text-xs sm:text-sm font-medium text-gray-400">
-                  <li><Link to="/category/phones#collection" className="hover:text-white transition-colors">Phones</Link></li>
-                  <li><Link to="/category/laptops#collection" className="hover:text-white transition-colors">Laptops</Link></li>
-                  <li><Link to="/category/watches#collection" className="hover:text-white transition-colors">Watches</Link></li>
-                  <li><Link to="/category/audio#collection" className="hover:text-white transition-colors">Audio</Link></li>
-                  <li><Link to="/category/components#collection" className="hover:text-white transition-colors">Components</Link></li>
-                </ul>
-              </div>
-              
-              <div>
-                <h4 className="font-bold mb-4 sm:mb-6 uppercase tracking-widest text-[10px] sm:text-xs text-cyan-500">Contact</h4>
-                <ul className="space-y-3 sm:space-y-4 text-xs sm:text-sm font-medium text-gray-400">
-                  <li className="flex items-center gap-2">
-                    <Phone className="w-3.5 h-3.5 text-cyan-500" />
-                    <a href="tel:08073651596" className="hover:text-white transition-colors">08073651596</a>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Phone className="w-3.5 h-3.5 text-cyan-500" />
-                    <a href="tel:09071498194" className="hover:text-white transition-colors">09071498194</a>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Mail className="w-3.5 h-3.5 text-cyan-500" />
-                    <a href="mailto:Ibusari127@gmail.com" className="hover:text-white transition-colors">Ibusari127@gmail.com</a>
-                  </li>
-                </ul>
-              </div>
-            </div>
-            <div className="px-4 sm:px-8 lg:px-20 pt-10 sm:pt-20 mt-10 sm:mt-20 border-t border-gray-800 text-center">
-              <p className="text-gray-500 text-[10px] font-bold tracking-widest uppercase">
-                © {new Date().getFullYear()} Dammytech Gadget Store. Engineered for Excellence by Tsmak Tech.
-              </p>
-            </div>
-          </footer>
+          <div>
+            <h4 className="font-bold mb-4 sm:mb-6 uppercase tracking-widest text-[10px] sm:text-xs text-cyan-500">Shop</h4>
+            <ul className="space-y-3 sm:space-y-4 text-xs sm:text-sm font-medium text-gray-400">
+              <li><Link to="/category/phones#collection" className="hover:text-white transition-colors">Phones</Link></li>
+              <li><Link to="/category/laptops#collection" className="hover:text-white transition-colors">Laptops</Link></li>
+              <li><Link to="/category/watches#collection" className="hover:text-white transition-colors">Watches</Link></li>
+              <li><Link to="/category/audio#collection" className="hover:text-white transition-colors">Audio</Link></li>
+              <li><Link to="/category/components#collection" className="hover:text-white transition-colors">Components</Link></li>
+            </ul>
+          </div>
+          
+          <div>
+            <h4 className="font-bold mb-4 sm:mb-6 uppercase tracking-widest text-[10px] sm:text-xs text-cyan-500">Contact</h4>
+            <ul className="space-y-3 sm:space-y-4 text-xs sm:text-sm font-medium text-gray-400">
+              <li className="flex items-center gap-2">
+                <Phone className="w-3.5 h-3.5 text-cyan-500" />
+                <a href="tel:08073651596" className="hover:text-white transition-colors">08073651596</a>
+              </li>
+              <li className="flex items-center gap-2">
+                <Phone className="w-3.5 h-3.5 text-cyan-500" />
+                <a href="tel:09071498194" className="hover:text-white transition-colors">09071498194</a>
+              </li>
+              <li className="flex items-center gap-2">
+                <Mail className="w-3.5 h-3.5 text-cyan-500" />
+                <a href="mailto:Ibusari127@gmail.com" className="hover:text-white transition-colors">Ibusari127@gmail.com</a>
+              </li>
+            </ul>
+          </div>
         </div>
-      </Router>
-    </AuthContext.Provider>
+        <div className="px-4 sm:px-8 lg:px-20 pt-10 sm:pt-20 mt-10 sm:mt-20 border-t border-gray-800 text-center">
+          <p className="text-gray-500 text-[10px] font-bold tracking-widest uppercase">
+            © {new Date().getFullYear()} Dammytech Gadget Store. Engineered for Excellence by Tsmak Tech.
+          </p>
+        </div>
+      </footer>
+    </div>
+  );
+};
+
+export default function App() {
+  return (
+    <Router>
+      <ScrollToTop />
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </Router>
   );
 }
 

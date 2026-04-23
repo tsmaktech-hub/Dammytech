@@ -37,7 +37,6 @@ const app = initializeApp(firebaseConfig);
 // Initialize Firestore with long polling to improve connectivity in restricted environments
 export const db = initializeFirestore(app, {
   experimentalForceLongPolling: true,
-  experimentalAutoDetectLongPolling: true,
 }, firebaseConfig.firestoreDatabaseId);
 
 export const auth = getAuth(app);

@@ -4,7 +4,7 @@ import { db, auth, storage, handleFirestoreError, OperationType } from '../lib/f
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, where, orderBy, getDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Gadget, UserProfile } from '../types';
-import { useAuth } from '../App';
+import { useAuth } from '../lib/AuthContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Plus, 

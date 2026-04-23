@@ -51,7 +51,7 @@ export default function VerifyLink() {
               // Check if profile already exists (maybe they just logged in)
               const userDoc = await getDoc(doc(db, 'users', user.uid));
               
-              if (!userDoc.empty && userDoc.exists()) {
+              if (userDoc.exists()) {
                 console.log("User profile already exists, skipping creation");
               } else {
                 // Create user profile in Firestore
