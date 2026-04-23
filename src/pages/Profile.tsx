@@ -90,24 +90,13 @@ export default function Profile() {
       const authUser = auth.currentUser;
       if (!authUser) throw new Error('No user logged in');
       
-      // 1. Delete from Auth first. This is most important and most likely to fail
-      // if the session is old (requires-recent-login).
+      await deleteDoc(doc(db, 'users', profile.id));
       await deleteUser(authUser);
       
-      // 2. Try to delete from Firestore. This might fail if the token is 
-      // invalidated immediately, but the account is already gone from Auth!
-      try {
-        await deleteDoc(doc(db, 'users', profile.id));
-      } catch (firestoreErr) {
-        console.warn("Could not delete Firestore profile after Auth deletion:", firestoreErr);
-        // This is okay as the Auth account is already gone.
-      }
-      
-      navigate('/auth', { state: { message: 'Your account has been successfully deleted.' } });
+      navigate('/auth');
     } catch (err: any) {
-      console.error("Account deletion error:", err);
       if (err.code === 'auth/requires-recent-login') {
-        setError('Special security check: Please sign out and sign back in immediately, then try deleting your account again.');
+        setError('Please log out and log in again to delete your account.');
       } else {
         setError(err.message);
       }
