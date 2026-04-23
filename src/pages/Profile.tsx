@@ -45,13 +45,58 @@ export default function Profile() {
         <UserCircle className="w-10 h-10 text-gray-300" />
       </div>
       <h2 className="text-2xl font-black text-gray-900 mb-2 uppercase tracking-tighter">Profile Not Found</h2>
-      <p className="text-gray-500 mb-8 max-w-sm font-medium">Please sign in to view and manage your profile details.</p>
-      <Link 
-        to="/login" 
-        className="px-8 py-4 bg-gray-900 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-cyan-600 transition-all shadow-xl shadow-gray-200"
-      >
-        Sign In Now
-      </Link>
+      <p className="text-gray-500 mb-8 max-w-sm font-medium">
+        {user 
+          ? "You are logged in, but your profile data couldn't be loaded (it may have been partially deleted). You can clean up this account below to start fresh."
+          : "Please sign in to view and manage your profile details."}
+      </p>
+      
+      {user ? (
+        <div className="w-full max-w-md space-y-6">
+          <div className="p-6 bg-red-50 border border-red-100 rounded-[2rem] space-y-4">
+            <div className="flex items-center gap-3 justify-center text-red-600">
+              <AlertCircle className="w-5 h-5" />
+              <h3 className="font-black uppercase tracking-widest text-xs">Account Cleanup Required</h3>
+            </div>
+            <p className="text-[10px] font-bold text-red-700/70 leading-relaxed uppercase tracking-widest">
+              Enter your password to permanently delete this login so you can register a new account.
+            </p>
+            <div className="relative">
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-red-300" />
+              <input 
+                type="password"
+                placeholder="Confirm Password"
+                className="w-full bg-white border border-red-100 rounded-xl px-12 py-4 text-sm font-bold text-gray-900 outline-none focus:ring-4 focus:ring-red-500/5 transition-all"
+                value={deletePassword}
+                onChange={(e) => setDeletePassword(e.target.value)}
+              />
+            </div>
+            <button
+              onClick={handleDeleteAccount}
+              disabled={loading}
+              className="w-full py-4 bg-red-600 text-white rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-red-700 transition-all shadow-lg flex items-center justify-center gap-2 group"
+            >
+              <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
+              {loading ? 'Processing...' : 'Final Delete Login'}
+            </button>
+            {error && <p className="text-[10px] text-red-600 font-bold uppercase mt-2">{error}</p>}
+          </div>
+          
+          <button 
+            onClick={() => auth.signOut()}
+            className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-gray-900 transition-colors"
+          >
+            Or just Sign Out
+          </button>
+        </div>
+      ) : (
+        <Link 
+          to="/login" 
+          className="px-8 py-4 bg-gray-900 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-cyan-600 transition-all shadow-xl shadow-gray-200"
+        >
+          Sign In Now
+        </Link>
+      )}
     </div>
   );
 
@@ -97,6 +142,7 @@ export default function Profile() {
     try {
       const authUser = auth.currentUser;
       if (!authUser || !authUser.email) throw new Error('No user logged in');
+      const userId = authUser.uid;
       
       // 1. Re-authenticate to ensure recent login
       const credential = EmailAuthProvider.credential(authUser.email, deletePassword);
@@ -106,22 +152,22 @@ export default function Profile() {
       const batch = writeBatch(db);
       
       // Find orders
-      const ordersQ = query(collection(db, 'orders'), where('user_id', '==', profile.id));
+      const ordersQ = query(collection(db, 'orders'), where('user_id', '==', userId));
       const ordersSnapshot = await getDocs(ordersQ);
       ordersSnapshot.forEach(d => batch.delete(d.ref));
 
       // Find testimonials
-      const testQ = query(collection(db, 'testimonials'), where('user_id', '==', profile.id));
+      const testQ = query(collection(db, 'testimonials'), where('user_id', '==', userId));
       const testSnapshot = await getDocs(testQ);
       testSnapshot.forEach(d => batch.delete(d.ref));
 
       // Find gadgets authored by the user
-      const gadgetsQ = query(collection(db, 'gadgets'), where('author', '==', profile.id));
+      const gadgetsQ = query(collection(db, 'gadgets'), where('author', '==', userId));
       const gadgetsSnapshot = await getDocs(gadgetsQ);
       gadgetsSnapshot.forEach(d => batch.delete(d.ref));
 
-      // Delete profile doc
-      batch.delete(doc(db, 'users', profile.id));
+      // Delete profile doc if it exists
+      batch.delete(doc(db, 'users', userId));
 
       // Execute batch deletions
       await batch.commit();
