@@ -44,6 +44,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import UserOrders from './pages/UserOrders';
 import Manifesto from './pages/Manifesto';
 import ForgotPassword from './pages/ForgotPassword';
+import Profile from './pages/Profile';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
 
@@ -142,262 +143,6 @@ const LogoutModal = ({ isOpen, onClose, onConfirm }: { isOpen: boolean; onClose:
   );
 };
 
-const ProfileModal = ({ 
-  isOpen, 
-  onClose, 
-  profile, 
-  refreshProfile 
-}: { 
-  isOpen: boolean; 
-  onClose: () => void; 
-  profile: UserProfile | null;
-  refreshProfile: () => Promise<void>;
-}) => {
-  const [isEditingPhone, setIsEditingPhone] = useState(false);
-  const [newPhone, setNewPhone] = useState(profile?.phone_number || '');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (profile) setNewPhone(profile.phone_number);
-  }, [isOpen, profile]);
-
-  if (!profile) return null;
-
-  const handleUpdatePhone = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const userRef = doc(db, 'users', profile.id);
-      await updateDoc(userRef, { phone_number: newPhone });
-      await refreshProfile();
-      setIsEditingPhone(false);
-      setSuccess('Phone number updated!');
-      setTimeout(() => setSuccess(null), 3000);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleResetPassword = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      await sendPasswordResetEmail(auth, profile.email);
-      setSuccess('Password reset link sent to email!');
-      setTimeout(() => setSuccess(null), 3000);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDeleteAccount = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const user = auth.currentUser;
-      if (!user) throw new Error('No user logged in');
-      
-      // Delete from Firestore
-      await deleteDoc(doc(db, 'users', profile.id));
-      
-      // Delete from Auth
-      await deleteUser(user);
-      
-      onClose();
-      navigate('/auth');
-    } catch (err: any) {
-      if (err.code === 'auth/requires-recent-login') {
-        setError('Please log out and log in again to delete your account.');
-      } else {
-        setError(err.message);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return createPortal(
-    <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 overflow-hidden">
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 bg-gray-950/40 backdrop-blur-md"
-          />
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 10 }}
-            className="relative w-full max-w-lg bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.2)] overflow-hidden border border-gray-100 p-8 sm:p-10 z-[10000]"
-          >
-            <div className="flex justify-between items-center mb-8">
-              <h2 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-3">
-                <div className="w-10 h-10 bg-cyan-50 rounded-xl flex items-center justify-center">
-                  <Settings className="w-6 h-6 text-cyan-500" />
-                </div>
-                My Profile
-              </h2>
-              <button onClick={onClose} className="text-gray-400 hover:text-gray-900 transition-colors p-2">
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-
-            <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1 p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
-                    <UserIcon className="w-3 h-3" /> Full Name
-                  </span>
-                  <p className="text-sm font-bold text-gray-900 line-clamp-1">{profile.full_name}</p>
-                </div>
-                <div className="space-y-1 p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
-                    <UserCircle className="w-3 h-3" /> Username
-                  </span>
-                  <p className="text-sm font-bold text-gray-900 line-clamp-1">@{profile.username}</p>
-                </div>
-                <div className="space-y-1 p-4 bg-gray-50 rounded-2xl border border-gray-100 sm:col-span-2">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
-                    <Mail className="w-3 h-3" /> Email
-                  </span>
-                  <p className="text-sm font-bold text-gray-900">{profile.email}</p>
-                </div>
-                <div className="space-y-1 p-4 bg-gray-50 rounded-2xl border border-gray-100 sm:col-span-2 relative">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
-                    <Phone className="w-3 h-3" /> Phone Number
-                  </span>
-                  {isEditingPhone ? (
-                    <div className="flex items-center gap-2 mt-2">
-                      <input 
-                        type="tel"
-                        className="flex-1 bg-white border border-gray-200 rounded-xl px-4 py-2 text-sm font-bold focus:border-cyan-500 outline-none transition-all"
-                        value={newPhone}
-                        onChange={(e) => setNewPhone(e.target.value)}
-                        autoFocus
-                      />
-                      <button 
-                        onClick={handleUpdatePhone}
-                        disabled={loading}
-                        className="p-2 bg-cyan-500 text-white rounded-xl hover:bg-cyan-600 transition-all disabled:opacity-50"
-                      >
-                        <CheckCircle className="w-4 h-4" />
-                      </button>
-                      <button 
-                        onClick={() => setIsEditingPhone(false)}
-                        className="p-2 bg-gray-100 text-gray-500 rounded-xl hover:bg-gray-200 transition-all"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex justify-between items-center group/phone mt-1">
-                      <p className="text-sm font-bold text-gray-900">{profile.phone_number}</p>
-                      <button 
-                        onClick={() => setIsEditingPhone(true)}
-                        className="text-cyan-500 hover:text-cyan-600 transition-all p-1"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {error && (
-                <motion.div 
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  className="p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 text-red-600 text-xs font-bold"
-                >
-                  <AlertCircle className="w-4 h-4" />
-                  {error}
-                </motion.div>
-              )}
-
-              {success && (
-                <motion.div 
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  className="p-4 bg-green-50 border border-green-100 rounded-2xl flex items-center gap-3 text-green-600 text-xs font-bold"
-                >
-                  <CheckCircle className="w-4 h-4" />
-                  {success}
-                </motion.div>
-              )}
-
-              <div className="pt-6 border-t border-gray-100 space-y-4">
-                <button
-                  onClick={handleResetPassword}
-                  disabled={loading}
-                  className="w-full py-4 bg-gray-50 text-gray-900 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-gray-100 transition-all border border-gray-100 flex items-center justify-center gap-3 group"
-                >
-                  <ShieldCheck className="w-4 h-4 text-cyan-500 group-hover:rotate-12 transition-transform" />
-                  Forgot Password?
-                </button>
-
-                <button
-                  onClick={() => setShowDeleteConfirm(!showDeleteConfirm)}
-                  disabled={loading}
-                  className="w-full py-4 bg-red-50 text-red-600 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-red-100 transition-all border border-red-100 flex items-center justify-center gap-3 group"
-                >
-                  <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                  Delete Account
-                </button>
-
-                <AnimatePresence>
-                  {showDeleteConfirm && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="p-6 bg-red-600 rounded-[2rem] text-white space-y-4"
-                    >
-                      <div className="flex items-center gap-3 mb-2">
-                        <AlertCircle className="w-5 h-5 text-white animate-pulse" />
-                        <h4 className="font-black uppercase tracking-widest text-xs">Danger Zone</h4>
-                      </div>
-                      <p className="text-xs font-bold leading-relaxed opacity-90">
-                        This action is permanent. All your data, orders, and credentials will be deleted forever.
-                      </p>
-                      <div className="grid grid-cols-2 gap-3 pt-2">
-                        <button
-                          onClick={() => setShowDeleteConfirm(false)}
-                          className="py-3 bg-white/20 hover:bg-white/30 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={handleDeleteAccount}
-                          disabled={loading}
-                          className="py-3 bg-white text-red-600 hover:bg-red-50 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-50"
-                        >
-                          {loading ? 'Deleting...' : 'Confirm'}
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      )}
-    </AnimatePresence>,
-    document.body
-  );
-};
-
 const Navbar = ({ 
   searchQuery, 
   setSearchQuery, 
@@ -412,7 +157,6 @@ const Navbar = ({
   const { user, profile, logout, isAdmin, refreshProfile } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -491,9 +235,10 @@ const Navbar = ({
           {/* User Actions */}
           <div className="flex items-center gap-3">
             {user && (
-              <div 
+              <Link 
+                to="/profile"
                 className="flex items-center gap-2 sm:gap-3 cursor-pointer group/profile"
-                onClick={() => setIsProfileModalOpen(true)}
+                onClick={() => setIsMenuOpen(false)}
               >
                 <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center text-white font-black text-xs sm:text-sm shadow-lg shadow-cyan-200 border-2 border-white flex-shrink-0 group-hover/profile:scale-110 transition-transform">
                   {getInitials(profile?.full_name, user?.email || undefined)}
@@ -504,7 +249,7 @@ const Navbar = ({
                     {profile?.username?.toLowerCase() === 'dammy' ? 'Admin' : (profile?.role || 'User')}
                   </span>
                 </div>
-              </div>
+              </Link>
             )}
 
             {/* Desktop Explore/Logout (Right Side) */}
@@ -617,13 +362,6 @@ const Navbar = ({
           </motion.div>
         )}
       </AnimatePresence>
-
-      <ProfileModal 
-        isOpen={isProfileModalOpen}
-        onClose={() => setIsProfileModalOpen(false)}
-        profile={profile}
-        refreshProfile={refreshProfile}
-      />
 
       <LogoutModal 
         isOpen={isLogoutModalOpen} 
@@ -757,6 +495,7 @@ export default function App() {
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/gadget/:id" element={<GadgetDetails />} />
                 <Route path="/manifesto" element={<Manifesto />} />
+                <Route path="/profile" element={<Profile />} />
                 <Route path="/my-orders" element={user ? <UserOrders /> : <Navigate to="/login" />} />
                 <Route path="/admin/orders" element={(profile?.role === 'admin' || profile?.username?.toLowerCase() === 'dammy') ? <AdminDashboard /> : <Navigate to="/" />} />
                 <Route path="/category/:category" element={<Home searchQuery={searchQuery} setSearchQuery={setSearchQuery} />} />
