@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { auth, db, doc, updateDoc, deleteDoc } from '../lib/firebase';
-import { sendPasswordResetEmail, deleteUser } from 'firebase/auth';
+import { sendPasswordResetEmail, deleteUser, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
+import { collection, query, where, getDocs, writeBatch } from 'firebase/firestore';
 import { useAuth } from '../App';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -19,7 +20,8 @@ import {
   ChevronLeft,
   Calendar,
   Shield,
-  Cpu
+  Cpu,
+  Lock
 } from 'lucide-react';
 
 export default function Profile() {
@@ -30,6 +32,7 @@ export default function Profile() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -84,21 +87,58 @@ export default function Profile() {
   };
 
   const handleDeleteAccount = async () => {
+    if (!deletePassword) {
+      setError('Please enter your password to confirm deletion.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
       const authUser = auth.currentUser;
-      if (!authUser) throw new Error('No user logged in');
+      if (!authUser || !authUser.email) throw new Error('No user logged in');
       
-      await deleteDoc(doc(db, 'users', profile.id));
+      // 1. Re-authenticate to ensure recent login
+      const credential = EmailAuthProvider.credential(authUser.email, deletePassword);
+      await reauthenticateWithCredential(authUser, credential);
+
+      // 2. Clear user data using batch
+      const batch = writeBatch(db);
+      
+      // Find orders
+      const ordersQ = query(collection(db, 'orders'), where('user_id', '==', profile.id));
+      const ordersSnapshot = await getDocs(ordersQ);
+      ordersSnapshot.forEach(d => batch.delete(d.ref));
+
+      // Find testimonials
+      const testQ = query(collection(db, 'testimonials'), where('user_id', '==', profile.id));
+      const testSnapshot = await getDocs(testQ);
+      testSnapshot.forEach(d => batch.delete(d.ref));
+
+      // Find gadgets authored by the user
+      const gadgetsQ = query(collection(db, 'gadgets'), where('author', '==', profile.id));
+      const gadgetsSnapshot = await getDocs(gadgetsQ);
+      gadgetsSnapshot.forEach(d => batch.delete(d.ref));
+
+      // Delete profile doc
+      batch.delete(doc(db, 'users', profile.id));
+
+      // Execute batch deletions
+      await batch.commit();
+      
+      // 3. Delete from Auth (now guaranteed to work after re-auth)
       await deleteUser(authUser);
       
+      // Navigate away
       navigate('/auth');
     } catch (err: any) {
-      if (err.code === 'auth/requires-recent-login') {
-        setError('Please log out and log in again to delete your account.');
+      console.error("Deletion error:", err);
+      if (err.code === 'auth/wrong-password') {
+        setError('Incorrect password. Please try again.');
+      } else if (err.code === 'auth/requires-recent-login') {
+        setError('Security check failed. Please log out and back in, then try again.');
       } else {
-        setError(err.message);
+        setError(err.message || 'Failed to delete account');
       }
     } finally {
       setLoading(false);
@@ -301,8 +341,18 @@ export default function Profile() {
                       <h4 className="font-black uppercase tracking-widest text-xs">Confirm Deletion</h4>
                     </div>
                     <p className="text-[10px] font-bold leading-relaxed opacity-90">
-                      This action is final. You will lose access to all orders and personalized settings.
+                      Please enter your password to permanently delete your account and all associated data.
                     </p>
+                    <div className="relative group">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/50" />
+                      <input 
+                        type="password"
+                        placeholder="Current Password"
+                        className="w-full bg-white/10 border border-white/20 rounded-xl px-9 py-3 text-[10px] text-white placeholder:text-white/40 outline-none focus:bg-white/20 transition-all font-bold"
+                        value={deletePassword}
+                        onChange={(e) => setDeletePassword(e.target.value)}
+                      />
+                    </div>
                     <div className="grid grid-cols-2 gap-3 pt-2">
                       <button
                         onClick={() => setShowDeleteConfirm(false)}
