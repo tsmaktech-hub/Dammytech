@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { auth, db } from '../lib/firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc, collection, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
-import { motion } from 'motion/react';
+import { doc, setDoc, collection, query, where, getDocs, serverTimestamp, deleteDoc } from 'firebase/firestore';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   UserPlus, 
   Mail, 
@@ -15,7 +15,9 @@ import {
   Cpu,
   ShieldCheck,
   Zap,
-  Star
+  Star,
+  CheckCircle,
+  Smartphone
 } from 'lucide-react';
 
 export default function Signup() {
@@ -27,11 +29,18 @@ export default function Signup() {
     password: '',
     confirmPassword: '',
   });
+  const [step, setStep] = useState(1); // 1: Details, 2: Verification
+  const [verificationCode, setVerificationCode] = useState('');
+  const [sentCode, setSentCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const generateCode = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  };
+
+  const handleInitialSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -51,6 +60,59 @@ export default function Signup() {
         throw new Error('Username already taken');
       }
 
+      // Check if email is already used in Firestore (extra check)
+      const emailQ = query(usersRef, where('email', '==', formData.email.toLowerCase()));
+      const emailSnapshot = await getDocs(emailQ);
+      if (!emailSnapshot.empty) {
+        throw new Error('Email already registered');
+      }
+
+      const code = generateCode();
+      setSentCode(code);
+
+      // Send verification email via backend
+      const response = await fetch('/api/send-verification-code', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          code: code
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to send verification email');
+      }
+
+      // Store code in Firestore for later verification (optional, but better)
+      await setDoc(doc(db, 'verification_codes', formData.email.toLowerCase()), {
+        code: code,
+        expires: new Date(Date.now() + 10 * 60 * 1000) // 10 mins
+      });
+
+      setStep(2);
+    } catch (err: any) {
+      console.error("Initial signup error:", err);
+      setError(err.message || 'Failed to proceed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyAndSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      // Simple verification for this prototype (check against state first)
+      if (verificationCode !== sentCode) {
+        throw new Error('Invalid verification code. Please try again.');
+      }
+
       // Create auth user
       const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
       const user = userCredential.user;
@@ -65,13 +127,21 @@ export default function Signup() {
         phone_number: formData.phoneNumber,
         role: isAdmin ? 'admin' : 'user',
         avatar_url: '',
+        created_at: serverTimestamp(),
         updated_at: serverTimestamp()
       });
+
+      // Cleanup code
+      try {
+        await deleteDoc(doc(db, 'verification_codes', formData.email.toLowerCase()));
+      } catch (e) {
+        console.warn("Could not delete code", e);
+      }
       
       navigate('/');
     } catch (err: any) {
-      console.error("Signup error:", err);
-      setError(err.message || 'Failed to create account');
+      console.error("Verification error:", err);
+      setError(err.message || 'Verification failed');
     } finally {
       setLoading(false);
     }
@@ -125,131 +195,215 @@ export default function Signup() {
 
         {/* Right Side - Form */}
         <div className="p-6 sm:p-12 md:p-16 flex flex-col justify-center">
-          <div className="mb-6 sm:mb-10">
-            <h1 className="text-xl sm:text-3xl font-bold text-gray-900 tracking-tight mb-2 sm:mb-3">Create Account</h1>
-            <p className="text-gray-500 font-medium text-xs sm:text-sm">Join our futuristic community today</p>
-          </div>
+          <AnimatePresence mode="wait">
+            {step === 1 ? (
+              <motion.div
+                key="step1"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+              >
+                <div className="mb-6 sm:mb-10">
+                  <h1 className="text-xl sm:text-3xl font-bold text-gray-900 tracking-tight mb-2 sm:mb-3">Create Account</h1>
+                  <p className="text-gray-500 font-medium text-xs sm:text-sm">Join our futuristic community today</p>
+                </div>
 
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="mb-6 p-4 sm:p-5 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 sm:gap-4 text-red-700 text-xs sm:text-sm font-bold"
-            >
-              <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" />
-              {error}
-            </motion.div>
-          )}
+                {error && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="mb-6 p-4 sm:p-5 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 sm:gap-4 text-red-700 text-xs sm:text-sm font-bold"
+                  >
+                    <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" />
+                    {error}
+                  </motion.div>
+                )}
 
-          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-              <div className="space-y-1 sm:space-y-2">
-                <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Full Name</label>
-                <div className="relative group">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
-                  <input
-                    type="text"
-                    required
-                    className="w-full pl-10 sm:pl-12 pr-5 py-3 sm:py-4 bg-gray-50 border border-gray-100 rounded-xl sm:rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm sm:text-base"
-                    placeholder="John Doe"
-                    value={formData.fullName}
-                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div className="space-y-1 sm:space-y-2">
-                <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Username</label>
-                <div className="relative group">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-black text-[10px] sm:text-xs group-focus-within:text-cyan-500 transition-colors">@</span>
-                  <input
-                    type="text"
-                    required
-                    className="w-full pl-8 sm:pl-10 pr-5 py-3 sm:py-4 bg-gray-50 border border-gray-100 rounded-xl sm:rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm sm:text-base"
-                    placeholder="johndoe"
-                    value={formData.username}
-                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                  />
-                </div>
-              </div>
-            </div>
+                <form onSubmit={handleInitialSubmit} className="space-y-4 sm:space-y-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                    <div className="space-y-1 sm:space-y-2">
+                      <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Full Name</label>
+                      <div className="relative group">
+                        <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
+                        <input
+                          type="text"
+                          required
+                          className="w-full pl-10 sm:pl-12 pr-5 py-3 sm:py-4 bg-gray-50 border border-gray-100 rounded-xl sm:rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm sm:text-base"
+                          placeholder="John Doe"
+                          value={formData.fullName}
+                          onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1 sm:space-y-2">
+                      <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Username</label>
+                      <div className="relative group">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-black text-[10px] sm:text-xs group-focus-within:text-cyan-500 transition-colors">@</span>
+                        <input
+                          type="text"
+                          required
+                          className="w-full pl-8 sm:pl-10 pr-5 py-3 sm:py-4 bg-gray-50 border border-gray-100 rounded-xl sm:rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm sm:text-base"
+                          placeholder="johndoe"
+                          value={formData.username}
+                          onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                  </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-              <div className="space-y-1 sm:space-y-2">
-                <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Email Address</label>
-                <div className="relative group">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
-                  <input
-                    type="email"
-                    required
-                    className="w-full pl-10 sm:pl-12 pr-5 py-3 sm:py-4 bg-gray-50 border border-gray-100 rounded-xl sm:rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm sm:text-base"
-                    placeholder="name@example.com"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div className="space-y-1 sm:space-y-2">
-                <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Phone Number</label>
-                <div className="relative group">
-                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
-                  <input
-                    type="tel"
-                    required
-                    className="w-full pl-10 sm:pl-12 pr-5 py-3 sm:py-4 bg-gray-50 border border-gray-100 rounded-xl sm:rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm sm:text-base"
-                    placeholder="+1 234 567 890"
-                    value={formData.phoneNumber}
-                    onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                  />
-                </div>
-              </div>
-            </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                    <div className="space-y-1 sm:space-y-2">
+                      <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Email Address</label>
+                      <div className="relative group">
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
+                        <input
+                          type="email"
+                          required
+                          className="w-full pl-10 sm:pl-12 pr-5 py-3 sm:py-4 bg-gray-50 border border-gray-100 rounded-xl sm:rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm sm:text-base"
+                          placeholder="name@example.com"
+                          value={formData.email}
+                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1 sm:space-y-2">
+                      <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Phone Number</label>
+                      <div className="relative group">
+                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
+                        <input
+                          type="tel"
+                          required
+                          className="w-full pl-10 sm:pl-12 pr-5 py-3 sm:py-4 bg-gray-50 border border-gray-100 rounded-xl sm:rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm sm:text-base"
+                          placeholder="+1 234 567 890"
+                          value={formData.phoneNumber}
+                          onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                  </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-              <div className="space-y-1 sm:space-y-2">
-                <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Password</label>
-                <div className="relative group">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
-                  <input
-                    type="password"
-                    required
-                    className="w-full pl-10 sm:pl-12 pr-5 py-3 sm:py-4 bg-gray-50 border border-gray-100 rounded-xl sm:rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm sm:text-base"
-                    placeholder="••••••••"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div className="space-y-1 sm:space-y-2">
-                <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Confirm</label>
-                <div className="relative group">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
-                  <input
-                    type="password"
-                    required
-                    className="w-full pl-10 sm:pl-12 pr-5 py-3 sm:py-4 bg-gray-50 border border-gray-100 rounded-xl sm:rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm sm:text-base"
-                    placeholder="••••••••"
-                    value={formData.confirmPassword}
-                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                  />
-                </div>
-              </div>
-            </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                    <div className="space-y-1 sm:space-y-2">
+                      <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Password</label>
+                      <div className="relative group">
+                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
+                        <input
+                          type="password"
+                          required
+                          className="w-full pl-10 sm:pl-12 pr-5 py-3 sm:py-4 bg-gray-50 border border-gray-100 rounded-xl sm:rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm sm:text-base"
+                          placeholder="••••••••"
+                          value={formData.password}
+                          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1 sm:space-y-2">
+                      <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Confirm</label>
+                      <div className="relative group">
+                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
+                        <input
+                          type="password"
+                          required
+                          className="w-full pl-10 sm:pl-12 pr-5 py-3 sm:py-4 bg-gray-50 border border-gray-100 rounded-xl sm:rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm sm:text-base"
+                          placeholder="••••••••"
+                          value={formData.confirmPassword}
+                          onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                  </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3.5 sm:py-4 bg-gray-900 text-white rounded-xl sm:rounded-2xl font-bold uppercase tracking-widest text-[10px] sm:text-xs hover:bg-cyan-600 transition-all shadow-xl shadow-gray-200 flex items-center justify-center gap-2 sm:gap-3 disabled:opacity-50 disabled:cursor-not-allowed group"
-            >
-              {loading ? (
-                <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <>
-                  Create Account
-                  <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
-                </>
-              )}
-            </button>
-          </form>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold uppercase tracking-widest text-xs hover:bg-cyan-600 transition-all shadow-xl shadow-gray-200 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed group"
+                  >
+                    {loading ? (
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        Verify Email
+                        <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                      </>
+                    )}
+                  </button>
+                </form>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="step2"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="text-center"
+              >
+                <div className="w-20 h-20 bg-cyan-50 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-inner">
+                  <Smartphone className="w-10 h-10 text-cyan-600" />
+                </div>
+                
+                <div className="mb-10">
+                  <h1 className="text-3xl font-bold text-gray-900 tracking-tight mb-3">Verify Your Email</h1>
+                  <p className="text-gray-500 font-medium text-sm max-w-xs mx-auto">
+                    We just sent a 6-digit code to <span className="text-cyan-600 font-bold">{formData.email}</span>
+                  </p>
+                </div>
+
+                {error && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="mb-8 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 text-red-700 text-xs font-bold justify-center"
+                  >
+                    <AlertCircle className="w-4 h-4" />
+                    {error}
+                  </motion.div>
+                )}
+
+                <form onSubmit={handleVerifyAndSignup} className="space-y-8">
+                  <div className="flex justify-center gap-3">
+                    <input
+                      type="text"
+                      maxLength={6}
+                      required
+                      autoFocus
+                      className="w-full max-w-[280px] bg-gray-50 border-2 border-gray-100 rounded-2xl px-6 py-5 text-center text-4xl font-black tracking-[0.3em] text-cyan-600 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10 outline-none transition-all placeholder:text-gray-200"
+                      placeholder="000000"
+                      value={verificationCode}
+                      onChange={(e) => setVerificationCode(e.target.value.replace(/[^0-9]/g, ''))}
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading || verificationCode.length !== 6}
+                    className="w-full py-5 bg-gray-900 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-xs hover:bg-cyan-600 transition-all shadow-[0_20px_40px_-15px_rgba(0,0,0,0.2)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 group"
+                  >
+                    {loading ? (
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        Complete Signup
+                        <CheckCircle className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                      </>
+                    )}
+                  </button>
+
+                  <div className="space-y-4">
+                    <button 
+                      type="button"
+                      onClick={() => setStep(1)}
+                      className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-gray-900 transition-colors"
+                    >
+                      Change Email
+                    </button>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                      Didn't receive code? Check your spam folder
+                    </p>
+                  </div>
+                </form>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <div className="mt-8 sm:mt-12 pt-8 sm:pt-12 border-t border-gray-50 text-center">
             <p className="text-gray-500 font-medium text-sm">
