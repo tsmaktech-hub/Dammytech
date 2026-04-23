@@ -2,6 +2,7 @@ import express from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import nodemailer from 'nodemailer';
+import cors from 'cors';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -10,10 +11,22 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
+  app.use(cors());
   app.use(express.json());
 
+  // Request logger
+  app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    next();
+  });
+
+  // API Health Check
+  app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', environment: process.env.NODE_ENV });
+  });
+
   // API Route to send verification code
-  app.post('/api/send-verification-code', async (req, res) => {
+  app.post('/api/auth/send-code', async (req, res) => {
     const { email, code } = req.body;
 
     console.log(`[Email] Request to send code to: ${email}`);

@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { auth, db } from '../lib/firebase';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { sendSignInLinkToEmail } from 'firebase/auth';
 import { doc, setDoc, collection, query, where, getDocs, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  UserPlus, 
   Mail, 
-  Lock, 
   User, 
   Phone, 
   ArrowRight, 
@@ -15,9 +13,7 @@ import {
   Cpu,
   ShieldCheck,
   Zap,
-  Star,
-  CheckCircle,
-  Smartphone
+  ExternalLink
 } from 'lucide-react';
 
 export default function Signup() {
@@ -26,28 +22,15 @@ export default function Signup() {
     phoneNumber: '',
     email: '',
     username: '',
-    password: '',
-    confirmPassword: '',
   });
-  const [step, setStep] = useState(1); // 1: Details, 2: Verification
-  const [verificationCode, setVerificationCode] = useState('');
-  const [sentCode, setSentCode] = useState('');
+  const [step, setStep] = useState(1); // 1: Details, 2: Link Sent
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const generateCode = () => {
-    return Math.floor(100000 + Math.random() * 900000).toString();
-  };
-
-  const handleInitialSubmit = async (e: React.FormEvent) => {
+  const handleSignupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
-    if (formData.password !== formData.confirmPassword) {
-      return setError('Passwords do not match');
-    }
-
     setLoading(true);
     
     try {
@@ -60,95 +43,37 @@ export default function Signup() {
         throw new Error('Username already taken');
       }
 
-      // Check if email is already used in Firestore (extra check)
+      // Check if email is already used in Firestore
       const emailQ = query(usersRef, where('email', '==', formData.email.toLowerCase()));
       const emailSnapshot = await getDocs(emailQ);
       if (!emailSnapshot.empty) {
         throw new Error('Email already registered');
       }
 
-      const code = generateCode();
-      setSentCode(code);
+      // Email link settings
+      const actionCodeSettings = {
+        // The URL to redirect back to. The domain must be whitelisted in the Firebase Console.
+        url: `${window.location.origin}/verify-link`,
+        // This must be true.
+        handleCodeInApp: true,
+      };
 
-      // Send verification email via backend
-      const response = await fetch('/api/send-verification-code', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          code: code
-        }),
-      });
+      // Send the sign-in link
+      await sendSignInLinkToEmail(auth, formData.email, actionCodeSettings);
 
-      if (!response.ok) {
-        let errorMessage = 'Failed to send verification email';
-        try {
-          const data = await response.json();
-          errorMessage = data.error || errorMessage;
-        } catch (e) {
-          // If response is not JSON, use the status text or a default message
-          errorMessage = `Server error (${response.status}): ${response.statusText || 'Unknown error'}`;
-        }
-        throw new Error(errorMessage);
-      }
-
-      // Store code in Firestore for later verification (optional, but better)
-      await setDoc(doc(db, 'verification_codes', formData.email.toLowerCase()), {
-        code: code,
-        expires: new Date(Date.now() + 10 * 60 * 1000) // 10 mins
-      });
+      // Save registration data to localStorage to use after clicking the link
+      window.localStorage.setItem('pending_signup', JSON.stringify({
+        ...formData,
+        email: formData.email.toLowerCase()
+      }));
+      
+      // Also store the email separately as required by Firebase completeSignIn
+      window.localStorage.setItem('emailForSignIn', formData.email.toLowerCase());
 
       setStep(2);
     } catch (err: any) {
-      console.error("Initial signup error:", err);
-      setError(err.message || 'Failed to proceed');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerifyAndSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    try {
-      // Simple verification for this prototype (check against state first)
-      if (verificationCode !== sentCode) {
-        throw new Error('Invalid verification code. Please try again.');
-      }
-
-      // Create auth user
-      const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-      const user = userCredential.user;
-
-      // Create user profile in Firestore
-      const isAdmin = formData.username.toLowerCase() === 'dammy';
-      await setDoc(doc(db, 'users', user.uid), {
-        id: user.uid,
-        username: formData.username.toLowerCase(),
-        email: formData.email,
-        full_name: formData.fullName,
-        phone_number: formData.phoneNumber,
-        role: isAdmin ? 'admin' : 'user',
-        avatar_url: '',
-        created_at: serverTimestamp(),
-        updated_at: serverTimestamp()
-      });
-
-      // Cleanup code
-      try {
-        await deleteDoc(doc(db, 'verification_codes', formData.email.toLowerCase()));
-      } catch (e) {
-        console.warn("Could not delete code", e);
-      }
-      
-      navigate('/');
-    } catch (err: any) {
-      console.error("Verification error:", err);
-      setError(err.message || 'Verification failed');
+      console.error("Signup error:", err);
+      setError(err.message || 'Failed to send verification link');
     } finally {
       setLoading(false);
     }
@@ -161,7 +86,7 @@ export default function Signup() {
         <div className="hidden lg:flex relative bg-gray-950 p-20 flex-col justify-between overflow-hidden">
           <div className="absolute inset-0">
             <img 
-              src="https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&q=80&w=1000" 
+              src="https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&q=80&w=1000" 
               alt="Signup Background" 
               className="w-full h-full object-cover opacity-30"
               referrerPolicy="no-referrer"
@@ -181,14 +106,14 @@ export default function Signup() {
               <span className="text-cyan-400">REVOLUTION.</span>
             </h2>
             <p className="text-gray-400 text-base font-medium leading-relaxed max-w-sm">
-              Create your account to start collecting the most advanced gadgets in the world.
+              Create your account with a direct magic link. No passwords, just instant access.
             </p>
           </div>
 
           <div className="relative z-10 grid grid-cols-2 gap-6">
             {[
-              { label: 'Secure Auth', icon: ShieldCheck },
-              { label: 'Fast Access', icon: Zap },
+              { label: 'Secure Link', icon: ShieldCheck },
+              { label: 'Instant Flow', icon: Zap },
             ].map(item => (
               <div key={item.label} className="flex items-center gap-3 text-white/80">
                 <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center border border-white/10">
@@ -226,7 +151,7 @@ export default function Signup() {
                   </motion.div>
                 )}
 
-                <form onSubmit={handleInitialSubmit} className="space-y-4 sm:space-y-6">
+                <form onSubmit={handleSignupSubmit} className="space-y-4 sm:space-y-6">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                     <div className="space-y-1 sm:space-y-2">
                       <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Full Name</label>
@@ -289,37 +214,6 @@ export default function Signup() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                    <div className="space-y-1 sm:space-y-2">
-                      <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Password</label>
-                      <div className="relative group">
-                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
-                        <input
-                          type="password"
-                          required
-                          className="w-full pl-10 sm:pl-12 pr-5 py-3 sm:py-4 bg-gray-50 border border-gray-100 rounded-xl sm:rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm sm:text-base"
-                          placeholder="••••••••"
-                          value={formData.password}
-                          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-1 sm:space-y-2">
-                      <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Confirm</label>
-                      <div className="relative group">
-                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
-                        <input
-                          type="password"
-                          required
-                          className="w-full pl-10 sm:pl-12 pr-5 py-3 sm:py-4 bg-gray-50 border border-gray-100 rounded-xl sm:rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm sm:text-base"
-                          placeholder="••••••••"
-                          value={formData.confirmPassword}
-                          onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
                   <button
                     type="submit"
                     disabled={loading}
@@ -329,7 +223,7 @@ export default function Signup() {
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     ) : (
                       <>
-                        Verify Email
+                        Get Magic Link
                         <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                       </>
                     )}
@@ -345,69 +239,35 @@ export default function Signup() {
                 className="text-center"
               >
                 <div className="w-20 h-20 bg-cyan-50 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-inner">
-                  <Smartphone className="w-10 h-10 text-cyan-600" />
+                  <Mail className="w-10 h-10 text-cyan-600 animate-pulse" />
                 </div>
                 
                 <div className="mb-10">
-                  <h1 className="text-3xl font-bold text-gray-900 tracking-tight mb-3">Verify Your Email</h1>
-                  <p className="text-gray-500 font-medium text-sm max-w-xs mx-auto">
-                    We just sent a 6-digit code to <span className="text-cyan-600 font-bold">{formData.email}</span>
+                  <h1 className="text-3xl font-bold text-gray-900 tracking-tight mb-3">Check Your Email</h1>
+                  <p className="text-gray-500 font-medium text-sm max-w-xs mx-auto leading-relaxed">
+                    We've sent a magic link to <span className="text-cyan-600 font-bold">{formData.email}</span>. Click it to log in instantly.
                   </p>
                 </div>
 
-                {error && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="mb-8 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 text-red-700 text-xs font-bold justify-center"
-                  >
-                    <AlertCircle className="w-4 h-4" />
-                    {error}
-                  </motion.div>
-                )}
-
-                <form onSubmit={handleVerifyAndSignup} className="space-y-8">
-                  <div className="flex justify-center gap-3">
-                    <input
-                      type="text"
-                      maxLength={6}
-                      required
-                      autoFocus
-                      className="w-full max-w-[280px] bg-gray-50 border-2 border-gray-100 rounded-2xl px-6 py-5 text-center text-4xl font-black tracking-[0.3em] text-cyan-600 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10 outline-none transition-all placeholder:text-gray-200"
-                      placeholder="000000"
-                      value={verificationCode}
-                      onChange={(e) => setVerificationCode(e.target.value.replace(/[^0-9]/g, ''))}
-                    />
+                <div className="p-6 bg-gray-50 rounded-2xl border border-dashed border-gray-200 mb-8">
+                  <div className="flex items-center gap-3 text-left">
+                    <ExternalLink className="w-5 h-5 text-gray-400" />
+                    <div>
+                      <p className="text-xs font-bold text-gray-900 uppercase tracking-widest mb-1">Check Inboxes Now</p>
+                      <p className="text-[10px] text-gray-500 font-medium">Be sure to check your spam or junk folder if you don't see it.</p>
+                    </div>
                   </div>
+                </div>
 
-                  <button
-                    type="submit"
-                    disabled={loading || verificationCode.length !== 6}
-                    className="w-full py-5 bg-gray-900 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-xs hover:bg-cyan-600 transition-all shadow-[0_20px_40px_-15px_rgba(0,0,0,0.2)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 group"
+                <div className="space-y-4">
+                  <button 
+                    type="button"
+                    onClick={() => setStep(1)}
+                    className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-gray-900 transition-colors"
                   >
-                    {loading ? (
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <>
-                        Complete Signup
-                        <CheckCircle className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                      </>
-                    )}
+                    Change Email
                   </button>
-
-                  <div className="space-y-4">
-                    <button 
-                      type="button"
-                      onClick={() => setStep(1)}
-                      className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-gray-900 transition-colors"
-                    >
-                      Change Email
-                    </button>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                      Didn't receive code? Check your spam folder
-                    </p>
-                  </div>
-                </form>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>

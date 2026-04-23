@@ -1,6 +1,33 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
-import { getFirestore, initializeFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, where, getDocFromServer } from 'firebase/firestore';
+import { 
+  getAuth, 
+  GoogleAuthProvider, 
+  signInWithPopup, 
+  signOut, 
+  onAuthStateChanged, 
+  User,
+  sendSignInLinkToEmail,
+  isSignInWithEmailLink,
+  signInWithEmailLink
+} from 'firebase/auth';
+import { 
+  getFirestore, 
+  initializeFirestore, 
+  collection, 
+  doc, 
+  getDoc, 
+  getDocs, 
+  setDoc, 
+  updateDoc, 
+  deleteDoc, 
+  onSnapshot, 
+  query, 
+  orderBy, 
+  where, 
+  getDocFromServer,
+  writeBatch,
+  serverTimestamp
+} from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import firebaseConfig from '../../firebase-applet-config.json';
 
@@ -10,6 +37,7 @@ const app = initializeApp(firebaseConfig);
 // Initialize Firestore with long polling to improve connectivity in restricted environments
 export const db = initializeFirestore(app, {
   experimentalForceLongPolling: true,
+  experimentalAutoDetectLongPolling: true,
 }, firebaseConfig.firestoreDatabaseId);
 
 export const auth = getAuth(app);
