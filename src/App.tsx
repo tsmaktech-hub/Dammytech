@@ -195,13 +195,18 @@ const Navbar = ({
   }
 
   const getInitials = (name?: string, email?: string) => {
-    if (profile?.username?.toLowerCase() === 'dammy') return 'BI';
-    if (name && name.trim()) {
-      const parts = name.trim().split(/\s+/);
-      if (parts.length === 1) return parts[0][0].toUpperCase();
-      if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    const targetName = name || (profile?.username?.toLowerCase() === 'dammy' ? 'Busari Ismail' : 'User');
+    
+    if (targetName && targetName.trim()) {
+      const parts = targetName.trim().split(/\s+/);
+      if (parts.length >= 2) {
+        // First letter of first name + first letter of last name
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+      }
+      // If only one name, take the first two letters
+      return targetName.trim().slice(0, 2).toUpperCase();
     }
-    if (email) return email[0].toUpperCase();
+    if (email) return email.slice(0, 2).toUpperCase();
     return '?';
   };
 

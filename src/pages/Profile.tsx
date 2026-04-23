@@ -126,7 +126,13 @@ export default function Profile() {
             </Link>
             <div className="flex items-center gap-6">
               <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-[2.5rem] flex items-center justify-center text-white font-black text-2xl sm:text-3xl shadow-2xl shadow-cyan-200 border-4 border-white shrink-0">
-                {profile.full_name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                {(() => {
+                  const parts = profile.full_name.trim().split(/\s+/);
+                  if (parts.length >= 2) {
+                    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+                  }
+                  return profile.full_name.trim().slice(0, 2).toUpperCase();
+                })()}
               </div>
               <div className="space-y-1">
                 <h1 className="text-3xl sm:text-4xl font-black text-gray-900 tracking-tighter uppercase leading-none">
