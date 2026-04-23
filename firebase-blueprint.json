@@ -64,6 +64,16 @@
         "created_at": { "type": "string", "format": "date-time", "description": "Creation timestamp." }
       },
       "required": ["user_id", "name", "text", "rating"]
+    },
+    "VerificationCode": {
+      "title": "Verification Code",
+      "description": "Temporary codes for email verification during signup.",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string", "description": "The 6-digit verification code." },
+        "expires": { "type": "string", "format": "date-time", "description": "Expiry timestamp." }
+      },
+      "required": ["code", "expires"]
     }
   },
   "firestore": {
@@ -82,6 +92,10 @@
     "/testimonials/{testimonialId}": {
       "schema": "Testimonial",
       "description": "Collection of user testimonials."
+    },
+    "/verification_codes/{email}": {
+      "schema": "VerificationCode",
+      "description": "Collection of temporary verification codes."
     }
   }
 }
