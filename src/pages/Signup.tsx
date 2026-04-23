@@ -83,8 +83,15 @@ export default function Signup() {
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to send verification email');
+        let errorMessage = 'Failed to send verification email';
+        try {
+          const data = await response.json();
+          errorMessage = data.error || errorMessage;
+        } catch (e) {
+          // If response is not JSON, use the status text or a default message
+          errorMessage = `Server error (${response.status}): ${response.statusText || 'Unknown error'}`;
+        }
+        throw new Error(errorMessage);
       }
 
       // Store code in Firestore for later verification (optional, but better)
