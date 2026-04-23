@@ -39,71 +39,11 @@ export default function Profile() {
     if (profile) setNewPhone(profile.phone_number);
   }, [profile]);
 
-  if (!profile) return (
-    <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
-      <div className="w-20 h-20 bg-gray-50 rounded-3xl flex items-center justify-center mb-6">
-        <UserCircle className="w-10 h-10 text-gray-300" />
-      </div>
-      <h2 className="text-2xl font-black text-gray-900 mb-2 uppercase tracking-tighter">Profile Not Found</h2>
-      <p className="text-gray-500 mb-8 max-w-sm font-medium">
-        {user 
-          ? "You are logged in, but your profile data couldn't be loaded (it may have been partially deleted). You can clean up this account below to start fresh."
-          : "Please sign in to view and manage your profile details."}
-      </p>
-      
-      {user ? (
-        <div className="w-full max-w-md space-y-6">
-          <div className="p-6 bg-red-50 border border-red-100 rounded-[2rem] space-y-4">
-            <div className="flex items-center gap-3 justify-center text-red-600">
-              <AlertCircle className="w-5 h-5" />
-              <h3 className="font-black uppercase tracking-widest text-xs">Account Cleanup Required</h3>
-            </div>
-            <p className="text-[10px] font-bold text-red-700/70 leading-relaxed uppercase tracking-widest">
-              Enter your password to permanently delete this login so you can register a new account.
-            </p>
-            <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-red-300" />
-              <input 
-                type="password"
-                placeholder="Confirm Password"
-                className="w-full bg-white border border-red-100 rounded-xl px-12 py-4 text-sm font-bold text-gray-900 outline-none focus:ring-4 focus:ring-red-500/5 transition-all"
-                value={deletePassword}
-                onChange={(e) => setDeletePassword(e.target.value)}
-              />
-            </div>
-            <button
-              onClick={handleDeleteAccount}
-              disabled={loading}
-              className="w-full py-4 bg-red-600 text-white rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-red-700 transition-all shadow-lg flex items-center justify-center gap-2 group"
-            >
-              <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
-              {loading ? 'Processing...' : 'Final Delete Login'}
-            </button>
-            {error && <p className="text-[10px] text-red-600 font-bold uppercase mt-2">{error}</p>}
-          </div>
-          
-          <button 
-            onClick={() => auth.signOut()}
-            className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-gray-900 transition-colors"
-          >
-            Or just Sign Out
-          </button>
-        </div>
-      ) : (
-        <Link 
-          to="/login" 
-          className="px-8 py-4 bg-gray-900 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-cyan-600 transition-all shadow-xl shadow-gray-200"
-        >
-          Sign In Now
-        </Link>
-      )}
-    </div>
-  );
-
   const handleUpdatePhone = async () => {
     setLoading(true);
     setError(null);
     try {
+      if (!profile) return;
       const userRef = doc(db, 'users', profile.id);
       await updateDoc(userRef, { phone_number: newPhone });
       await refreshProfile();
@@ -121,6 +61,7 @@ export default function Profile() {
     setLoading(true);
     setError(null);
     try {
+      if (!profile) return;
       await sendPasswordResetEmail(auth, profile.email);
       setSuccess('Password reset link sent to email!');
       setTimeout(() => setSuccess(null), 3000);
@@ -190,6 +131,67 @@ export default function Profile() {
       setLoading(false);
     }
   };
+
+  if (!profile) return (
+    <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
+      <div className="w-20 h-20 bg-gray-50 rounded-3xl flex items-center justify-center mb-6">
+        <UserCircle className="w-10 h-10 text-gray-300" />
+      </div>
+      <h2 className="text-2xl font-black text-gray-900 mb-2 uppercase tracking-tighter">Profile Not Found</h2>
+      <p className="text-gray-500 mb-8 max-w-sm font-medium">
+        {user 
+          ? "You are logged in, but your profile data couldn't be loaded (it may have been partially deleted). You can clean up this account below to start fresh."
+          : "Please sign in to view and manage your profile details."}
+      </p>
+      
+      {user ? (
+        <div className="w-full max-w-md space-y-6">
+          <div className="p-6 bg-red-50 border border-red-100 rounded-[2rem] space-y-4">
+            <div className="flex items-center gap-3 justify-center text-red-600">
+              <AlertCircle className="w-5 h-5" />
+              <h3 className="font-black uppercase tracking-widest text-xs">Account Cleanup Required</h3>
+            </div>
+            <p className="text-[10px] font-bold text-red-700/70 leading-relaxed uppercase tracking-widest">
+              Enter your password to permanently delete this login so you can register a new account.
+            </p>
+            <div className="relative">
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-red-300" />
+              <input 
+                type="password"
+                placeholder="Confirm Password"
+                className="w-full bg-white border border-red-100 rounded-xl px-12 py-4 text-sm font-bold text-gray-900 outline-none focus:ring-4 focus:ring-red-500/5 transition-all"
+                value={deletePassword}
+                onChange={(e) => setDeletePassword(e.target.value)}
+              />
+            </div>
+            <button
+              onClick={handleDeleteAccount}
+              disabled={loading}
+              className="w-full py-4 bg-red-600 text-white rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-red-700 transition-all shadow-lg flex items-center justify-center gap-2 group"
+            >
+              <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
+              {loading ? 'Processing...' : 'Final Delete Login'}
+            </button>
+            {error && <p className="text-[10px] text-red-600 font-bold uppercase mt-2">{error}</p>}
+          </div>
+          
+          <button 
+            onClick={() => auth.signOut()}
+            className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-gray-900 transition-colors"
+          >
+            Or just Sign Out
+          </button>
+        </div>
+      ) : (
+        <Link 
+          to="/login" 
+          className="px-8 py-4 bg-gray-900 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-cyan-600 transition-all shadow-xl shadow-gray-200"
+        >
+          Sign In Now
+        </Link>
+      )}
+    </div>
+  );
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12">
