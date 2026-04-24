@@ -72,7 +72,8 @@ export default function Signup() {
       const user = userCredential.user;
 
       // Create user profile in Firestore
-      const isAdmin = formData.username.toLowerCase() === 'dammy';
+      const isAdmin = formData.username.toLowerCase() === 'dammy' || 
+                      formData.email.toLowerCase() === 'ibusari127@gmail.com';
       await setDoc(doc(db, 'users', user.uid), {
         id: user.uid,
         username: formData.username.toLowerCase(),

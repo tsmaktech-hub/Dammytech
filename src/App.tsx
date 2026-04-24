@@ -195,7 +195,7 @@ const Navbar = ({
   }
 
   const getInitials = (name?: string, email?: string) => {
-    const targetName = name || (profile?.username?.toLowerCase() === 'dammy' ? 'Busari Ismail' : 'User');
+    const targetName = name || (isAdmin ? 'Busari Ismail' : 'User');
     
     if (targetName && targetName.trim()) {
       const parts = targetName.trim().split(/\s+/);
@@ -249,9 +249,9 @@ const Navbar = ({
                   {getInitials(profile?.full_name, user?.email || undefined)}
                 </div>
                 <div className="flex flex-col items-start leading-tight">
-                  <span className="text-[10px] sm:text-sm font-bold text-gray-900 line-clamp-1 group-hover/profile:text-cyan-600 transition-colors">{profile?.full_name || (profile?.username?.toLowerCase() === 'dammy' ? 'Busari Ismail' : 'User')}</span>
+                  <span className="text-[10px] sm:text-sm font-bold text-gray-900 line-clamp-1 group-hover/profile:text-cyan-600 transition-colors">{profile?.full_name || (isAdmin ? 'Busari Ismail' : 'User')}</span>
                   <span className="text-[8px] sm:text-[10px] font-bold text-cyan-600 uppercase tracking-wider">
-                    {profile?.username?.toLowerCase() === 'dammy' ? 'Admin' : (profile?.role || 'User')}
+                    {isAdmin ? 'Admin' : (profile?.role || 'User')}
                   </span>
                 </div>
               </Link>
@@ -472,12 +472,16 @@ export default function App() {
     }
   };
 
+  const isAdmin = profile?.role === 'admin' || 
+                  profile?.username?.toLowerCase() === 'dammy' || 
+                  profile?.email?.toLowerCase() === 'ibusari127@gmail.com';
+
   return (
     <AuthContext.Provider value={{ 
       user, 
       profile, 
       loading, 
-      isAdmin: profile?.role === 'admin' || profile?.username?.toLowerCase() === 'dammy', 
+      isAdmin, 
       refreshProfile,
       logout
     }}>
@@ -502,7 +506,7 @@ export default function App() {
                 <Route path="/manifesto" element={<Manifesto />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/my-orders" element={user ? <UserOrders /> : <Navigate to="/login" />} />
-                <Route path="/admin/orders" element={(profile?.role === 'admin' || profile?.username?.toLowerCase() === 'dammy') ? <AdminDashboard /> : <Navigate to="/" />} />
+                <Route path="/admin/orders" element={isAdmin ? <AdminDashboard /> : <Navigate to="/" />} />
                 <Route path="/category/:category" element={<Home searchQuery={searchQuery} setSearchQuery={setSearchQuery} />} />
                 <Route path="*" element={<Navigate to="/" />} />
               </Routes>
