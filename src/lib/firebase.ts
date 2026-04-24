@@ -6,9 +6,6 @@ import {
   signOut, 
   onAuthStateChanged, 
   User,
-  sendSignInLinkToEmail,
-  isSignInWithEmailLink,
-  signInWithEmailLink
 } from 'firebase/auth';
 import { 
   getFirestore, 

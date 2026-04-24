@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { auth, db } from '../lib/firebase';
-import { signInWithEmailAndPassword, sendSignInLinkToEmail } from 'firebase/auth';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import { motion, AnimatePresence } from 'motion/react';
-import { cn } from '../lib/utils';
+import { motion } from 'motion/react';
 import { 
   LogIn, 
   Mail, 
@@ -14,63 +13,31 @@ import {
   Cpu,
   ShieldCheck,
   Zap,
-  Star,
   Eye,
   EyeOff,
-  Sparkles,
-  CheckCircle,
-  ExternalLink
+  CheckCircle
 } from 'lucide-react';
 
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const [formData, setFormData] = useState({
-    email: location.state?.email || '',
+    identifier: location.state?.email || '',
     password: '',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [magicLoading, setMagicLoading] = useState(false);
-  const [magicSent, setMagicSent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [successMessage, setSuccessMessage] = useState(location.state?.message || '');
 
   useEffect(() => {
     if (location.state?.email) {
-      setFormData(prev => ({ ...prev, email: location.state.email }));
+      setFormData(prev => ({ ...prev, identifier: location.state.email }));
     }
     if (location.state?.message) {
       setSuccessMessage(location.state.message);
     }
   }, [location.state]);
-
-  const handleMagicLink = async () => {
-    if (!formData.email || !formData.email.includes('@')) {
-      setError('Please enter a valid email address to use a magic link.');
-      return;
-    }
-
-    setError('');
-    setMagicLoading(true);
-
-    try {
-      const actionCodeSettings = {
-        url: `${window.location.origin}/verify-link`,
-        handleCodeInApp: true,
-      };
-
-      await sendSignInLinkToEmail(auth, formData.email, actionCodeSettings);
-      window.localStorage.setItem('emailForSignIn', formData.email.toLowerCase());
-      setMagicSent(true);
-      setSuccessMessage(`Magic link sent to ${formData.email}!`);
-    } catch (err: any) {
-      console.error("Magic link error:", err);
-      setError(err.message || 'Failed to send magic link');
-    } finally {
-      setMagicLoading(false);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,12 +45,12 @@ export default function Login() {
     setLoading(true);
 
     try {
-      let loginEmail = formData.email;
+      let loginEmail = formData.identifier;
 
       // If it doesn't look like an email, try to find it by username in Firestore
-      if (!formData.email.includes('@')) {
+      if (!formData.identifier.includes('@')) {
         const usersRef = collection(db, 'users');
-        const q = query(usersRef, where('username', '==', formData.email.toLowerCase()));
+        const q = query(usersRef, where('username', '==', formData.identifier.toLowerCase()));
         const querySnapshot = await getDocs(q);
         
         if (!querySnapshot.empty) {
@@ -187,105 +154,62 @@ export default function Login() {
             </motion.div>
           )}
 
-          <div className="space-y-8">
-            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
-              <div className="space-y-1 sm:space-y-2">
-                <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Username or Email</label>
-                <div className="relative group">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
-                  <input
-                    type="text"
-                    required
-                    className="w-full pl-10 sm:pl-12 pr-5 py-3 sm:py-4 bg-gray-50 border border-gray-100 rounded-xl sm:rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm sm:text-base"
-                    placeholder="Username or email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1 sm:space-y-2">
-                <div className="flex justify-between items-center ml-1">
-                  <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-500">Password</label>
-                  <Link to="/forgot-password" className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-cyan-600 hover:text-cyan-700">Forgot?</Link>
-                </div>
-                <div className="relative group">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    required
-                    className="w-full pl-10 sm:pl-12 pr-12 py-3 sm:py-4 bg-gray-50 border border-gray-100 rounded-xl sm:rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm sm:text-base"
-                    placeholder="••••••••"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-cyan-500 transition-colors"
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Eye className="w-4 h-4 sm:w-5 sm:h-5" />}
-                  </button>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading || magicLoading}
-                className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] sm:text-xs hover:bg-cyan-600 transition-all shadow-xl shadow-cyan-100 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed group border border-transparent font-bold"
-              >
-                {loading ? (
-                  <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <>
-                    Sign In
-                    <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
-                  </>
-                )}
-              </button>
-            </form>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-100"></div>
-              </div>
-              <div className="relative flex justify-center text-xs uppercase tracking-widest font-black">
-                <span className="bg-white px-4 text-gray-400">OR</span>
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+            <div className="space-y-1 sm:space-y-2">
+              <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Username or Email</label>
+              <div className="relative group">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
+                <input
+                  type="text"
+                  required
+                  className="w-full pl-10 sm:pl-12 pr-5 py-3 sm:py-4 bg-gray-50 border border-gray-100 rounded-xl sm:rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm sm:text-base"
+                  placeholder="Username or email"
+                  value={formData.identifier}
+                  onChange={(e) => setFormData({ ...formData, identifier: e.target.value })}
+                />
               </div>
             </div>
 
-            <div className="space-y-4">
-              <button
-                type="button"
-                onClick={handleMagicLink}
-                disabled={magicLoading || loading || magicSent}
-                className={cn(
-                  "w-full py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] sm:text-xs transition-all flex items-center justify-center gap-3 border shadow-sm",
-                  magicSent 
-                    ? "bg-green-50 text-green-600 border-green-100" 
-                    : "bg-white text-gray-900 border-gray-100 hover:bg-gray-50 hover:border-cyan-200"
-                )}
-              >
-                {magicLoading ? (
-                  <div className="w-4 h-4 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
-                ) : magicSent ? (
-                  <>
-                    <CheckCircle className="w-4 h-4" />
-                    Magic Link Sent
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4 text-cyan-500" />
-                    Sign In With Magic Link
-                  </>
-                )}
-              </button>
-              
-              <p className="text-center text-[10px] text-gray-400 font-bold uppercase tracking-widest px-4">
-                No password? No problem. We'll send a magic link to your email.
-              </p>
+            <div className="space-y-1 sm:space-y-2">
+              <div className="flex justify-between items-center ml-1">
+                <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-500">Password</label>
+                <Link to="/forgot-password" className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-cyan-600 hover:text-cyan-700">Forgot?</Link>
+              </div>
+              <div className="relative group">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  required
+                  className="w-full pl-10 sm:pl-12 pr-12 py-3 sm:py-4 bg-gray-50 border border-gray-100 rounded-xl sm:rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm sm:text-base"
+                  placeholder="••••••••"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-cyan-500 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Eye className="w-4 h-4 sm:w-5 sm:h-5" />}
+                </button>
+              </div>
             </div>
-          </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] sm:text-xs hover:bg-cyan-600 transition-all shadow-xl shadow-cyan-100 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed group border border-transparent font-bold"
+            >
+              {loading ? (
+                <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <>
+                  Sign In
+                  <LogIn className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
+            </button>
+          </form>
 
           <div className="mt-8 sm:mt-12 pt-8 sm:pt-12 border-t border-gray-50 text-center">
             <p className="text-gray-500 font-medium text-sm">
@@ -300,3 +224,4 @@ export default function Login() {
     </div>
   );
 }
+
