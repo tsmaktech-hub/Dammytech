@@ -4,7 +4,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation, us
 import { auth, db, onAuthStateChanged, doc, getDoc, signOut, User, updateDoc, deleteDoc } from './lib/firebase';
 import { sendPasswordResetEmail, deleteUser } from 'firebase/auth';
 import { UserProfile } from './types';
-import { ErrorBoundary as GlobalErrorBoundary } from './components/GlobalErrorBoundary';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { 
   LogOut, 
   LogIn, 
@@ -491,7 +491,7 @@ export default function App() {
             setIsSearchOpen={setIsSearchOpen}
           />
           <main className="px-4 sm:px-8 lg:px-20 py-6 sm:py-12">
-            <GlobalErrorBoundary>
+            <ErrorBoundary>
               <Routes>
                 <Route path="/" element={<Home searchQuery={searchQuery} setSearchQuery={setSearchQuery} />} />
                 <Route path="/auth" element={user ? <Navigate to="/" /> : <AuthChoice />} />
@@ -506,7 +506,7 @@ export default function App() {
                 <Route path="/category/:category" element={<Home searchQuery={searchQuery} setSearchQuery={setSearchQuery} />} />
                 <Route path="*" element={<Navigate to="/" />} />
               </Routes>
-            </GlobalErrorBoundary>
+            </ErrorBoundary>
           </main>
           
           <footer className="bg-gray-900 text-white py-10 sm:py-20 mt-10 sm:mt-20">

@@ -727,7 +727,7 @@ export default function Home({
             </div>
             <h3 className="text-lg sm:text-2xl font-black text-gray-900 mb-2 sm:mb-3">No gadgets found</h3>
             <p className="text-xs sm:text-gray-500 font-medium max-w-xs mx-auto mb-6 sm:mb-10">
-              We couldn't find any gadgets in this category. {isAuthorizedSeller ? 'Be the first to list one!' : 'Check back later for new arrivals.'}
+              We couldn't find any gadgets in this category. {isAuthorizedSeller ? 'Be the first to list one!' : 'Check back later for new arrivals, or check your internet connection.'}
             </p>
             {isAuthorizedSeller && (
               <button 
