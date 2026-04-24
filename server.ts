@@ -3,24 +3,9 @@ import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import nodemailer from 'nodemailer';
 import cors from 'cors';
-import fs from 'fs';
 import { fileURLToPath } from 'url';
-import admin from 'firebase-admin';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-// Load Firebase Config safely
-const firebaseConfig = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'firebase-applet-config.json'), 'utf8'));
-
-// Initialize Firebase Admin
-if (!admin.apps.length) {
-  admin.initializeApp({
-    projectId: firebaseConfig.projectId,
-  });
-}
-
-const dbAdmin = admin.firestore();
-const authAdmin = admin.auth();
 
 async function startServer() {
   const app = express();
@@ -51,17 +36,6 @@ async function startServer() {
     }
 
     try {
-      // Store code in Firestore for verification
-      const expiresAt = new Date();
-      expiresAt.setMinutes(expiresAt.getMinutes() + 10);
-
-      await dbAdmin.collection('otp_codes').doc(email).set({
-        code,
-        email,
-        expiresAt: admin.firestore.Timestamp.fromDate(expiresAt),
-        createdAt: admin.firestore.FieldValue.serverTimestamp()
-      });
-
       // For development/preview, we'll try Ethereal or provided SMTP
       let transporter;
       
@@ -122,78 +96,22 @@ async function startServer() {
         return res.json({ success: true, previewUrl });
       } catch (emailErr: any) {
         console.warn('[Email] Email service failed, but logging code to console for development:', emailErr.message);
+        // Fallback for development: even if email fails, we return generic success but log the code
+        // This prevents the whole signup from breaking if Ethereal is down
         console.log(`\n************************************************\n`);
         console.log(`DEVELOPMENT VERIFICATION CODE FOR ${email}: ${code}`);
         console.log(`\n************************************************\n`);
         
+        // We still return true but maybe with a warning in production we'd return 500
+        // For a prototype, let's keep it moving but log the error
         return res.json({ 
           success: true, 
           warning: 'Email service skipped (Development Fallback)',
-          devCode: code 
+          devCode: code // Only for debugging in this environment
         });
       }
     } catch (error: any) {
       console.error('[Email] Internal server error:', error);
-      return res.status(500).json({ error: 'Internal server error during verification' });
-    }
-  });
-
-  // API Route to verify OTP code
-  app.post('/api/auth/verify-code', async (req, res) => {
-    const { email, code } = req.body;
-
-    console.log(`[Verify Code] Request for: ${email}`);
-
-    if (!email || !code) {
-      return res.status(400).json({ error: 'Email and code are required' });
-    }
-
-    try {
-      const otpRef = dbAdmin.collection('otp_codes').doc(email);
-      const doc = await otpRef.get();
-
-      if (!doc.exists) {
-        return res.status(404).json({ error: 'No verification code found for this email' });
-      }
-
-      const data = doc.data();
-      if (data?.code !== code) {
-        return res.status(400).json({ error: 'Invalid verification code' });
-      }
-
-      const expiresAt = data.expiresAt.toDate();
-      if (expiresAt < new Date()) {
-        return res.status(400).json({ error: 'Verification code has expired' });
-      }
-
-      // Mark user as verified in Firebase Auth
-      try {
-        const userRecord = await authAdmin.getUserByEmail(email);
-        await authAdmin.updateUser(userRecord.uid, {
-          emailVerified: true
-        });
-        console.log(`[Verify Code] User ${email} marked as verified in Auth`);
-      } catch (authErr: any) {
-        console.warn(`[Verify Code] Could not update Auth user directly (maybe social login?), skipping auth update:`, authErr.message);
-      }
-
-      // Update Firestore profile as well just in case
-      const usersQuery = await dbAdmin.collection('users').where('email', '==', email).get();
-      if (!usersQuery.empty) {
-        const userDocId = usersQuery.docs[0].id;
-        await dbAdmin.collection('users').doc(userDocId).update({
-          is_verified: true,
-          updated_at: admin.firestore.FieldValue.serverTimestamp()
-        });
-        console.log(`[Verify Code] User profile updated in Firestore`);
-      }
-
-      // Delete the OTP code after successful verification
-      await otpRef.delete();
-
-      return res.json({ success: true });
-    } catch (error: any) {
-      console.error('[Verify Code] Error:', error);
       return res.status(500).json({ error: 'Internal server error during verification' });
     }
   });
