@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { auth, db } from '../lib/firebase';
-import { signInWithEmailAndPassword, signOut, sendEmailVerification } from 'firebase/auth';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import { 
   LogIn, 
   Mail, 
@@ -27,7 +27,6 @@ export default function Login() {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [resending, setResending] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [successMessage, setSuccessMessage] = useState(location.state?.message || '');
 
@@ -63,13 +62,6 @@ export default function Login() {
       }
 
       const userCredential = await signInWithEmailAndPassword(auth, loginEmail, formData.password);
-      const user = userCredential.user;
-
-      if (!user.emailVerified) {
-        await signOut(auth);
-        throw new Error('Your email is not verified. Please check your inbox for the verification link.');
-      }
-
       navigate('/');
     } catch (err: any) {
       console.error("Login error:", err);
@@ -84,49 +76,6 @@ export default function Login() {
       setError(errorMessage);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleResendEmail = async () => {
-    if (!formData.identifier) {
-      setError('Please enter your email to resend the verification link.');
-      return;
-    }
-
-    setResending(true);
-    setError('');
-    setSuccessMessage('');
-
-    try {
-      let loginEmail = formData.identifier;
-      if (!formData.identifier.includes('@')) {
-        const usersRef = collection(db, 'users');
-        const q = query(usersRef, where('username', '==', formData.identifier.toLowerCase()));
-        const querySnapshot = await getDocs(q);
-        if (!querySnapshot.empty) {
-          loginEmail = querySnapshot.docs[0].data().email;
-        }
-      }
-
-      // We need to sign in temporarily to resend verification email for the current user
-      // But Firebase verifyEmail usually requires a recent sign-in anyway.
-      // A better way is to inform the user that they can only resend by trying to log in again if we don't have the password.
-      // However, if we have the password from the form, we can sign in, send, then sign out.
-      
-      const userCredential = await signInWithEmailAndPassword(auth, loginEmail, formData.password);
-      const actionCodeSettings = {
-        url: `${window.location.origin}/confirm-email`,
-        handleCodeInApp: true,
-      };
-      await sendEmailVerification(userCredential.user, actionCodeSettings);
-      await signOut(auth);
-      
-      setSuccessMessage('Verification email resent! Please check your inbox.');
-    } catch (err: any) {
-      console.error("Resend error:", err);
-      setError(err.message || 'Failed to resend verification email. Make sure your credentials are correct.');
-    } finally {
-      setResending(false);
     }
   };
 
@@ -198,22 +147,10 @@ export default function Login() {
             <motion.div
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
-              className="mb-6 p-4 sm:p-5 bg-red-50 border border-red-100 rounded-2xl flex flex-col gap-3 text-red-700 text-xs sm:text-sm font-bold"
+              className="mb-6 p-4 sm:p-5 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 sm:gap-4 text-red-700 text-xs sm:text-sm font-bold"
             >
-              <div className="flex items-center gap-3 sm:gap-4">
-                <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" />
-                {error}
-              </div>
-              {error.includes('not verified') && (
-                <button
-                  type="button"
-                  onClick={handleResendEmail}
-                  disabled={resending}
-                  className="mt-2 text-cyan-600 hover:text-cyan-700 underline text-left disabled:opacity-50"
-                >
-                  {resending ? 'Sending...' : 'Resend verification email'}
-                </button>
-              )}
+              <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" />
+              {error}
             </motion.div>
           )}
 
