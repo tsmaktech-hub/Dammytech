@@ -6,6 +6,9 @@ import {
   signOut, 
   onAuthStateChanged, 
   User,
+  sendEmailVerification,
+  applyActionCode,
+  checkActionCode
 } from 'firebase/auth';
 import { 
   getFirestore, 
@@ -118,6 +121,9 @@ export {
   where,
   signInWithPopup,
   signOut,
-  onAuthStateChanged
+  onAuthStateChanged,
+  sendEmailVerification,
+  applyActionCode,
+  checkActionCode
 };
 export type { User };

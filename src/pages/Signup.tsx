@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { auth, db } from '../lib/firebase';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, sendEmailVerification, signOut } from 'firebase/auth';
 import { doc, setDoc, collection, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   Mail, 
   User, 
@@ -15,7 +15,9 @@ import {
   Zap,
   Lock,
   Eye,
-  EyeOff
+  EyeOff,
+  CheckCircle,
+  ExternalLink
 } from 'lucide-react';
 
 export default function Signup() {
@@ -30,6 +32,7 @@ export default function Signup() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
   const navigate = useNavigate();
 
   const handleSignupSubmit = async (e: React.FormEvent) => {
@@ -83,7 +86,17 @@ export default function Signup() {
         updated_at: serverTimestamp()
       });
 
-      navigate('/');
+      // Send verification email
+      const actionCodeSettings = {
+        url: `${window.location.origin}/confirm-email`,
+        handleCodeInApp: true,
+      };
+      await sendEmailVerification(user, actionCodeSettings);
+      
+      // Sign out to prevent auto-login before verification if they try to navigate
+      await signOut(auth);
+
+      setVerificationSent(true);
     } catch (err: any) {
       console.error("Signup error:", err);
       setError(err.message || 'Failed to create account');
@@ -140,143 +153,193 @@ export default function Signup() {
 
         {/* Right Side - Form */}
         <div className="p-6 sm:p-12 md:p-16 flex flex-col justify-center">
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-          >
-            <div className="mb-6 sm:mb-10">
-              <h1 className="text-xl sm:text-3xl font-bold text-gray-900 tracking-tight mb-2 sm:mb-3">Create Account</h1>
-              <p className="text-gray-500 font-medium text-xs sm:text-sm">Join our futuristic community today</p>
-            </div>
-
-            {error && (
+          <AnimatePresence mode="wait">
+            {!verificationSent ? (
               <motion.div
-                initial={{ opacity: 0, x: -10 }}
+                key="signup-form"
+                initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="mb-6 p-4 sm:p-5 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 sm:gap-4 text-red-700 text-xs sm:text-sm font-bold"
+                exit={{ opacity: 0, x: -20 }}
               >
-                <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" />
-                {error}
+                <div className="mb-6 sm:mb-10">
+                  <h1 className="text-xl sm:text-3xl font-bold text-gray-900 tracking-tight mb-2 sm:mb-3">Create Account</h1>
+                  <p className="text-gray-500 font-medium text-xs sm:text-sm">Join our futuristic community today</p>
+                </div>
+
+                {error && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="mb-6 p-4 sm:p-5 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 sm:gap-4 text-red-700 text-xs sm:text-sm font-bold"
+                  >
+                    <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" />
+                    {error}
+                  </motion.div>
+                )}
+
+                <form onSubmit={handleSignupSubmit} className="space-y-4 sm:space-y-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1 sm:space-y-2">
+                      <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Full Name</label>
+                      <div className="relative group">
+                        <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
+                        <input
+                          type="text"
+                          required
+                          className="w-full pl-10 sm:pl-12 pr-5 py-3 sm:py-4 bg-gray-50 border border-gray-100 rounded-xl sm:rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm sm:text-base"
+                          placeholder="John Doe"
+                          value={formData.fullName}
+                          onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1 sm:space-y-2">
+                      <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Username</label>
+                      <div className="relative group">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-black text-[10px] sm:text-xs group-focus-within:text-cyan-500 transition-colors">@</span>
+                        <input
+                          type="text"
+                          required
+                          className="w-full pl-8 sm:pl-10 pr-5 py-3 sm:py-4 bg-gray-50 border border-gray-100 rounded-xl sm:rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm sm:text-base"
+                          placeholder="johndoe"
+                          value={formData.username}
+                          onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1 sm:space-y-2">
+                      <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Email Address</label>
+                      <div className="relative group">
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
+                        <input
+                          type="email"
+                          required
+                          className="w-full pl-10 sm:pl-12 pr-5 py-3 sm:py-4 bg-gray-50 border border-gray-100 rounded-xl sm:rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm sm:text-base"
+                          placeholder="name@example.com"
+                          value={formData.email}
+                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1 sm:space-y-2">
+                      <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Phone Number</label>
+                      <div className="relative group">
+                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
+                        <input
+                          type="tel"
+                          required
+                          className="w-full pl-10 sm:pl-12 pr-5 py-3 sm:py-4 bg-gray-50 border border-gray-100 rounded-xl sm:rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm sm:text-base"
+                          placeholder="+1 234 567 890"
+                          value={formData.phoneNumber}
+                          onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1 sm:space-y-2">
+                      <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Password</label>
+                      <div className="relative group">
+                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
+                        <input
+                          type={showPassword ? "text" : "password"}
+                          required
+                          className="w-full pl-10 sm:pl-12 pr-12 py-3 sm:py-4 bg-gray-50 border border-gray-100 rounded-xl sm:rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm sm:text-base"
+                          placeholder="••••••••"
+                          value={formData.password}
+                          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-cyan-500 transition-colors"
+                        >
+                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="space-y-1 sm:space-y-2">
+                      <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Confirm Password</label>
+                      <div className="relative group">
+                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
+                        <input
+                          type={showPassword ? "text" : "password"}
+                          required
+                          className="w-full pl-10 sm:pl-12 pr-12 py-3 sm:py-4 bg-gray-50 border border-gray-100 rounded-xl sm:rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm sm:text-base"
+                          placeholder="••••••••"
+                          value={formData.confirmPassword}
+                          onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold uppercase tracking-widest text-[10px] sm:text-xs hover:bg-cyan-600 transition-all shadow-xl shadow-gray-200 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed group mt-2"
+                  >
+                    {loading ? (
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        Create Account
+                        <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                      </>
+                    )}
+                  </button>
+                </form>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="verification-sent"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="text-center"
+              >
+                <div className="w-20 h-20 bg-cyan-50 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-inner">
+                  <Mail className="w-10 h-10 text-cyan-600 animate-pulse" />
+                </div>
+                
+                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 tracking-tight">Verify Your Email</h2>
+                <p className="text-gray-500 font-medium mb-8 leading-relaxed max-w-sm mx-auto">
+                  We've sent a verification link to <span className="text-cyan-600 font-bold">{formData.email}</span>. 
+                  Please check your inbox and click the link to activate your account.
+                </p>
+
+                <div className="p-6 bg-gray-50 rounded-3xl border border-dashed border-gray-200 mb-8 inline-block text-left w-full">
+                  <div className="flex gap-4">
+                    <div className="w-10 h-10 bg-white rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0">
+                      <Zap className="w-5 h-5 text-cyan-500" />
+                    </div>
+                    <div>
+                      <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-900 mb-1">Check Junk Folder</h4>
+                      <p className="text-[10px] text-gray-500 font-bold">If you don't see the email within a few minutes, check your spam or junk folder.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-4">
+                  <Link 
+                    to="/login"
+                    className="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold uppercase tracking-widest text-[10px] hover:bg-cyan-600 transition-all shadow-xl shadow-gray-200"
+                  >
+                    Return to Login
+                  </Link>
+                  <button 
+                    onClick={() => setVerificationSent(false)}
+                    className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-gray-900 transition-colors"
+                  >
+                    Back to Signup
+                  </button>
+                </div>
               </motion.div>
             )}
-
-            <form onSubmit={handleSignupSubmit} className="space-y-4 sm:space-y-5">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1 sm:space-y-2">
-                  <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Full Name</label>
-                  <div className="relative group">
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
-                    <input
-                      type="text"
-                      required
-                      className="w-full pl-10 sm:pl-12 pr-5 py-3 sm:py-4 bg-gray-50 border border-gray-100 rounded-xl sm:rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm sm:text-base"
-                      placeholder="John Doe"
-                      value={formData.fullName}
-                      onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                    />
-                  </div>
-                </div>
-                <div className="space-y-1 sm:space-y-2">
-                  <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Username</label>
-                  <div className="relative group">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-black text-[10px] sm:text-xs group-focus-within:text-cyan-500 transition-colors">@</span>
-                    <input
-                      type="text"
-                      required
-                      className="w-full pl-8 sm:pl-10 pr-5 py-3 sm:py-4 bg-gray-50 border border-gray-100 rounded-xl sm:rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm sm:text-base"
-                      placeholder="johndoe"
-                      value={formData.username}
-                      onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1 sm:space-y-2">
-                  <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Email Address</label>
-                  <div className="relative group">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
-                    <input
-                      type="email"
-                      required
-                      className="w-full pl-10 sm:pl-12 pr-5 py-3 sm:py-4 bg-gray-50 border border-gray-100 rounded-xl sm:rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm sm:text-base"
-                      placeholder="name@example.com"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    />
-                  </div>
-                </div>
-                <div className="space-y-1 sm:space-y-2">
-                  <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Phone Number</label>
-                  <div className="relative group">
-                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
-                    <input
-                      type="tel"
-                      required
-                      className="w-full pl-10 sm:pl-12 pr-5 py-3 sm:py-4 bg-gray-50 border border-gray-100 rounded-xl sm:rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm sm:text-base"
-                      placeholder="+1 234 567 890"
-                      value={formData.phoneNumber}
-                      onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1 sm:space-y-2">
-                  <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Password</label>
-                  <div className="relative group">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      required
-                      className="w-full pl-10 sm:pl-12 pr-12 py-3 sm:py-4 bg-gray-50 border border-gray-100 rounded-xl sm:rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm sm:text-base"
-                      placeholder="••••••••"
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-cyan-500 transition-colors"
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-                <div className="space-y-1 sm:space-y-2">
-                  <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-gray-500 ml-1">Confirm Password</label>
-                  <div className="relative group">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-focus-within:text-cyan-500 transition-colors" />
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      required
-                      className="w-full pl-10 sm:pl-12 pr-12 py-3 sm:py-4 bg-gray-50 border border-gray-100 rounded-xl sm:rounded-2xl focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none transition-all font-semibold text-sm sm:text-base"
-                      placeholder="••••••••"
-                      value={formData.confirmPassword}
-                      onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold uppercase tracking-widest text-[10px] sm:text-xs hover:bg-cyan-600 transition-all shadow-xl shadow-gray-200 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed group mt-2"
-              >
-                {loading ? (
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <>
-                    Create Account
-                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </>
-                )}
-              </button>
-            </form>
-          </motion.div>
+          </AnimatePresence>
 
           <div className="mt-8 sm:mt-10 pt-6 sm:pt-8 border-t border-gray-50 text-center">
             <p className="text-gray-500 font-medium text-sm">
