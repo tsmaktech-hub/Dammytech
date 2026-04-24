@@ -58,9 +58,16 @@ export default function Signup() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, code }),
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to send code');
-      return data;
+      
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.indexOf("application/json") !== -1) {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Failed to send code');
+        return data;
+      } else {
+        const text = await response.text();
+        throw new Error(`Server returned non-JSON response (${response.status}): ${text.substring(0, 100)}`);
+      }
     } catch (err: any) {
       console.error("Send code error:", err);
       throw err;
@@ -151,13 +158,18 @@ export default function Signup() {
         body: JSON.stringify({ email: formData.email, code: otpCode }),
       });
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Invalid code');
-
-      // Success
-      setIsVerifying(false);
-      alert('Account verified successfully! You can now log in.');
-      navigate('/login');
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.indexOf("application/json") !== -1) {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Invalid code');
+        
+        setIsVerifying(false);
+        alert('Account verified successfully! You can now log in.');
+        navigate('/login');
+      } else {
+        const text = await response.text();
+        throw new Error(`Server returned non-JSON response (${response.status}): ${text.substring(0, 100)}`);
+      }
     } catch (err: any) {
       console.error("Verification error:", err);
       setError(err.message || 'Verification failed');

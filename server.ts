@@ -3,11 +3,14 @@ import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import nodemailer from 'nodemailer';
 import cors from 'cors';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import admin from 'firebase-admin';
-import firebaseConfig from './firebase-applet-config.json' with { type: 'json' };
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// Load Firebase Config safely
+const firebaseConfig = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'firebase-applet-config.json'), 'utf8'));
 
 // Initialize Firebase Admin
 if (!admin.apps.length) {

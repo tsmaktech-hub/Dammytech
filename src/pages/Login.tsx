@@ -65,7 +65,7 @@ export default function Login() {
       const user = userCredential.user;
 
       // Check if email is verified
-      const isDeveloper = user.email === 'tsmaktech@gmail.com' || user.email === 'ibusari127@gmail.com';
+      const isDeveloper = user.email === 'ibusari127@gmail.com';
       
       if (!user.emailVerified && !isDeveloper) {
         // Find user in Firestore to check internal is_verified flag as well
