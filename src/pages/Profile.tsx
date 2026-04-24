@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { auth, db, doc, updateDoc, deleteDoc } from '../lib/firebase';
 import { sendPasswordResetEmail, deleteUser, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { collection, query, where, getDocs, writeBatch } from 'firebase/firestore';
-import { useAuth } from '../lib/AuthContext';
+import { useAuth } from '../App';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Settings, 

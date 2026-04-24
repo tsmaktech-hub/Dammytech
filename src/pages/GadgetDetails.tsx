@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { db, auth, handleFirestoreError, OperationType } from '../lib/firebase';
 import { doc, getDoc, collection, query, where, onSnapshot, addDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { Gadget, Order } from '../types';
-import { useAuth } from '../lib/AuthContext';
+import { useAuth } from '../App';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ArrowLeft, 

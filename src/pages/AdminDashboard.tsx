@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { Order } from '../types';
-import { useAuth } from '../lib/AuthContext';
+import { useAuth } from '../App';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ShoppingBag, 
