@@ -2,10 +2,18 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { LogIn, UserPlus, Cpu, ArrowRight } from 'lucide-react';
 import { motion } from 'motion/react';
+import { Logo } from '../App';
 
 export default function AuthChoice() {
   return (
-    <div className="min-h-[80vh] flex items-center justify-center p-4">
+    <div className="min-h-[80vh] flex flex-col items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-12 sm:mb-20"
+      >
+        <Logo className="scale-110 sm:scale-150" />
+      </motion.div>
       <div className="max-w-4xl w-full grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Login Option */}
         <motion.div

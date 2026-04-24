@@ -66,7 +66,7 @@ const AuthContext = createContext<AuthContextType>({
   logout: async () => {},
 });
 
-const Logo = ({ className = "", iconClassName = "" }) => (
+export const Logo = ({ className = "", iconClassName = "" }) => (
   <div className={cn("flex items-center gap-2 sm:gap-3 group shrink-0", className)}>
     <div className="relative">
       <div className="absolute inset-0 bg-cyan-500 blur-lg opacity-20 group-hover:opacity-40 transition-opacity" />
