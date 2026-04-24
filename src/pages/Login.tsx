@@ -62,6 +62,24 @@ export default function Login() {
       }
 
       const userCredential = await signInWithEmailAndPassword(auth, loginEmail, formData.password);
+      const user = userCredential.user;
+
+      // Check if email is verified
+      const isDeveloper = user.email === 'tsmaktech@gmail.com' || user.email === 'ibusari127@gmail.com';
+      
+      if (!user.emailVerified && !isDeveloper) {
+        // Find user in Firestore to check internal is_verified flag as well
+        const usersRef = collection(db, 'users');
+        const q = query(usersRef, where('email', '==', user.email));
+        const querySnapshot = await getDocs(q);
+        const userData = !querySnapshot.empty ? querySnapshot.docs[0].data() : null;
+
+        if (!userData?.is_verified) {
+          await auth.signOut();
+          throw new Error('Your email is not verified. Please verify your account to continue.');
+        }
+      }
+
       navigate('/');
     } catch (err: any) {
       console.error("Login error:", err);
@@ -74,6 +92,43 @@ export default function Login() {
       }
       
       setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOTP = async () => {
+    if (!formData.identifier) {
+      setError('Please enter your email/username first');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      let email = formData.identifier;
+      if (!email.includes('@')) {
+        const usersRef = collection(db, 'users');
+        const q = query(usersRef, where('username', '==', formData.identifier.toLowerCase()));
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+          email = querySnapshot.docs[0].data().email;
+        }
+      }
+
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const response = await fetch('/api/auth/send-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code: otp }),
+      });
+
+      if (!response.ok) throw new Error('Failed to send code');
+      
+      setSuccessMessage('A new verification code has been sent to your email.');
+      // Optionally navigate to signup with state to show verify form
+      navigate('/signup', { state: { email, verificationMode: true } });
+    } catch (err: any) {
+      setError(err.message || 'Failed to resend code');
     } finally {
       setLoading(false);
     }
@@ -147,10 +202,21 @@ export default function Login() {
             <motion.div
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
-              className="mb-6 p-4 sm:p-5 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 sm:gap-4 text-red-700 text-xs sm:text-sm font-bold"
+              className="mb-6 p-4 sm:p-5 bg-red-50 border border-red-100 rounded-2xl flex flex-col gap-3 text-red-700 text-xs sm:text-sm font-bold"
             >
-              <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" />
-              {error}
+              <div className="flex items-center gap-3 sm:gap-4">
+                <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" />
+                {error}
+              </div>
+              {error.includes('not verified') && (
+                <button
+                  type="button"
+                  onClick={handleResendOTP}
+                  className="mt-2 text-cyan-600 hover:text-cyan-700 underline text-left"
+                >
+                  Resend verification code
+                </button>
+              )}
             </motion.div>
           )}
 
