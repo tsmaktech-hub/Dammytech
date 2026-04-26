@@ -686,7 +686,6 @@ export default function Home({
         <div className="flex flex-col sm:flex-row justify-between items-center sm:items-end gap-4 sm:gap-8 mb-8 sm:mb-16">
           <div className="text-center sm:text-left">
             <div className="inline-flex items-center gap-2 text-cyan-600 font-black uppercase tracking-widest text-[8px] sm:text-xs mb-2 sm:mb-3">
-              <Logo className="scale-50 sm:scale-75" />
               <div className="w-4 sm:w-8 h-[2px] bg-cyan-600" />
               Our Inventory
             </div>
@@ -930,7 +929,6 @@ export default function Home({
         <div className="text-center max-w-3xl mx-auto mb-16 sm:mb-24">
           <div className="inline-flex items-center gap-2 text-cyan-600 font-black uppercase tracking-widest text-[10px] sm:text-xs mb-4">
             <div className="w-8 h-[2px] bg-cyan-600" />
-            <Logo className="scale-75 mb-2" />
             The Dammytech Edge
           </div>
           <h2 className="text-3xl sm:text-6xl font-black text-gray-900 tracking-tighter mb-6">
