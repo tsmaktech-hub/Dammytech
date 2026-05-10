@@ -520,7 +520,7 @@ export default function App() {
                   <Logo />
                 </div>
                 <p className="text-gray-400 text-sm max-w-sm mb-6 sm:mb-8 leading-relaxed">
-                  Yours ultimate destination for high-end gadgets and futuristic technology. We bring the future to your doorstep.
+                  Your ultimate destination for high-end gadgets and futuristic technology. We bring the future to your doorstep.
                 </p>
                 <div className="flex gap-3 sm:gap-4">
                   {[
